@@ -2,6 +2,7 @@
 .classpath
 *.class
 **/target/*
+**/src-gen/*
 .settings/*
 /target
-**/src-gen/*
+**/src-gen
