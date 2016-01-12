@@ -28,7 +28,6 @@ tima::Mailbox::exists(std::string& name, TimaNativeContext* context)
     );
 
     // remove found element
-
     it->second.erase(std::remove_if(it0, it1, [&] (Message e)
                               {
                                 std::cerr << "\t\t" << ctx->msg_id << " " << ctx->src_id << std::endl;
