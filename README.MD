@@ -15,7 +15,7 @@ Read the [full grammar](tima-dsl/fr.labri.gossip.tima/src/fr/labri/gossip/tima/D
 
 ## States
 
-A simple example where there is a compound action. The first simple action is the execution of a method **method1** defined elsewhere. The second simple action send a message **a** to automaton2.
+A simple example where there is a compound action. The first simple action is the execution of a method **method1** defined elsewhere. The second simple action send a message **a** to **automaton2**.
 
     state s0
       action
@@ -29,6 +29,24 @@ Notice that there are two possible transitions. First, we can go to state **s2**
 if **guard1** is true in the first 100 msec after the s0 becomes the current state. If this doesn't happen, we take the *default* transition to **s1**.
 
 ## Guards
+
+There are three type of guards.
+
+**Arbitrary Guard**
+
+Arbitrary guards are implemented as *static* methods of *C++* classes.
+
+**Local message from a different automaton**
+
+```
+? message_id : automaton_id
+```
+
+**Remote message from the network**
+
+```
+>> message_id
+```
 
 ## Automaton
 
