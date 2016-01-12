@@ -3,6 +3,7 @@
 *.class
 **/target/*
 **/src-gen/*
+.metadata/*
 .settings/*
 /target
 **/src-gen
