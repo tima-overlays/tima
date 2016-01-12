@@ -54,6 +54,314 @@ class DSLGenerator extends AbstractGenerator {
 		
 		fsa.generateFile('''«s»/«s».cc''', native_version(s, automatons, resource.allContents.filter(Message).toList))
 		fsa.generateFile('''«s»/«s».h''', native_version_header(s, automatons))
+		fsa.generateFile('''«s»/«s»_inet.ned''', omnet_inet_app_descriptor(s + "_inet"))
+		fsa.generateFile('''«s»/«s»_inet.h''', omnet_inet_app_header(s+"_inet"))
+		fsa.generateFile('''«s»/«s»_inet.cc''', omnet_inet_app_code(s+"_inet"))
+	}
+	
+	def omnet_inet_app_code(String project_name) {
+	'''
+	#include "«project_name».h"
+	#include "Gossip_m.h"
+	
+	#include "inet/networklayer/common/L3AddressResolver.h"
+	#include "inet/transportlayer/contract/udp/UDPControlInfo.h"
+	
+	#include <algorithm>
+	
+	namespace inet {
+	
+	Define_Module(«project_name»);
+	
+	enum ControlMessageTypes {
+	    IDLE,
+	    START,
+	    TICK_MESSAGE
+	};
+	
+	void «project_name»::initialize(int stage)
+	{
+	    ApplicationBase::initialize(stage);
+	
+	    if (stage == INITSTAGE_LOCAL) {
+	        msg_tick = new cMessage("msg_ctrl", IDLE);
+	    }
+	}
+	
+	void «project_name»::handleMessageWhenUp(cMessage *msg)
+	{
+	    cPacket* pkt = nullptr;
+	
+	    if (msg->isSelfMessage()) {
+	
+	        switch (msg->getKind()) {
+	            case START:
+	                processStart();
+	                break;
+	            case TICK_MESSAGE:
+	                
+	
+	                break;
+	            default:
+	                break;
+	        }
+	    }
+	    else if (msg->getKind() == UDP_I_DATA) {
+	        pkt = PK(msg);
+	
+	        EV_TRACE << "A network message\n";
+	
+	        bool done = processReceivedGossip(pkt);
+	        done = done || processReceivedHello(pkt);
+	
+	        // unknown package
+	        if (!done) {
+	            delete pkt;
+	        }
+	    }
+	}
+	
+	bool «project_name»::sayHello()
+	{
+	    // EV_TRACE << myself << " is saying hello" << endl;
+	    // FIXME: Figure out how to do a real broadcast
+	
+	//    if (isSource) {
+	//
+	//    GossipHello* pkt = new GossipHello("Hello");
+	//    pkt->setId(myself.c_str());
+	//    socket.sendTo(pkt, IPv4Address::ALLONES_ADDRESS, destinationPort);
+	//
+	//    }
+	
+	    for ( L3Address& addr : possibleNeighbors ) {
+	        GossipHello* pkt = new GossipHello("Hello");
+	        pkt->setId(myself.c_str());
+	        socket.sendTo(pkt, addr, destinationPort);
+	    }
+	
+	    return true;
+	}
+	
+	bool «project_name»::gossiping()
+	{
+	    bool r = false;
+	    auto it = std::find_if(infections.begin(), infections.end(), [] (GossipInfection f) {
+	       return f.roundsLeft > 0;
+	    });
+	
+	    while (it != infections.end()) {
+	
+	        for (std::map<string,L3Address>::iterator it2=addresses.begin(); it2!=addresses.end(); ++it2) {
+	            L3Address addr = it2->second;
+	            Gossip* pkt = new Gossip("");
+	            pkt->setId(it->idMsg);
+	            pkt->setSource(it->source.c_str());
+	            pkt->setMsg(it->text.c_str());
+	            socket.sendTo(pkt, addr, destinationPort);
+	        }
+	
+	        r = true;
+	        it->roundsLeft--;
+	
+	        it = std::find_if(it, infections.end(), [] (GossipInfection f) {
+	           return f.roundsLeft > 0;
+	        });
+	    }
+	
+	    return r;
+	}
+	
+	void «project_name»::finish()
+	{
+	    if (msg_tick)
+	        cancelAndDelete(msg_tick);
+	    msg_tick = nullptr;
+	}
+	
+	bool «project_name»::handleNodeStart(IDoneCallback *doneCallback)
+	{
+	    msg_tick->setKind(START);
+	    scheduleAt(simTime() + 0.01, msg_tick);
+	    return true;
+	}
+	
+	bool «project_name»::handleNodeShutdown(IDoneCallback *doneCallback)
+	{
+	    if (msg_tick)
+	        cancelAndDelete(msg_tick);
+	    msg_tick = nullptr;
+	
+	    return true;
+	}
+	
+	void «project_name»::handleNodeCrash()
+	{
+	    if (msg_tick)
+	        cancelAndDelete(msg_tick);
+	    msg_tick = nullptr;
+	}
+	
+	void «project_name»::processStart()
+	{
+	    myself = this->getParentModule()->getFullName();
+	    L3AddressResolver().tryResolve(myself.c_str(), myAddress);
+	    EV_TRACE << "Starting the process in module " << myself << " (" << myAddress.str() << ")" << "\n";
+	
+	    nodesPerRound = par("nodesPerRound");
+	    roundRatio = par("roundRatio");
+	
+	    const char *destAddrs = par("addresses");
+	    cStringTokenizer tokenizer(destAddrs);
+	    const char *token;
+	
+	    while ((token = tokenizer.nextToken()) != nullptr) {
+	        L3Address result;
+	        L3AddressResolver().tryResolve(token, result);
+	        if (result.isUnspecified())
+	            EV_ERROR << "cannot resolve destination address: " << ((token)?token:"NULL") << endl;
+	        else if (myself != token)
+	            possibleNeighbors.push_back(result);
+	    }
+	
+	    socket.setOutputGate(gate("udpOut"));
+	    socket.bind(localPort);
+	    socket.setBroadcast(true);
+	
+	
+	    EV_TRACE << "Creating protocol's executer\n";
+	
+	    std::vector<tima::Automata*> automatas = parameters.build_stl_version();
+	    executor = std::move(new Executor(automatas));
+	}
+	
+	void GossipPush::registerListener(ITimeOut* listener, double afterElapsedTime)
+	{
+	    //EV_TRACE << "Registering listener because we enter in the state of waiting for tick " << afterElapsedTime << "\n";
+	    cMessage* m = new cMessage("a tick");
+	    m->setKind(TICK_MESSAGE);
+	    scheduleAt(simTime() + afterElapsedTime, m);
+	
+	
+	}
+	
+	void GossipPush::addNewAddress(string id)
+	{
+	    if (myself != id) {
+	        L3Address result;
+	        L3AddressResolver().tryResolve(id.c_str(), result);
+	        auto it = addresses.find(id);
+	        if (it == addresses.end()) {
+	            EV_TRACE << "Hello from " << id << "\n";
+	            addresses.insert(std::pair<string, L3Address>(id, result));
+	        }
+	    }
+	
+	
+	}
+	
+	void GossipPush::addNewInfection(Gossip* g)
+	{
+	    bool exists = std::any_of(infections.begin(), infections.end(), [&](GossipInfection t) {
+	        return (g->getId() == t.idMsg) && (g->getSource() == t.source);
+	    });
+	
+	    if (!exists) {
+	        GossipInfection t;
+	        t.idMsg = g->getId();
+	        t.roundsLeft = roundRatio;
+	        t.source = g->getSource();
+	        t.text = g->getMsg();
+	        infections.push_back(t);
+	
+	        UDPDataIndication *ctrl = check_and_cast<UDPDataIndication *>(g->getControlInfo());
+	
+	        EV_TRACE << "A new foreign message : '"  <<  t.text << "' from " << t.source << " through "<< ctrl->getSrcAddr() << "\n";
+	    }
+	}
+	
+	} //namespace
+	'''
+	}
+	
+	def omnet_inet_app_header(String project_name) {
+	'''
+	#ifndef __INET_«project_name.toUpperCase»_H_
+	#define __INET_«project_name.toUpperCase»_H_
+	
+	#include <omnetpp.h>
+	
+	#include <map>
+	#include <vector>
+	#include <string>
+	
+	#include "inet/common/INETDefs.h"
+	
+	#include "inet/applications/base/ApplicationBase.h"
+	#include "inet/transportlayer/contract/udp/UDPSocket.h"
+	
+	#include "Gossip_m.h"
+	
+	#include "executor.h"
+	#include "automata.h"
+	#include "mailbox.hpp"
+	
+	namespace inet {
+	
+	/**
+	 * TODO - Generated class
+	 */
+	class INET_API «project_name» : public ApplicationBase, public ITimeOutProducer
+	{
+	  protected:
+	
+	    int destinationPort = 10000;
+	    int localPort = 10000;
+	
+	    // gossip stuff
+	    int nodesPerRound = 1; // this node will gossip with 'nodesPerRound' in each round
+	    int roundRatio = 2; // the number of rounds is 'roundRatio*numberOfAddresses'
+	
+	    double gossipInterval = 0.1;
+	
+	    std::map<std::string, L3Address> addresses; // network members
+	    std::vector<L3Address> possibleNeighbors;
+	
+	    // to assign ids to messages
+	    int lastIdMsg = 1;
+	
+	    // communication
+	    UDPSocket socket;
+	
+	    // control messages
+	    cMessage* tick_msg = nullptr;
+	
+	    // myself as a module
+	    string myself;
+	    L3Address myAddress;
+	
+	    std::unique_ptr<tima::Executor> executor;
+	
+	  protected:
+	
+	    virtual int numInitStages() const override { return NUM_INIT_STAGES; }
+	    virtual void initialize(int stage) override;
+	    virtual void handleMessageWhenUp(cMessage *msg) override;
+	    virtual void finish() override;
+	
+	    virtual bool handleNodeStart(IDoneCallback *doneCallback) override;
+	    virtual bool handleNodeShutdown(IDoneCallback *doneCallback) override;
+	    virtual void handleNodeCrash() override;
+	
+	    virtual void registerListener(ITimeOut* listener, double afterElapsedTime) override;
+	
+	    virtual void processStart();
+	};
+	
+	} //namespace
+	
+	#endif
+	'''
 	}
 	
 	def native_version_header(String name, LinkedHashMap<String, ITimedAutomata<String>> map) {
@@ -130,8 +438,6 @@ class DSLGenerator extends AbstractGenerator {
 		#endif
 		'''
 	}
-	
-	
 	
 	def native_version(String project_name, LinkedHashMap<String, ITimedAutomata<String>> map, List<Message> messages) {
 	'''
@@ -254,6 +560,38 @@ class DSLGenerator extends AbstractGenerator {
 	'''
 	}
 	
+	def omnet_inet_app_descriptor(String project_name){
+	'''
+	package inet.applications.gossip;
+	
+	import inet.applications.contract.IUDPApp;
+	
+	//
+	// This module is an application that implement the Gossip protocol
+	// to disemminate messages.
+	//
+	// Some nodes distribute messages in the network using unicast UDP.
+	//
+	simple «project_name» like IUDPApp
+	{
+	    parameters:
+	        
+	        int destinationPort = default(10000);
+	        int localPort = default(10000);
+	        
+	        // gossip stuff
+	        int nodesPerRound = default(1); // this node will gossip at most with 'nodesPerRound' in each round
+	        int roundRatio = default(2); // the number of rounds is 'roundRatio*numberOfAddresses'
+	        
+	        string addresses = default(""); // network members
+	          
+		gates:
+	        input udpIn @labels(UDPControlInfo/up);
+	        output udpOut @labels(UDPControlInfo/down);
+	}
+	'''
+	}
+	
 	def actionStep(SimpleTimaAction<String> act_simple)
 		'''«IF act_simple.isMessage»
 		tima::TimaNativeContext* ctx2 = new tima::SendTimaContext(«act_simple.msg_id», «act_simple.src_id», "«act_simple.automaton_dst»");
@@ -262,7 +600,6 @@ class DSLGenerator extends AbstractGenerator {
 		«ELSE»
 		«act_simple»(name, ctx);
 		«ENDIF»'''
-	
 	
 	def numberOfFollowers(ITimedAutomata<String> a, ITimedAutomata.State s) {
 		a.getFollowers(s).length - (if (a.asCompiled.getTimeoutDestination(s) != -1) 1 else 0)
