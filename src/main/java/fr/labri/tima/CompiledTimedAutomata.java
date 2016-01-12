@@ -148,6 +148,16 @@ public class CompiledTimedAutomata<C> implements ITimedAutomata<C> {
 		int idSrc = Utils.indexOf(s, _states);
 		return _timeouts[idSrc];
 	}
+	
+	/**
+	 * In a compiled automata, every states must have a single timeout transition and non-timeout transitions must have the same expiration value.
+	 * Hence, this method returns the destination
+	 * @return
+	 */
+	public int getTimeoutDestination(State<C> s) {
+		int idSrc = Utils.indexOf(s, _states);
+		return _timeoutsTarget[idSrc];
+	}
 
 	@Override
 	public Predicate<C> getPredicate(State<C> src, State<C> dst) {
