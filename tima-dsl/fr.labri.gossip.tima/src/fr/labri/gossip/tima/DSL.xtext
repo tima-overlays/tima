@@ -1,0 +1,61 @@
+grammar fr.labri.gossip.tima.DSL with org.eclipse.xtext.common.Terminals
+
+generate dSL "http://www.labri.fr/gossip/tima/DSL"
+
+Model:
+	header=Header
+	('messages' messages+=Message*)?
+	automatons+=Automata*
+;
+ 
+Message:
+	name=ID
+;
+
+Automata:
+	'automaton' name=ID states+=State* 
+;
+
+State:
+	modifiers+=Modifier* 'state' name=ID actions+=CompoundAction* transitions+=Transition*
+;
+
+Modifier:
+	(urgent='urgent') | (initial='initial') | (term='terminate')
+;
+
+CompoundAction:
+	name=('post-action'|'action'|'pre-action') actions+=Action+	
+;
+
+Action:
+	 externalAction=ExternalAction |
+	 '!' msg=MessageType ':' target=[Automata]
+;
+
+ExternalAction:
+	'::' name=ID '::' method=ID
+;
+
+Transition:
+	'on' guards=Guard '=>' target=[State]
+;
+
+Guard:
+	'?' msg=MessageType ':' source=[Automata] ('within'value=INT unit=UNIT)? |
+	'>>' msg=MessageType ('within'value=INT unit=UNIT)? |
+	externalAction=ExternalAction ('within' value=INT unit=UNIT)? |
+	'timeout' {Guard} //value=INT unit=Unit
+;
+
+MessageType: 
+	msg=[Message] |
+	'_' {MessageType}
+;
+
+
+Header:
+	'name' name=ID ('description' description=STRING)?
+;
+
+terminal UNIT: 'sec' | 'msec';
