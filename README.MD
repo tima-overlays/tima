@@ -28,6 +28,14 @@ A simple example where there is a compound action. The first simple action is th
 Notice that there are two possible transitions. First, we can go to state **s2**
 if **guard1** is true in the first 100 msec after the s0 becomes the current state. If this doesn't happen, we take the *default* transition to **s1**.
 
+## Messages
+
+You have to declare the messages used in the protocol. These messages are used to perform communication among automata in the same device and also network communication. So far, we are only interested in their name -- this will change really soon. The declaration of messages is done as follow:
+
+```
+messages msg1, msg2, msg3
+```
+
 ## Guards
 
 There are three type of guards.
