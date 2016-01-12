@@ -11,7 +11,7 @@ There are three directories:
 
 # Language Description
 
-Read the [full grammar](tima-dsl/fr.labri.gossip.tima/src/fr/labri/gossip/tima/DSL.xtext) of the language.
+Take a look at the [full grammar](tima-dsl/fr.labri.gossip.tima/src/fr/labri/gossip/tima/DSL.xtext) of the language.
 
 ## States
 
@@ -35,6 +35,21 @@ There are three type of guards.
 **Arbitrary Guard**
 
 Arbitrary guards are implemented as *static* methods of *C++* classes.
+
+```
+:: Classname::Methodname
+```
+
+and the implementation of this guard can be something like:
+
+```C++
+bool Classname::Methodname(std::string& name, tima::TimaNativeContext* context)
+{
+  bool b;
+  // code to compute b
+  return b;
+}
+```
 
 **Local message from a different automaton**
 
