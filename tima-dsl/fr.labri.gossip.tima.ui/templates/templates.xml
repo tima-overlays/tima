@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><templates><template autoinsert="true" id="org.xtext.example.mydsl.GossipDSL.templates.STATE" context="org.xtext.example.mydsl.GossipDSL.Automata" description="Create new State" enabled="true" name="STATE">state ${s}
+	action
+		${cursor}
+	on ? ${msg} : ${source} within 1 sec =&gt; ${target}
+	on timeout =&gt; ${defautTarget}</template>
+	<template autoinsert="true" id="org.xtext.example.mydsl.GossipDSL.templates.RECEIVE_MSG" context="org.xtext.example.mydsl.GossipDSL.State" deleted="false" description="Guard to receive message" enabled="true" name="RECEIVE_MSG">on ? ${msg} : ${source} within ${t} msec =&gt; ${target} </template>
+	</templates>
