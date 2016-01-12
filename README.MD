@@ -73,5 +73,60 @@ bool Classname::Methodname(std::string& name, tima::TimaNativeContext* context)
 
 ## Automaton
 
+# Example (It just shows the grammar and how to define arbitrary actions)
+
+```
+name ex1
+
+messages a z
+
+automaton Main
+	initial state s0 		
+		on ? a : Secondary within 500 msec => s1
+		on :: C::b within 1000 msec => s2
+		on >> z within 700 msec => s5
+		on timeout => s3
+
+	urgent state s1
+		action
+			:: D::x
+
+		on ::C::True => s0
+
+	state s2
+		on ::C::c within 400 msec => s1
+		on timeout => s3
+
+	state s3
+		on :: C::d within 1500 msec => s4
+		on timeout => s0
+
+
+	urgent state s4
+		on ::C::True => s0
+
+	urgent state s5
+		action
+			:: D::y
+
+		on ::C::True => s0
+
+/**
+ * This is a ticker
+ */
+automaton Secondary
+	initial state s0
+		on :: C::False within 700 msec => s2
+		on timeout => s1
+
+	urgent state s1
+		action
+			! a : Main
+
+		on :: C::True => s0
+
+	state s2
+		on :: C::False => s0
+```
 
 # Usage
