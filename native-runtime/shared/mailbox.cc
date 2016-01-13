@@ -104,3 +104,23 @@ tima::Mailbox::add_automaton(std::string& name)
   std::vector<Message> v;
   messages.emplace(name, v);
 }
+
+
+void
+tima::GenericActionContext::send_to(const std::string& dst, int port, const std::string& rumor)
+{
+  std::cout << nature << std::endl;
+  nature->send_network_message(dst, port, rumor);
+}
+
+std::string
+tima::GenericActionContext::get_device_name()
+{
+
+}
+
+void
+tima::GenericActionContext::broadcast(int port, std::string& msg)
+{
+
+}

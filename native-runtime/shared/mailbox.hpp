@@ -4,8 +4,10 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <memory>
 
 #include "automata.h"
+#include "tima_nature.h"
 
 namespace tima {
 
@@ -49,7 +51,12 @@ struct MailboxContext : public TimaNativeContext {
 struct GenericActionContext : public TimaNativeContext {
   bool msg_received = false;
   Message msg;
-  GenericActionContext(Message msg, bool msg_received) : msg_received(msg_received),msg(msg) {}
+  GenericActionContext(Message msg, bool msg_received, std::shared_ptr<tima::AbstractTimaNature> nature) : msg_received(msg_received),msg(msg),nature(nature) {}
+  void send_to(const std::string& dst, int port, const std::string& rumor);
+  std::string get_device_name();
+  void broadcast(int port, std::string& msg);
+private:
+  std::shared_ptr<tima::AbstractTimaNature> nature;
 };
 
 class Mailbox {

@@ -6,9 +6,11 @@
 #include "mailbox.hpp"
 
 
-tima::Executor::Executor(std::vector<struct tima::Automata*>& automatas)
+tima::Executor::Executor(std::shared_ptr<tima::AbstractTimaNature> nature)
+  :nature(nature)
 {
-  this->automatas = automatas;
+
+  this->automatas = nature->build_stl_version();
 
   for (auto it = this->automatas.begin(),
             end=this->automatas.end(); it != end ; ++it) {
@@ -62,23 +64,26 @@ tima::Executor::step(uint32_t milliseconds, bool only_urgents)
       }
     }
     // check if we found a valid transition
+    bool must_execute_action = false;
     if (!found) {
       timeouts[idx] -= (!only_urgents && timeouts[idx] != tima::never_timeout)?milliseconds:0;
       if (timeouts[idx] == 0) {
+        must_execute_action = true;
+        // FIXME: I wonder if after a timeout we should execute urgent states
+        // moved = true;
         // go to the default state
         current_states[idx] = state->timeout_destination;
-        timeouts[idx] = deadline(a, current_states[idx]);
-        auto ctx = new GenericActionContext(Message(state->transitions[i].msg_id, state->transitions[i].src_id), message_received);
-        ctx->msg = _the_message;
-        a->states[current_states[idx]].each_action(a->name, ctx);
-        delete ctx;
+
       }
     }
     else {
+      must_execute_action = true;
       moved = true;
       current_states[idx] = state->transitions[i].dst; // new state
+    }
+    if (must_execute_action) {
       timeouts[idx] = deadline(a, current_states[idx]);
-      auto ctx = new GenericActionContext(Message(state->transitions[i].msg_id, state->transitions[i].src_id), message_received);
+      auto ctx = new GenericActionContext(Message(state->transitions[i].msg_id, state->transitions[i].src_id), message_received, nature);
       ctx->msg = _the_message;
       a->states[current_states[idx]].each_action(a->name, ctx);
       delete ctx;

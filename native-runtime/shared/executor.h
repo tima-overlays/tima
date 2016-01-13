@@ -3,13 +3,17 @@
 
 #include <vector>
 #include <stdint.h>
+#include <memory>
 
 #include "automata.h"
+#include "tima_nature.h"
 
-namespace tima{
+
+namespace tima {
 
 class Executor {
 private:
+  std::shared_ptr< tima::AbstractTimaNature > nature;
   std::vector<struct tima::Automata*> automatas;
   std::vector<int> current_states;
   std::vector<int> timeouts;
@@ -19,7 +23,7 @@ private:
   bool step(uint32_t milliseconds, bool only_urgents);
 
 public:
-  Executor(std::vector<struct tima::Automata*>& automatas);
+  Executor(std::shared_ptr<tima::AbstractTimaNature> nature);
 
   // return tima::never_timeout if all the states can only wait forever
   int tick(uint32_t milliseconds);
