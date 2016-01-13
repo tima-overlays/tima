@@ -1,7 +1,7 @@
 
 #include "ex1.h"
 #include "mailbox.hpp"
-#include "tima_utils.h"
+// #include "tima_utils.h"
 
 #include <iostream>
 
@@ -37,7 +37,9 @@ bool C::False(std::string& name, tima::TimaNativeContext* context)
 
 void D::x(std::string& name, tima::TimaNativeContext* context)
 {
+  auto ctx = (tima::GenericActionContext*)context;
   std::cout << "Entering the state because I received a tick" << std::endl;
+  ctx->send_to(std::string("pepe"), 1234, std::string("maria"));
 }
 
 void D::y(std::string& name, tima::TimaNativeContext* context)
