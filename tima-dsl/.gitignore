@@ -3,6 +3,7 @@
 *.class
 **/target/*
 **/src-gen/*
+**/xtend-gen/*
 .metadata/*
 .settings/*
 /target
