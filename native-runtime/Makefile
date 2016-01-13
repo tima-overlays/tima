@@ -7,8 +7,9 @@ CCFLAGS=-Ishared
 SRC=shared/automata.cc \
 		shared/executor.cc \
 		shared/mailbox.cc \
-		shared/tima_utils.cc \
+		shared/tima_nature.cc \
 		unix/main.cc \
+		unix/unix_tima_nature.cc \
 		tests/ex1.cc \
 		tests/ex1_semantic.cc
 
