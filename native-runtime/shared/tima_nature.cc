@@ -1,5 +1,5 @@
 
-#include "tima_utils.h"
+#include "tima_nature.h"
 
 /** For accessing automata */
 struct tima::Automata& get_automata(uint32_t idx);
@@ -7,7 +7,7 @@ uint32_t get_nr_automatas();
 
 
 void
-tima::TimaMethods::print_automata(std::vector<tima::Automata*>& automata)
+tima::AbstractTimaNature::print_automata(std::vector<tima::Automata*>& automata)
 {
   // THIS IS DEBUG
   for (auto it = automata.begin(), it_end = automata.end() ; it != it_end ; ++it) {
@@ -32,7 +32,7 @@ tima::TimaMethods::print_automata(std::vector<tima::Automata*>& automata)
 }
 
 std::vector<tima::Automata*>
-tima::TimaMethods::build_stl_version()
+tima::AbstractTimaNature::build_stl_version()
 {
   std::vector<tima::Automata*> automatas;
   uint32_t n = get_nr_automatas();
