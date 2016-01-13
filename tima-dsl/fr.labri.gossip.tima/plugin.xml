@@ -7,4 +7,110 @@
 			class = "fr.labri.gossip.tima.dSL.DSLPackage"
 			genModel = "model/generated/DSL.genmodel" />
 	</extension>
+ <extension
+       id="timabuilder"
+       name="Tima Builder"
+       point="org.eclipse.core.resources.builders">
+    <builder
+          hasNature="true">
+       <run class="fr.labri.gossip.tima.builder.TimaBuilder">
+       		<parameter name="optimize" value="true" />
+            <parameter name="comment" value="Builder comment" />
+       </run>
+    </builder>
+ </extension>
+ <extension
+       id="timaNature"
+       name="Tima Project Nature"
+       point="org.eclipse.core.resources.natures">
+    <runtime>
+       <run
+             class="fr.labri.gossip.tima.builder.TimaNature">
+       </run>
+    </runtime>
+    <builder
+          id="fr.labri.gossip.tima.timabuilder">
+    </builder>
+ </extension>
+ <extension
+       point="org.eclipse.ui.commands">
+    <category
+          id="fr.labri.gossip.tima.timaNature.category"
+          name="Tima Project Nature commands">
+    </category>
+    <command
+          categoryId="fr.labri.gossip.tima.timaNature.category"
+          defaultHandler="fr.labri.gossip.tima.builder.AddRemoveTimaNatureHandler"
+          id="fr.labri.gossip.tima.addRemoveTimaNature"
+          name="Add/Remove Tima Project Nature">
+    </command>
+ </extension>
+ <extension
+       point="org.eclipse.ui.menus">
+    <menuContribution
+          locationURI="popup:org.eclipse.ui.projectConfigure?after=additions">
+       <command
+             commandId="fr.labri.gossip.tima.addRemoveTimaNature"
+             label="Disable Tima builder"
+             style="push">
+          <visibleWhen
+                checkEnabled="false">
+             <with
+                   variable="selection">
+                <count
+                      value="1">
+                </count>
+                <iterate>
+                   <adapt
+                         type="org.eclipse.core.resources.IProject">
+                      <test
+                            property="org.eclipse.core.resources.projectNature"
+                            value="fr.labri.gossip.tima.timaNature">
+                      </test>
+                   </adapt>
+                </iterate>
+             </with>
+          </visibleWhen>
+       </command>
+       <command
+             commandId="fr.labri.gossip.tima.addRemoveTimaNature"
+             label="Enable Tima builder"
+             style="push">
+          <visibleWhen
+                checkEnabled="false">
+             <with
+                   variable="selection">
+                <count
+                      value="1">
+                </count>
+                <iterate>
+                   <adapt
+                         type="org.eclipse.core.resources.IProject">
+                      <not>
+                         <test
+                               property="org.eclipse.core.resources.projectNature"
+                               value="fr.labri.gossip.tima.timaNature">
+                         </test>
+                      </not>
+                   </adapt>
+                </iterate>
+             </with>
+          </visibleWhen>
+       </command>
+    </menuContribution>
+ </extension>
+ <extension
+       point="org.eclipse.ui.propertyPages">
+    <page
+          class="fr.labri.gossip.tima.properties.TimaPropertyPage"
+          id="fr.labri.gossip.tima.properties.timaPropertyPage"
+          name="Tima Property Page"
+          nameFilter="*">
+       <enabledWhen>
+          <adapt
+                type="org.eclipse.core.resources.IProject">
+          </adapt>
+       </enabledWhen>
+    </page>
+ </extension>
 </plugin>
