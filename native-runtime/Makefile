@@ -4,8 +4,7 @@ TEST_BIN=testing.x
 CC=g++
 CCFLAGS=-Ishared
 
-SRC=shared/automata.cc \
-		shared/executor.cc \
+SRC=shared/executor.cc \
 		shared/mailbox.cc \
 		shared/tima_nature.cc \
 		unix/main.cc \

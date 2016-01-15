@@ -15,7 +15,8 @@
 #include <memory>
 
 
-void execute_protocol(std::shared_ptr<tima::AbstractTimaNature> nature, int port)
+void
+execute_protocol(std::shared_ptr<tima::AbstractTimaNature> nature, int port)
 {
 
   // printing the automatas

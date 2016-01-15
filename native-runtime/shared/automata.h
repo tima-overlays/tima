@@ -11,13 +11,16 @@ const int32_t never_timeout = -1;
 
 struct Transition;
 
-struct TimaNativeContext {
-  
+class TimaNativeContext {
+public:
+    TimaNativeContext(std::string device_name, void* user_data) : device_name(device_name), user_data(user_data) {}
+    std::string get_device_name() { return device_name; }
+    void* get_user_data() { return user_data; }
+private:
+    std::string device_name;
+    void* user_data;
 };
 
-/**
- * You should nver instantiate this struture using operator new
- */
 struct State {
   std::string name;
   bool urgent;
@@ -25,9 +28,6 @@ struct State {
   int32_t timeout_destination; // default transition
   uint32_t nr_transitions;
   struct Transition* transitions;
-
-  static void* operator new  ( std::size_t count );
-  static void* operator new[]( std::size_t count );
 
   void (*pre_action)(std::string&, TimaNativeContext*);
   void (*post_action)(std::string&, TimaNativeContext*);
