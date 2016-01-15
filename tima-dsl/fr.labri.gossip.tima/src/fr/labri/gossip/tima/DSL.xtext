@@ -30,7 +30,7 @@ CompoundAction:
 
 Action:
 	 externalAction=ExternalAction |
-	 '!' msg=MessageType ':' target=[Automata]
+	 '!' msg=MessageType '@' target=[Automata]
 ;
 
 ExternalAction:
@@ -42,8 +42,7 @@ Transition:
 ;
 
 Guard:
-	'?' msg=MessageType ':' source=[Automata] ('within'value=INT unit=UNIT)? |
-	'>>' msg=MessageType ('within'value=INT unit=UNIT)? |
+	'?' msg=MessageType ('within'value=INT unit=UNIT)? |
 	externalAction=ExternalAction ('within' value=INT unit=UNIT)? |
 	'timeout' {Guard} //value=INT unit=Unit
 ;
