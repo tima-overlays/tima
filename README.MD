@@ -59,17 +59,12 @@ bool Classname::Methodname(std::string& name, tima::TimaNativeContext* context)
 }
 ```
 
-**Local message from a different automaton**
+**Message in front of th mailbox**
 
 ```
-? message_id : automaton_id
+? message_id
 ```
 
-**Remote message from the network**
-
-```
->> message_id
-```
 
 ## Automaton
 
