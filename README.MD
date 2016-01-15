@@ -217,7 +217,7 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
           └── results
   ```
 
-The path to select is `$(OMNET_ROOT)/samples/inet/src/inet/applications`, which means that the source code of your protocol will be copied to that directory as a new application.
+  The path to select is `$(OMNET_ROOT)/samples/inet/src/inet/applications`, which means that the source code of your protocol will be copied to that directory as a new application.
 
 3. In the third page of the wizard, select the example `simple_gossip_push`
 
