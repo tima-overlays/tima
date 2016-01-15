@@ -189,7 +189,9 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
 # Tutorial
 
 ## Preliminaries
-- Install Eclipse Mars with XText support (https://www.itemis.com/en/xtext/download/?__hssc=&__hstc=&__hsfp=&hsCtaTracking=5f19e385-5578-4a5b-96b2-81413c6e6d20|1de82870-5b6a-4170-b133-ccf3448abe51)[XText 2.9.0]
+- Install Eclipse Mars with XText support [https://www.itemis.com/en/xtext/download/?__hssc=&__hstc=&__hsfp=&hsCtaTracking=5f19e385-5578-4a5b-96b2-81413c6e6d20|1de82870-5b6a-4170-b133-ccf3448abe51](XText 2.9.0)
+- Install Omnet++/Inet (OMNeT++ 5.0b3 released, [https://github.com/inet-framework/inet/releases/download/v3.2.0/inet-3.2.0-src.tgz](INET 3.2 Released)).
+- Run the tutorial, you can read below to get some insight.
 
 ## Spreading a rumor
 1. Create a new project using the provided Eclipse Wizard: **Tima-based Project**
