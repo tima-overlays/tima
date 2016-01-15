@@ -20,7 +20,7 @@ A simple example where there is a compound action. The first simple action is th
     state s0
       action
         :: Class1::method1
-        ! a : automaton2
+        ! a @ automaton2
 
       on :: Class2::guard1 within 100 msec => s2
       on timeout => s1
@@ -116,7 +116,7 @@ automaton Secondary
 
 	urgent state s1
 		action
-			! a : Main
+			! a @ Main
 
 		on :: C::True => s0
 
