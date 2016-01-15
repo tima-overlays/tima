@@ -188,6 +188,10 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
 
 # Tutorial
 
+## Preliminaries
+- Install Eclipse Mars with XText support (XText 2.9.0)[https://www.itemis.com/en/xtext/download/?__hssc=&__hstc=&__hsfp=&hsCtaTracking=5f19e385-5578-4a5b-96b2-81413c6e6d20|1de82870-5b6a-4170-b133-ccf3448abe51]
+
+## Spreading a rumor
 1. Create a new project using the provided Eclipse Wizard: **Tima-based Project**
 2. In the second page of the wizard, you must provide the path to OMNET++/INET applications. To elaborate, when we type `tree $(OMNET_ROOT)/samples/inet` the result is:
 
@@ -207,14 +211,9 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
   │       ├── routing
   │       └── transportlayer
   ├── templates
-  │   ├── NewAdhocWirelessSimulationWizard
-  │   ├── NewInetSimulationWizard
-  │   ├── NewManagedWirelessSimulationWizard
-  │   └── NewWirelessHandoverSimulationWizard
   ...
   └── tutorials
       └── wireless
-          └── results
   ```
 
   The path to select is `$(OMNET_ROOT)/samples/inet/src/inet/applications`, which means that the source code of your protocol will be copied to that directory as a new application.
@@ -226,3 +225,28 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
   The first file is the protocol specification. You will notice that some actions and guards have the form `:: Classname::methodname`; this means that the semantic to evaluate them are written in plain *C/C++*.
 
   The second file contains such actions plus an initialization routine. Notice the pattern in the name of this second file, it is the name of the protocol file plus **_semantic**. Notice also that the protocol name and the name of the file with the protocol must be identical (line 1 of the protocol).
+
+  There are two additional files in the `src` directory. Although they are not part of the protocol, we include them there as a mean to ease the execution of this example. The first file (`WirelessSimpleGossip.ned`) is an INET network with some wireless devices. These devices can send message using UDP to others only if they are in radio range. In other words, routing is disabled. The second file `gossip.ini` is a configuration file describing an scenario. In this scenario, devices are executing the protocol defined in `simple_gossip_push.gossip`. The idea in the scenario is that one node *hostA* is trying to spread a rumor.
+
+  If you read the semantic, you will notice how each node prints some traces when it receives the rumor for the first time. You will also notice that *hostA* begins communication after five seconds.
+
+5. Copy these two files to `$(OMNET_ROOT)/samples/inet/tutorials/wireless`
+6. Open two terminals
+7. In **terminal 1**
+  ```
+  cd $(OMNET_ROOT)
+  . setenv
+  cd samples/inet
+  make makefiles
+  make MODE=release -j8
+  ```
+  If everything goes well, the protocol have been compiled. You can check that a directory `simple_gossip_push` exists under `$(OMNET_ROOT)/samples/inet/src/inet/applications`.
+
+8. In **terminal 2** (or 1)
+  ```
+  cd $(OMNET_ROOT)
+  . setenv
+  cd samples/inet/tutorials/wireless
+  ../../../../bin/opp_run -r 0 -n ../../examples:../../src:.. -l ../../out/gcc-release/src/INET -f gossip.ini
+  ```
+9. Run the simulation and try to spot messages such as `New Rumor in host ...`. You can filter the traces to only show *udpapps*
