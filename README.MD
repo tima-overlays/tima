@@ -82,9 +82,9 @@ messages a z
 
 automaton Main
 	initial state s0 		
-		on ? a : Secondary within 500 msec => s1
+		on ? a within 500 msec => s1
 		on :: C::b within 1000 msec => s2
-		on >> z within 700 msec => s5
+		on ? z within 700 msec => s5
 		on timeout => s3
 
 	urgent state s1
@@ -192,6 +192,9 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
 - Install Eclipse Mars with XText support [XText 2.9.0](https://www.itemis.com/en/xtext/download/?__hssc=&__hstc=&__hsfp=&hsCtaTracking=5f19e385-5578-4a5b-96b2-81413c6e6d20|1de82870-5b6a-4170-b133-ccf3448abe51)
 - Install Omnet++/Inet (OMNeT++ 5.0b3 released, [INET 3.2 Released](https://github.com/inet-framework/inet/releases/download/v3.2.0/inet-3.2.0-src.tgz)).
 - Run the tutorial, you can read below to get some insight.
+- In Xtext, install software from the following repository [http://www.labri.fr/perso/igonzale/site.xml](http://www.labri.fr/perso/igonzale/site.xml)
+  - Yeah, I didn't sign the feature, but I'm not hacking your computer :-)
+  - After doing this you will get "*regular*" updates
 
 ## Spreading a rumor
 1. Create a new project using the provided Eclipse Wizard: **Tima-based Project**
