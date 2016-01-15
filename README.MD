@@ -186,4 +186,35 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
 }
 ```
 
-# Usage
+# Tutorial
+
+1. Create a new project using the provided Eclipse Wizard: **Tima-based Project**
+2. In the second step, you must provide the path to OMNET++/INET applications. To elaborate, when we type `tree $(OMNET_ROOT)/samples/inet` the result is:
+
+```
+...
+├── src
+│   └── inet
+│       ├── applications
+│       ├── common
+│       ├── environment
+│       ├── linklayer
+│       ├── mobility
+│       ├── networklayer
+│       ├── node
+│       ├── physicallayer
+│       ├── power
+│       ├── routing
+│       └── transportlayer
+├── templates
+│   ├── NewAdhocWirelessSimulationWizard
+│   ├── NewInetSimulationWizard
+│   ├── NewManagedWirelessSimulationWizard
+│   └── NewWirelessHandoverSimulationWizard
+...
+└── tutorials
+    └── wireless
+        └── results
+```
+
+The path to select is `$(OMNET_ROOT)/samples/inet/src/inet/applications`, which means that the source code of your protocol will be copied to that directory as a new application. 
