@@ -189,7 +189,7 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
 # Tutorial
 
 1. Create a new project using the provided Eclipse Wizard: **Tima-based Project**
-2. In the second step, you must provide the path to OMNET++/INET applications. To elaborate, when we type `tree $(OMNET_ROOT)/samples/inet` the result is:
+2. In the second page of the wizard, you must provide the path to OMNET++/INET applications. To elaborate, when we type `tree $(OMNET_ROOT)/samples/inet` the result is:
 
 ```
 ...
@@ -217,4 +217,8 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
         └── results
 ```
 
-The path to select is `$(OMNET_ROOT)/samples/inet/src/inet/applications`, which means that the source code of your protocol will be copied to that directory as a new application. 
+The path to select is `$(OMNET_ROOT)/samples/inet/src/inet/applications`, which means that the source code of your protocol will be copied to that directory as a new application.
+
+3. In the third page of the wizard, select the example `simple_gossip_push`
+
+4. After the project is created, you will find two directories `src` and `src-gen`. As a developer you only care about `src`. This directory contains two main files, `simple_gossip_push.gossip` and `simple_gossip_push_semantic.cc`. The first file is the protocol specification. You will notice that some actions and guards have the form `:: Classname::methodname`; this means that the semantic to evaluate them are written in plain *C/C++*. The second file contains such actions plus an initialization routine. Notice the pattern in the name of this second file, it is the name of the protocol file plus **_semantic**. Notice also that the protocol name and the name of the file with the protocol must be identical (line 1 of the protocol).
