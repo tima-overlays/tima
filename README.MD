@@ -189,7 +189,7 @@ void D::y(std::string& name, tima::TimaNativeContext* context)
 # Tutorial
 
 ## Preliminaries
-- Install Eclipse Mars with XText support (XText 2.9.0)[https://www.itemis.com/en/xtext/download/?__hssc=&__hstc=&__hsfp=&hsCtaTracking=5f19e385-5578-4a5b-96b2-81413c6e6d20|1de82870-5b6a-4170-b133-ccf3448abe51]
+- Install Eclipse Mars with XText support (https://www.itemis.com/en/xtext/download/?__hssc=&__hstc=&__hsfp=&hsCtaTracking=5f19e385-5578-4a5b-96b2-81413c6e6d20|1de82870-5b6a-4170-b133-ccf3448abe51)[XText 2.9.0]
 
 ## Spreading a rumor
 1. Create a new project using the provided Eclipse Wizard: **Tima-based Project**
