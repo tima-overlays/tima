@@ -1,0 +1,100 @@
+name simple_gossip_push
+
+messages
+	// local messages
+	gossip_time
+	hello_time 
+	new_rumor_time
+	// remote messages
+	hello
+	rumor
+
+automaton Main
+	initial state w
+		on ? hello within 1000 msec => s_remembering_hello
+		on ? rumor within 1000 msec => s_taking_note_of_rumor
+		on ? new_rumor_time within 1000 msec => s_new_gossiping
+		on ? hello_time within 1000 msec => s_greeting
+		on ? gossip_time within 500 msec => s_gossiping
+		on timeout => s_loop
+		
+	urgent state s_loop
+		on :: C::True => w
+		
+	urgent state s_gossiping
+		on :: C::no_rumors_to_spread within 1 sec => w
+		on :: C::True => s_do_gossip
+	
+	urgent state s_do_gossip
+		action
+			:: C::gossip
+		on :: C::True => w
+		
+	urgent state s_greeting
+		action
+			:: C::greet
+		on :: C::True => w
+		
+	urgent state s_new_gossiping 
+		action
+			:: C::spread_new_rumor
+		on :: C::True => w 
+		
+	urgent state s_remembering_hello
+		action
+			:: C::store_sender
+		on :: C::True => w
+		
+	urgent state s_taking_note_of_rumor
+		action
+			:: C::store_rumor
+		on :: C::True => w
+	
+/**
+ * This is a ticker. It regularly sends a message to the Main automaton.
+ * Such a message is used to initiate a gossip phase
+ */
+automaton ticker_gossip 
+	initial state s0
+		on :: C::False within 700 msec => s2
+		on timeout => s1
+	urgent state s1
+		action
+			! gossip_time @ Main
+		on :: C::True => s0
+	state s2
+		on :: C::False => s0
+		
+		
+/**
+ * This is a tricker. It regularly sends a message to the Main automaton.
+ * Such a message is used to initiate a completely new rumor
+ */
+automaton ticker_newgossip
+	initial state s0
+		on :: C::False within 5000 msec => s2
+		on timeout => s1
+	urgent state s1
+		action
+			! new_rumor_time @ Main
+		on :: C::True => s0
+	state s2
+		on :: C::False => s0 
+		
+/**
+ * This is a ticker. It regularly sends a message to the Main automaton.
+ * Such a message is used to initiate the process of saying hello to your neighbors.
+ * In this example, we are assuming that the protocol is executed in a wireless environment
+ * where nodes move. As a consequence, the device doesn't know who is listening.
+ * A device sends 'hello' messages to to notify other participants of its existence. 
+ */
+automaton ticker_hello
+	initial state s0
+		on :: C::False within 1500 msec => s2
+		on timeout => s1
+	urgent state s1
+		action
+			! hello_time @ Main
+		on :: C::True => s0
+	state s2
+		on :: C::False => s0
