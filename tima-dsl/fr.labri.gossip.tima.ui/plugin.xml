@@ -407,4 +407,129 @@
 			type="text">
 		</fileTypes>
 	</extension>
+	
+	 <extension
+       id="timabuilder"
+       name="Tima Builder"
+       point="org.eclipse.core.resources.builders">
+    <builder
+          hasNature="true">
+       <run class="fr.labri.gossip.tima.ui.builder.TimaBuilder">
+       		<parameter name="optimize" value="true" />
+            <parameter name="comment" value="Builder comment" />
+       </run>
+    </builder>
+ </extension>
+ <extension
+       id="timaNature"
+       name="Tima Project Nature"
+       point="org.eclipse.core.resources.natures">
+    <runtime>
+       <run
+             class="fr.labri.gossip.tima.ui.builder.TimaNature">
+       </run>
+    </runtime>
+    <builder
+          id="fr.labri.gossip.tima.ui.timabuilder">
+    </builder>
+ </extension>
+ <extension
+       point="org.eclipse.ui.commands">
+    <category
+          id="fr.labri.gossip.tima.ui.timaNature.category"
+          name="Tima Project Nature commands">
+    </category>
+    <command
+          categoryId="fr.labri.gossip.tima.ui.timaNature.category"
+          defaultHandler="fr.labri.gossip.tima.ui.builder.AddRemoveTimaNatureHandler"
+          id="fr.labri.gossip.tima.ui.addRemoveTimaNature"
+          name="Add/Remove Tima Project Nature">
+    </command>
+ </extension>
+ <extension
+       point="org.eclipse.ui.menus">
+    <menuContribution
+          locationURI="popup:org.eclipse.ui.projectConfigure?after=additions">
+       <command
+             commandId="fr.labri.gossip.tima.ui.addRemoveTimaNature"
+             label="Disable Tima builder"
+             style="push">
+          <visibleWhen
+                checkEnabled="false">
+             <with
+                   variable="selection">
+                <count
+                      value="1">
+                </count>
+                <iterate>
+                   <adapt
+                         type="org.eclipse.core.resources.IProject">
+                      <test
+                            property="org.eclipse.core.resources.projectNature"
+                            value="fr.labri.gossip.tima.ui.timaNature">
+                      </test>
+                   </adapt>
+                </iterate>
+             </with>
+          </visibleWhen>
+       </command>
+       <command
+             commandId="fr.labri.gossip.tima.ui.addRemoveTimaNature"
+             label="Enable Tima builder"
+             style="push">
+          <visibleWhen
+                checkEnabled="false">
+             <with
+                   variable="selection">
+                <count
+                      value="1">
+                </count>
+                <iterate>
+                   <adapt
+                         type="org.eclipse.core.resources.IProject">
+                      <not>
+                         <test
+                               property="org.eclipse.core.resources.projectNature"
+                               value="fr.labri.gossip.tima.ui.timaNature">
+                         </test>
+                      </not>
+                   </adapt>
+                </iterate>
+             </with>
+          </visibleWhen>
+       </command>
+    </menuContribution>
+ </extension>
+	
+	
+	<extension point="org.eclipse.ui.propertyPages">
+	    <page
+	          class="fr.labri.gossip.tima.ui.properties.TimaPropertyPage"
+	          id="fr.labri.gossip.tima.ui.properties.timaPropertyPage"
+	          name="Tima Property Page"
+	          nameFilter="*">
+	       <enabledWhen>
+	          <adapt
+	                type="org.eclipse.core.resources.IProject">
+	          </adapt>
+	       </enabledWhen>
+	    </page>
+	</extension>
+ <extension
+       id="fr.labri.gossip.tima.ui.newProject"
+       point="org.eclipse.ui.newWizards">
+    <category
+          id="fr.labri.gossip.tima.ui.newWizards"
+          name="Tima-based Protocols">
+    </category>
+    <wizard
+          category="fr.labri.gossip.tima.ui.newWizards"
+          class="fr.labri.gossip.tima.ui.wizards.NewTimaProject"
+          hasPages="true"
+          icon="icons/automata.png"
+          id="fr.labri.gossip.tima.ui.newWizards.project"
+          name="Tima Project"
+          project="true">
+    </wizard>
+ </extension>
 </plugin>

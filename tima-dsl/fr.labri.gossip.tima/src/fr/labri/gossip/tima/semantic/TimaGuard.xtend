@@ -27,15 +27,15 @@ class TimaGuard<C> implements Predicate<C> {
 	private def dsl2cpp(String automatonName, Guard g) {
 		if (g.msg != null) {
 			messageID = g.msg.msg.name
-			if (g.source != null) {
-				sourceID = g.source.name
+//			if (g.source != null) {
+//				sourceID = g.source.name
 				guardType = GuardType.LOCAL_MESSAGE_GUARD
 				'''tima::Mailbox::exists'''
-			}
-			else {
-				guardType = GuardType.NETWORK_MESSAGE_GUARD
-				'''tima::Mailbox::exists_network_message'''
-			}
+//			}
+//			else {
+//				guardType = GuardType.NETWORK_MESSAGE_GUARD
+//				'''tima::Mailbox::exists_network_message'''
+//			}
 		}
 		else if (g.externalAction != null) {
 			guardType = GuardType.GENERIC_GUARD
@@ -60,11 +60,11 @@ class TimaGuard<C> implements Predicate<C> {
 	}
 	
 	override equals(Object obj) {
-		(obj.class == TimaGuard) && (obj as TimaGuard<C>).type == type
+		(obj.class == TimaGuard) && ((obj as TimaGuard<C>).type == type) && (messageID == (obj as TimaGuard<C>).messageID) && ((obj as TimaGuard<C>).sourceID == sourceID)
 	}
 	
 	override hashCode() {
-		type.hashCode
+		type.hashCode + messageID.hashCode + sourceID.hashCode
 	}
 	
 }
