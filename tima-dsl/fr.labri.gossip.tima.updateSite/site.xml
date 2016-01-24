@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <description name="Tima update site (in my personal web page)" url="http://www.labri.fr/perso/igonzale/site.xml">
+      This is the description of TIMA
+   </description>
+   <feature url="features/fr.labri.gossip.tima.featureID_0.1.0.201601151750.jar" id="fr.labri.gossip.tima.featureID" version="0.1.0.201601151750">
+      <category name="fr.labri.gossip.tima.updateSite.id"/>
+   </feature>
+   <category-def name="fr.labri.gossip.tima.updateSite.id" label="Timed out automata"/>
+</site>
