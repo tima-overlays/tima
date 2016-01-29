@@ -13,14 +13,6 @@
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
-	<modules>
-		<module>fr.labri.gossip.tima</module>
-		<module>fr.labri.gossip.tima.ide</module>
-		<module>fr.labri.gossip.tima.ui</module>
-		<module>fr.labri.gossip.tima.target</module>
-		<module>fr.labri.gossip.tima.tests</module>
-		<module>fr.labri.gossip.tima.ui.tests</module>
-	</modules>
 	<build>
 		<plugins>
 			<plugin>
@@ -173,7 +165,7 @@
 					</configuration>
 				</plugin>
 				<plugin>
-					<!-- 
+					<!--
 						Can be removed after first generator execution
 						https://bugs.eclipse.org/bugs/show_bug.cgi?id=480097
 					-->
@@ -226,10 +218,16 @@
         					</exclusion>
 						</exclusions>
 					</dependency> -->
-		<dependency>
-		<groupId>fr.labri</groupId>
-    <artifactId>tima</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-		</dependency>
 	</dependencies>
+	<modules>
+		<module>../fr.labri.gossip.tima.target</module>
+		<module>../fr.labri.gossip.tima.compiler</module>
+		<module>../fr.labri.gossip.tima</module>
+		<module>../fr.labri.gossip.tima.ide</module>
+		<module>../fr.labri.gossip.tima.tests</module>
+		<module>../fr.labri.gossip.tima.ui</module>
+		<module>../fr.labri.gossip.tima.ui.tests</module>
+		<module>../fr.labri.gossip.tima.feature</module>
+		<module>../fr.labri.gossip.tima.updateSite</module>
+	</modules>
 </project>

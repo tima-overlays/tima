@@ -5,6 +5,7 @@
 		<groupId>fr.labri.gossip.tima</groupId>
 		<artifactId>fr.labri.gossip.tima.parent</artifactId>
 		<version>1.0.0-SNAPSHOT</version>
+		<relativePath>../fr.labri.gossip.tima.parent</relativePath>
 	</parent>
 	<artifactId>fr.labri.gossip.tima.ui</artifactId>
 	<packaging>eclipse-plugin</packaging>
@@ -18,4 +19,6 @@
 		</plugins>
 	</build>
 
+	<version>1.0.0-SNAPSHOT</version>
+	<groupId>fr.labri.gossip.tima</groupId>
 </project>
