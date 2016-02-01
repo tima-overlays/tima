@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <map>
 
 #include "automata.h"
 #include "executor.h"
@@ -16,7 +17,7 @@
 
 
 void
-execute_protocol(std::shared_ptr<tima::AbstractTimaNature> nature, int port)
+execute_protocol(std::shared_ptr<tima::AbstractTimaNature> nature, int port, std::map< std::string, std::string >& options)
 {
 
   // printing the automatas
@@ -30,7 +31,7 @@ execute_protocol(std::shared_ptr<tima::AbstractTimaNature> nature, int port)
   nature->configure_communication(port);
 
   // create executor
-  tima::Executor executor(nature);
+  tima::Executor executor(nature, options);
 
   bool  was_tick = true;
 
@@ -50,13 +51,19 @@ execute_protocol(std::shared_ptr<tima::AbstractTimaNature> nature, int port)
      // SCHEDULE HANLDERS FOR EVENTS
 
      // IDENTIFY EVENT
-     tima::AbstractTimaNature::EventType event_type = nature->identify_event();
+	 int msg_id;
+	 char* payload;
+     tima::AbstractTimaNature::EventType event_type = nature->identify_event(&msg_id, &payload);
 
      // CALL EXECUTOR WHEN YOU RECEIVE A TICK
      was_tick = false;
      if (event_type == tima::AbstractTimaNature::TICK) {
        executor.tick(msec);
        was_tick = true;
+     }
+	 else if (event_type == tima::AbstractTimaNature::NETWORK_MESSAGE) {
+     	executor.add_received_network_message(msg_id, payload);
+		delete [] payload;
      }
  }
 }
@@ -66,11 +73,13 @@ main(int argc, char* const *argv)
 {
 
   int port = 1567;
+  std::map< std::string, std::string > options;
   char c;
   while ((c = getopt (argc, argv, "p:")) != -1) {
     std::stringstream str;
     switch (c) {
       case 'p':
+		 options.emplace("p", optarg);
          str << optarg;
          str >> port;
       break;
@@ -80,7 +89,7 @@ main(int argc, char* const *argv)
   std::cout << "The port is " << port << std::endl;
 
   std::shared_ptr<tima::AbstractTimaNature> nature (new UnixTimaNature("node 0"));
-  execute_protocol(nature, port);
+  execute_protocol(nature, port, options);
 
   return 0;
 }

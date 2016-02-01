@@ -1,6 +1,7 @@
 #include "automata.h"
-#include "mailbox.hpp"
+#include "mailbox.h"
 #include "ex1.h"
+#include "tima.h"
 #include <cstring>
 
 /** ID for each automaton */
@@ -361,7 +362,7 @@ Secondary_s1_post_action(std::string& name, tima::TimaNativeContext* ctx)
 static void
 Secondary_s1_each_action(std::string& name, tima::TimaNativeContext* ctx)
 {
-	tima::TimaNativeContext* ctx2 = new tima::SendTimaContext(a_MSG_ID, Secondary_AUTOMATON_ID, "Main");
+	tima::TimaNativeContext* ctx2 = new tima::SendTimaContext(a_MSG_ID, Secondary_AUTOMATON_ID, "Main", ctx->get_device_name(), ctx->get_user_data());
 	tima::Mailbox::send(name, ctx2);
 	free(ctx2);
 }

@@ -5,10 +5,12 @@
 #include <iostream>
 #include <cstring>
 
+#include "tima.h"
+
 std::map<std::string, tima::Mailbox*> tima::Mailbox::_singleton;
 
 bool
-tima::Mailbox::exists(std::string& name, TimaNativeContext* context)
+tima::Mailbox::exists(std::string& name, tima::TimaNativeContext* context)
 {
   // std::cerr << "Executing this " << std::endl;
   auto ctx = (MailboxContext*) context;
@@ -69,8 +71,9 @@ tima::Mailbox::send(std::string& name, TimaNativeContext* context)
 {
   auto ctx = (SendTimaContext*)context;
   auto dst = ctx->dst_name;
-  auto it = Mailbox::get_instance(context->get_device_name())->messages.find(dst);
-  if (it != Mailbox::get_instance(context->get_device_name())->messages.end()) {
+  auto inst = get_instance(context->get_device_name());
+  auto it = inst->messages.find(dst);
+  if (it != inst->messages.end()) {
     // found
 //    std::cout << "Adding to the queue " << ctx->msg_id << ctx->dst_id << std::endl;
     it->second.push_back(Message(ctx->msg_id, ctx->dst_id));
@@ -95,17 +98,4 @@ tima::Mailbox::get_instance(std::string device_name)
       _singleton.emplace(device_name, new tima::Mailbox());
   }
   return _singleton[device_name];
-}
-
-
-void
-tima::GenericActionContext::send_to(const std::string& dst, int port, const std::string& rumor)
-{
-  nature->send_network_message(dst, port, rumor);
-}
-
-void
-tima::GenericActionContext::broadcast(int port, std::string& msg)
-{
-    nature->broadcast(port, msg);
 }

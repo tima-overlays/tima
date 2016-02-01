@@ -16,9 +16,7 @@ import fr.labri.tima.CompiledTimedAutomata
 import fr.labri.tima.DotRenderer
 import fr.labri.tima.ITimedAutomata
 import java.util.HashMap
-import java.util.HashSet
 import java.util.LinkedHashMap
-import java.util.LinkedList
 import java.util.List
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.generator.AbstractGenerator
@@ -273,6 +271,7 @@ class DSLGenerator extends AbstractGenerator {
 	#include "executor.h"
 	#include "automata.h"
 	#include "mailbox.h"
+	#include "tima.h"
 	
 	#include "omnetpp_tima_nature.h"
 	
@@ -404,6 +403,7 @@ class DSLGenerator extends AbstractGenerator {
 	def native_version(String project_name, LinkedHashMap<String, ITimedAutomata<String>> map, List<Message> messages) {
 	'''
 	#include "automata.h"
+	#include "tima.h"
 	#include "mailbox.h"
 	#include "«project_name».h"
 	#include <cstring>

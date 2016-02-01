@@ -4,22 +4,14 @@
 #include <string>
 #include <stdint.h>
 
+#include "tima.h"
+
 namespace tima {
 
 const int32_t null_destination = -1;
 const int32_t never_timeout = -1;
 
 struct Transition;
-
-class TimaNativeContext {
-public:
-    TimaNativeContext(std::string device_name, void* user_data) : device_name(device_name), user_data(user_data) {}
-    std::string get_device_name() { return device_name; }
-    void* get_user_data() { return user_data; }
-private:
-    std::string device_name;
-    void* user_data;
-};
 
 struct State {
   std::string name;

@@ -99,7 +99,7 @@ UnixTimaNature::configure_timer(uint64_t nanoseconds)
 }
 
 tima::AbstractTimaNature::EventType
-UnixTimaNature::identify_event(int* msg_id, char** payload)
+UnixTimaNature::identify_event(int* msg_id, const char** payload)
 {
   *msg_id = 0;
   *payload = nullptr;

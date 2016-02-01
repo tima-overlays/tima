@@ -2,10 +2,63 @@
 #include "executor.h"
 #include <algorithm>
 #include <iostream>
+#include <string>
+#include <map>
 
 #include "mailbox.h"
+#include "tima.h"
+
 
 void init_device_data(std::string& device_name,std::map<std::string, std::string>& options, void** ptr);
+
+namespace tima {
+	struct InnerGenericActionContext : public ActionContext {
+	  InnerGenericActionContext(std::string device_name,void* user_data, Message msg, bool msg_received, std::shared_ptr<tima::AbstractTimaNature> nature);
+
+	  virtual void send_to(const std::string& dst, int port, const std::string& rumor);
+	  virtual void broadcast(int port, std::string& msg);
+      virtual void print_trace(const std::string& msg);
+      virtual ~InnerGenericActionContext();
+	private:
+	  std::shared_ptr<tima::AbstractTimaNature> nature;
+	};
+}
+
+
+tima::ActionContext::ActionContext(
+        std::string device_name,void* user_data,
+        tima::Message msg, bool msg_received
+      ):
+        TimaNativeContext(device_name, user_data),
+        msg_received(msg_received),
+        msg(msg) {}
+
+tima::InnerGenericActionContext::InnerGenericActionContext(std::string device_name,void* user_data, Message msg, bool msg_received, std::shared_ptr<tima::AbstractTimaNature> nature):
+		tima::ActionContext(device_name, user_data, msg, msg_received), nature(nature) {}
+
+tima::ActionContext::~ActionContext()
+{
+}
+
+tima::InnerGenericActionContext::~InnerGenericActionContext()
+{
+}
+
+void
+tima::InnerGenericActionContext::send_to(const std::string& dst, int port, const std::string& rumor) {
+  nature->send_network_message(dst, port, rumor);
+}
+
+void
+tima::InnerGenericActionContext::broadcast(int port, std::string& msg) {
+  nature->broadcast(port, msg);
+}
+
+void
+tima::InnerGenericActionContext::print_trace(const std::string& msg)
+{
+	nature->print_trace(msg);
+}
 
 tima::Executor::Executor(std::shared_ptr<tima::AbstractTimaNature> nature, std::map<std::string, std::string>& options)
   :nature(nature)
@@ -89,7 +142,7 @@ tima::Executor::step(uint32_t milliseconds, bool only_urgents)
     }
     if (must_execute_action) {
       timeouts[idx] = deadline(a, current_states[idx]);
-      auto ctx = new GenericActionContext(nature->device_name, user_data, Message(state->transitions[i].msg_id, state->transitions[i].src_id), message_received, nature);
+      auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(state->transitions[i].msg_id, state->transitions[i].src_id), message_received, nature);
       ctx->msg = _the_message;
       a->states[current_states[idx]].each_action(a->name, ctx);
       delete ctx;
@@ -125,3 +178,4 @@ tima::Executor::add_received_network_message(int msg_id, const char* payload)
     Mailbox::add_received_network_message(msg_id, payload, ctx);
     delete ctx;
 }
+
