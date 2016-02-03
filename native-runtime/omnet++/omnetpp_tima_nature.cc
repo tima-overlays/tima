@@ -20,7 +20,7 @@
 
 #include "inet/networklayer/common/L3AddressResolver.h"
 #include "inet/transportlayer/contract/udp/UDPControlInfo.h"
-#include "inet/applications/base/ApplicationBase.h" 
+#include "inet/applications/base/ApplicationBase.h"
 
 #include "Tima_m.h"
 
@@ -81,7 +81,7 @@ OMNetTimaNature::configure_timer(uint64_t nanoseconds)
 
 tima::AbstractTimaNature::EventType
 OMNetTimaNature::identify_event(int* msg_id, char** payload)
-{ 
+{
 	*msg_id = 0;
     *payload = nullptr;
 	return AbstractTimaNature::EventType::NONE;

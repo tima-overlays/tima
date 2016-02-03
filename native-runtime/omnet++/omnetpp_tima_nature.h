@@ -33,7 +33,7 @@ public:
 private:
   inet::UDPSocket& socket;
   inet::ApplicationBase* app_base;
-  std::vector<inet::L3Address> possibleNeighbors; 
+  std::vector<inet::L3Address> possibleNeighbors;
 };
 
 #endif

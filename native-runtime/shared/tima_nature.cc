@@ -1,10 +1,40 @@
 
 #include "tima_nature.h"
 
+#include <sstream>
+
 /** For accessing automata */
 struct tima::Automata& get_automata(uint32_t idx);
 uint32_t get_nr_automatas();
 
+std::string
+tima::AbstractTimaNature::serialize(const tima::Message& msg)
+{
+  std::stringstream ss;
+	ss << msg.msg_id;
+	ss << ";";
+	for (auto it = msg.fields.begin(),
+						itEnd = msg.fields.end() ; it != itEnd ; ++it) {
+						ss << it->first << "=" << it->second << ";";
+	}
+  return ss.str();
+}
+
+tima::Message
+tima::AbstractTimaNature::deserialize(int msg_id, const std::string& payload)
+{
+  tima::Message msg(msg_id, 0);
+  std::string s(payload);
+  auto pos = s.find(';');
+  while (pos > 0 && pos != std::string::npos) {
+    std::string ss = s.substr(0, pos);
+    auto p2 = ss.find('=');
+    msg.fields[ss.substr(0, p2)] = ss.substr(p2 + 1);
+    s=s.substr(pos+1);
+    pos = s.find(';');
+  }
+  return msg;
+}
 
 void
 tima::AbstractTimaNature::print_automata(std::vector<tima::Automata*>& automata)

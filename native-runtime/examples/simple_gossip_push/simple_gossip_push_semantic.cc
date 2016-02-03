@@ -47,7 +47,7 @@ C::store_sender(std::string& name, tima::TimaNativeContext* context)
   auto ctx = (tima::ActionContext*)context;
   auto content = (Content*)ctx->get_user_data();
   if (ctx->msg_received) {
-    std::string device (ctx->msg.payload.begin(), ctx->msg.payload.end());
+    std::string device = ctx->msg.fields["sender"];
     content->known_devices.emplace(device);
   }
 }
@@ -58,7 +58,7 @@ C::store_rumor(std::string& name, tima::TimaNativeContext* context)
   auto ctx = (tima::ActionContext*)context;
   auto content = (Content*)ctx->get_user_data();
   if (ctx->msg_received) {
-    std::string rumor(ctx->msg.payload.begin(), ctx->msg.payload.end());
+    std::string rumor = ctx->msg.fields["rumor"];
     // adding rumor if it is unknown
     if (content->known_rumors.find(rumor) == content->known_rumors.end()) {
 	  ctx->print_trace(std::string("New Rumor received in ") + context->get_device_name() + " is: " + rumor);
@@ -72,8 +72,9 @@ C::greet(std::string& name, tima::TimaNativeContext* context)
 {
   auto ctx = (tima::ActionContext*)context;
   auto content = (Content*)ctx->get_user_data();
-  std::string s = "hello;" + context->get_device_name();
-  ctx->broadcast(content->destinationPort, s);
+  MessageHello msg;
+  msg.fields["sender"] = context->get_device_name();
+  ctx->broadcast(content->destinationPort, msg);
 }
 
 void
@@ -97,7 +98,9 @@ C::gossip(std::string& name, tima::TimaNativeContext* context)
     auto value = (*it).second;
     content->known_rumors[rumor] = value - 1;
     std::for_each(content->known_devices.begin(), content->known_devices.end(), [&] (std::string s) {
-        ctx->send_to(s, content->destinationPort, std::string("rumor;")+rumor);
+        MessageRumor msg;
+        msg.fields["rumor"] = rumor;
+        ctx->send_to(s, content->destinationPort, msg);
     });
   }
   // remove old rumors

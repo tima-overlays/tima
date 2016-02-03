@@ -51,7 +51,7 @@ class DSLGenerator extends AbstractGenerator {
 				''')
 		
 		fsa.generateFile('''«s»/«s».cc''', native_version(s, automatons, resource.allContents.filter(Message).toList))
-		fsa.generateFile('''«s»/«s».h''', native_version_header(s, automatons))
+		fsa.generateFile('''«s»/«s».h''', native_version_header(s, automatons, resource.allContents.filter(Message).toList))
 		fsa.generateFile('''«s»/«s»_inet.ned''', omnet_inet_app_descriptor(s, s + "_inet"))
 		fsa.generateFile('''«s»/«s»_inet.h''', omnet_inet_app_header(s+"_inet"))
 		fsa.generateFile('''«s»/«s»_inet.cc''', omnet_inet_app_code(s+"_inet"))
@@ -325,7 +325,7 @@ class DSLGenerator extends AbstractGenerator {
 	'''
 	}
 	
-	def native_version_header(String name, LinkedHashMap<String, ITimedAutomata<String>> map) {
+	def native_version_header(String name, LinkedHashMap<String, ITimedAutomata<String>> map, List<Message> messages) {
 		val classes = new LinkedHashMap<String,HashMap<String, Boolean>>
 		for (entry : map.entrySet) {
 			val a = entry.value
@@ -379,9 +379,31 @@ class DSLGenerator extends AbstractGenerator {
 		#define __«name»__
 		
 		#include "automata.h"
+		#include "tima.h"
 		#include <string>
 		
 		int	get_msg_id_from_name(const char* name);
+		
+		/** ID for each automaton */
+		enum AUTOMATA_ID {
+			ANY_AUTOMATON_ID,
+			«FOR a: map.entrySet SEPARATOR ','»
+				«a.key»_AUTOMATON_ID
+			«ENDFOR»
+		};
+		
+		enum MESSAGES_ID {
+			ANY_MSG_ID,
+			«FOR m : messages SEPARATOR ','»
+				«m.name»_MSG_ID
+			«ENDFOR»
+		};
+		
+		«FOR m : messages SEPARATOR '\n'»
+			struct Message«m.name.toFirstUpper» : public tima::Message {
+				Message«m.name.toFirstUpper»(): Message(«m.name»_MSG_ID, 0) {}
+			};		
+		«ENDFOR»
 		
 		«FOR clazz: classes.keySet SEPARATOR '\n'»
 			class «clazz» {
@@ -407,21 +429,6 @@ class DSLGenerator extends AbstractGenerator {
 	#include "mailbox.h"
 	#include "«project_name».h"
 	#include <cstring>
-	
-	/** ID for each automaton */
-	enum AUTOMATA_ID {
-		ANY_AUTOMATON_ID,
-		«FOR a: map.entrySet SEPARATOR ','»
-			«a.key»_AUTOMATON_ID
-		«ENDFOR»
-	};
-	
-	enum MESSAGES_ID {
-		ANY_MSG_ID,
-		«FOR m : messages SEPARATOR ','»
-			«m.name»_MSG_ID
-		«ENDFOR»
-	};
 	
 	int
 	get_msg_id_from_name(const char* name)

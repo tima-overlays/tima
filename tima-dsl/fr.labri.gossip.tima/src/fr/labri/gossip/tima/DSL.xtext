@@ -30,7 +30,11 @@ CompoundAction:
 
 Action:
 	 externalAction=ExternalAction |
-	 '!' msg=MessageType '@' target=[Automata]
+	 '!' msg=MessageType ( 'with' fields+=Field+)? '@' target=[Automata]
+;
+
+Field:
+	name=ID '=' value=STRING
 ;
 
 ExternalAction:

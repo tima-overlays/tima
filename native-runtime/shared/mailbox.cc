@@ -58,12 +58,9 @@ tima::Mailbox::exists_network_message(std::string& name, TimaNativeContext* cont
 void
 tima::Mailbox::add_received_network_message(int msg_id, const char* payload, TimaNativeContext* context)
 {
-  Message msg(msg_id, 0);
-  while (*payload) {
-    msg.payload.push_back(*payload);
-    payload++;
-  }
-  Mailbox::get_instance(context->get_device_name())->network_messages.push_back(msg);
+  std::cout << msg_id << " Payload " << payload << std::endl;
+  TemporaryActionContext* ctx = (TemporaryActionContext*) context;
+  Mailbox::get_instance(context->get_device_name())->network_messages.push_back(ctx->nature->deserialize(msg_id, payload));
 }
 
 void

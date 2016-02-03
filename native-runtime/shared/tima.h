@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <memory>
 
 namespace tima {
@@ -11,7 +12,7 @@ struct Message {
 public:
   int msg_id;
   int automaton_id; // the source
-  std::vector<char> payload;
+  std::map< std::string, std::string > fields;
   Message(int m_id, int a_id): msg_id(m_id), automaton_id(a_id) {}
   Message(): msg_id(0), automaton_id(0) {}
 };
@@ -61,8 +62,8 @@ struct ActionContext : public TimaNativeContext {
   Message msg;
 
   ActionContext(std::string device_name,void* user_data, Message msg, bool msg_received);
-  virtual void send_to(const std::string& dst, int port, const std::string& rumor) = 0;
-  virtual void broadcast(int port, std::string& msg) = 0;
+  virtual void send_to(const std::string& dst, int port, const Message& msg) = 0;
+  virtual void broadcast(int port, const Message& msg) = 0;
   virtual void print_trace(const std::string& msg) = 0;
 
   virtual ~ActionContext() = 0;

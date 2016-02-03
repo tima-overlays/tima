@@ -15,10 +15,10 @@ namespace tima {
 	struct InnerGenericActionContext : public ActionContext {
 	  InnerGenericActionContext(std::string device_name,void* user_data, Message msg, bool msg_received, std::shared_ptr<tima::AbstractTimaNature> nature);
 
-	  virtual void send_to(const std::string& dst, int port, const std::string& rumor);
-	  virtual void broadcast(int port, std::string& msg);
-      virtual void print_trace(const std::string& msg);
-      virtual ~InnerGenericActionContext();
+	  virtual void send_to(const std::string& dst, int port, const Message& msg);
+	  virtual void broadcast(int port, const Message& msg);
+    virtual void print_trace(const std::string& msg);
+    virtual ~InnerGenericActionContext();
 	private:
 	  std::shared_ptr<tima::AbstractTimaNature> nature;
 	};
@@ -45,13 +45,14 @@ tima::InnerGenericActionContext::~InnerGenericActionContext()
 }
 
 void
-tima::InnerGenericActionContext::send_to(const std::string& dst, int port, const std::string& rumor) {
-  nature->send_network_message(dst, port, rumor);
+tima::InnerGenericActionContext::send_to(const std::string& dst, int port, const Message& msg) {
+  nature->send_network_message(dst, port, nature->serialize(msg));
 }
 
 void
-tima::InnerGenericActionContext::broadcast(int port, std::string& msg) {
-  nature->broadcast(port, msg);
+tima::InnerGenericActionContext::broadcast(int port, const Message& msg) {
+	// serialize the message
+  nature->broadcast(port, nature->serialize(msg));
 }
 
 void
@@ -174,8 +175,7 @@ tima::Executor::deadline(struct tima::Automata* a, int state_idx)
 void
 tima::Executor::add_received_network_message(int msg_id, const char* payload)
 {
-    auto ctx = new TimaNativeContext(nature->device_name, user_data);
+    auto ctx = new TemporaryActionContext(nature->device_name, user_data, nature);
     Mailbox::add_received_network_message(msg_id, payload, ctx);
     delete ctx;
 }
-

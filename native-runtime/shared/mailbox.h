@@ -28,6 +28,13 @@ public:
   void add_automaton(std::string& name);
 };
 
+struct TemporaryActionContext : public TimaNativeContext {
+  TemporaryActionContext(std::string device_name,void* user_data, std::shared_ptr<tima::AbstractTimaNature> nature)
+            : TimaNativeContext(device_name, user_data), nature(nature) {}
+  virtual ~TemporaryActionContext() {}
+  std::shared_ptr<tima::AbstractTimaNature> nature;
+};
+
 }
 
 

@@ -2,6 +2,7 @@
 #define __TIMA_UTILS__
 
 #include "automata.h"
+#include "tima.h"
 #include <vector>
 #include <string>
 #include <iostream>
@@ -23,6 +24,10 @@ public:
  virtual void send_network_message(const std::string& dst, int port, const std::string& msg) = 0;
  virtual void broadcast(int port, const std::string& msg) = 0;
  virtual void print_trace(const std::string& msg) = 0;
+
+ virtual std::string serialize(const Message& msg);
+ virtual Message deserialize(int msg_id, const std::string& msg);
+
 
  void print_automata(std::vector<tima::Automata*>& automata);
  std::vector<tima::Automata*> build_stl_version();
