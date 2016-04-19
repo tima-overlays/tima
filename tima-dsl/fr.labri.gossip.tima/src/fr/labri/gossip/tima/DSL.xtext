@@ -39,7 +39,7 @@ Field:
 ;
 
 ExternalAction:
-	'::' name=ID '::' method=ID
+	'`' name=EXTERNAL_NAME '`'
 ;
 
 Transition:
@@ -63,3 +63,4 @@ Header:
 ;
 
 terminal UNIT: 'sec' | 'msec';
+terminal EXTERNAL_NAME:  ( '\\' . | !('\\'|'`') )*;

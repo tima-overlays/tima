@@ -39,7 +39,7 @@ class TimaGuard<C> implements Predicate<C> {
 		}
 		else if (g.externalAction != null) {
 			guardType = GuardType.GENERIC_GUARD
-			'''«g.externalAction.name»::«g.externalAction.method»'''
+			'''«g.externalAction.name»'''
 		}
 		else {
 			guardType = GuardType.TIMEOUT_GUARD

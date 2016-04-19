@@ -36,7 +36,7 @@ class TimaAction<C> extends ActionAdapter<C> {
 				'''tima::Mailbox::send''' //
 			}
 			else if (g.externalAction != null) {
-				'''«g.externalAction.name»::«g.externalAction.method»'''
+				'''«g.externalAction.name»'''
 			}
 			else {
 				'''timeout'''

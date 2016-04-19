@@ -53,7 +53,7 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
 		val x = new StyledString()
 		val s = if (a == null) x.append('empty') else {
 			if (a.externalAction != null)
-				x.appendBlackText('''«a.externalAction.name»::«a.externalAction.method»''')
+				x.appendBlackText('''«a.externalAction.name»''')
 			else if (a.msg != null && a.msg.msg != null && a.target != null) {
 				x.appendNiceText('Send message ').appendBlackText('''«a.msg.msg.name»''').append(' to ').appendBlackText('''«a.target.name»''')
 			}

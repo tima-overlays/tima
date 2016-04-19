@@ -5,6 +5,6 @@
 **/src-gen/*
 **/xtend-gen/*
 .metadata/*
-.settings/*
+**/.settings/*
 /target
 **/src-gen
