@@ -26,27 +26,27 @@ automaton Main
 		on :: C::True => s_do_gossip
 	
 	urgent state s_do_gossip
-		action
+		do
 			:: C::gossip
 		on :: C::True => w
 		
 	urgent state s_greeting
-		action
+		do
 			:: C::greet
 		on :: C::True => w
 		
 	urgent state s_new_gossiping 
-		action
+		do
 			:: C::spread_new_rumor
 		on :: C::True => w 
 		
 	urgent state s_remembering_hello
-		action
+		do
 			:: C::store_sender
 		on :: C::True => w
 		
 	urgent state s_taking_note_of_rumor
-		action
+		do
 			:: C::store_rumor
 		on :: C::True => w
 	
@@ -59,7 +59,7 @@ automaton ticker_gossip
 		on :: C::False within 700 msec => s2
 		on timeout => s1
 	urgent state s1
-		action
+		do
 			! gossip_time @ Main
 		on :: C::True => s0
 	state s2
@@ -75,7 +75,7 @@ automaton ticker_newgossip
 		on :: C::False within 5000 msec => s2
 		on timeout => s1
 	urgent state s1
-		action
+		do
 			! new_rumor_time @ Main
 		on :: C::True => s0
 	state s2
@@ -93,7 +93,7 @@ automaton ticker_hello
 		on :: C::False within 1500 msec => s2
 		on timeout => s1
 	urgent state s1
-		action
+		do
 			! hello_time @ Main
 		on :: C::True => s0
 	state s2

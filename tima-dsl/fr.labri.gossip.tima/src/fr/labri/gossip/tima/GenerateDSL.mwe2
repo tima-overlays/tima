@@ -32,7 +32,7 @@ Workflow {
 		}
 		language = StandardLanguage {
 			name = "fr.labri.gossip.tima.DSL"
-			fileExtensions = "gossip"
+			fileExtensions = "tima"
 
 			serializer = {
 				generateStub = false

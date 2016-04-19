@@ -25,7 +25,7 @@ Modifier:
 ;
 
 CompoundAction:
-	name=('post-action'|'action'|'pre-action') actions+=Action+	
+	name=('post-action'|'do'|'pre-action') actions+=Action+	
 ;
 
 Action:
