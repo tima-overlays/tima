@@ -54,10 +54,10 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
 		val s = if (a == null) x.append('empty') else {
 			if (a.externalAction != null)
 				x.appendBlackText('''«a.externalAction.name»''')
-			else if (a.msg != null && a.msg.msg != null && a.target != null) {
-				x.appendNiceText('Send message ').appendBlackText('''«a.msg.msg.name»''').append(' to ').appendBlackText('''«a.target.name»''')
+			else if (a.msg != null && a.msg.msg != null && a.msg.target != null) { // TODO remote message
+				x.appendNiceText('Send message ').appendBlackText('''«a.msg.msg.msg.name»''').append(' to ').appendBlackText('''«a.msg.target.name»''')
 			}
-			else {
+			else { // buildin
 				x.append('unknown')
 			}
 		}

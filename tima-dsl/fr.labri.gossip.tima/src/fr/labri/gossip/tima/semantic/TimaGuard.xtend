@@ -2,6 +2,7 @@ package fr.labri.gossip.tima.semantic
 
 import fr.labri.tima.ITimedAutomata.Predicate
 import fr.labri.gossip.tima.dSL.Guard
+import static fr.labri.gossip.tima.semantic.MicroUtil.*
 
 class TimaGuard<C> implements Predicate<C> {
 	
@@ -37,9 +38,9 @@ class TimaGuard<C> implements Predicate<C> {
 //				'''tima::Mailbox::exists_network_message'''
 //			}
 		}
-		else if (g.externalAction != null) {
+		else if (g.externalGuard != null) {
 			guardType = GuardType.GENERIC_GUARD
-			'''«g.externalAction.name»'''
+			'''«unMangleString(g.externalGuard.name)»'''
 		}
 		else {
 			guardType = GuardType.TIMEOUT_GUARD

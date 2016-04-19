@@ -9,4 +9,9 @@ public class MicroUtil {
 	public static <C> boolean isUrgent(State<C> s) {
 		return (s.getModifier() & TimedAutomata.URGENT) != 0;
 	}
+	
+	public static String unMangleString(String str) {
+		 String result = str.substring(1,str.length()-1);
+		 return result.replaceAll("\\\\", ""); // FIXME that not the right way of changing codepoints
+	}
 }

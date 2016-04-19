@@ -3,6 +3,7 @@ package fr.labri.gossip.tima.semantic
 import fr.labri.tima.ITimedAutomata.ActionAdapter
 import java.util.LinkedList
 import fr.labri.gossip.tima.dSL.Action
+import static fr.labri.gossip.tima.semantic.MicroUtil.*
 
 class TimaAction<C> extends ActionAdapter<C> {
 	
@@ -29,16 +30,16 @@ class TimaAction<C> extends ActionAdapter<C> {
 		private def dsl2cpp(String auto_name, Action g) {
 			isMessage = false
 			if (g.msg != null) {
-				msg_id = g.msg.msg.name + "_MSG_ID"
-				automaton_dst = g.target.name
+				msg_id = g.msg.msg.msg.name + "_MSG_ID"
+				automaton_dst = g.msg.target.name // FIXME
 				src_id = auto_name + "_AUTOMATON_ID"
 				isMessage = true
 				'''tima::Mailbox::send''' //
 			}
 			else if (g.externalAction != null) {
-				'''«g.externalAction.name»'''
+				'''«unMangleString(g.externalAction.name)»'''
 			}
-			else {
+			else { // TODO builtin
 				'''timeout'''
 			}
 		}

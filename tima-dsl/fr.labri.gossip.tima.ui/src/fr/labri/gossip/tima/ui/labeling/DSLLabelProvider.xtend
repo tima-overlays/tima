@@ -32,9 +32,9 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 		val s = if (ele == null) 'empty' else {
 		if (ele.externalAction != null)
 			'''C++: «ele.externalAction.name»'''
-		else 
-			'''Send message "«ele.msg.msg.name»" to "«ele.target.name»"'''
-		}
+		else if (ele.msg != null) 
+			'''Send message "«ele.msg.msg.msg.name»" to "«ele.msg.target.name»"'''
+		} // TODO builin
 		s
 	}
 	
