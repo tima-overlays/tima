@@ -7,7 +7,7 @@
 			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.ui.editor.XtextEditor"
 			contributorClass="org.eclipse.ui.editors.text.TextEditorActionContributor"
 			default="true"
-			extensions="gossip"
+			extensions="tima"
 			id="fr.labri.gossip.tima.DSL"
 			name="DSL Editor">
 		</editor>
@@ -209,13 +209,13 @@
 		point="org.eclipse.emf.ecore.extension_parser">
 		<parser
 			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.resource.IResourceFactory"
-			type="gossip">
+			type="tima">
 		</parser>
 	</extension>
 	<extension point="org.eclipse.xtext.extension_resourceServiceProvider">
 	    <resourceServiceProvider
 	        class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.ui.resource.IResourceUIServiceProvider"
-	        uriExtension="gossip">
+	        uriExtension="tima">
 	    </resourceServiceProvider>
 	</extension>
 	<!-- marker definitions for fr.labri.gossip.tima.DSL -->
@@ -243,7 +243,7 @@
 	<extension point="org.eclipse.xtext.builder.participant">
 		<participant
 			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.builder.IXtextBuilderParticipant"
-			fileExtensions="gossip"/>
+			fileExtensions="tima"/>
 	</extension>
 	<extension point="org.eclipse.ui.preferencePages">
 		<page
@@ -386,24 +386,24 @@
 	<extension point="org.eclipse.compare.contentViewers">
 		<viewer id="fr.labri.gossip.tima.DSL.compare.contentViewers"
 			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.ui.compare.InjectableViewerCreator"
-			extensions="gossip">
+			extensions="tima">
 		</viewer>
 	</extension>
 	<extension point="org.eclipse.compare.contentMergeViewers">
 		<viewer id="fr.labri.gossip.tima.DSL.compare.contentMergeViewers"
 			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.ui.compare.InjectableViewerCreator"
-			extensions="gossip" label="DSL Compare">
+			extensions="tima" label="DSL Compare">
 		</viewer>
 	</extension>
 	<extension point="org.eclipse.ui.editors.documentProviders">
 		<provider id="fr.labri.gossip.tima.DSL.editors.documentProviders"
 			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.ui.editor.model.XtextDocumentProvider"
-			extensions="gossip">
+			extensions="tima">
 		</provider>
 	</extension>
 	<extension point="org.eclipse.team.core.fileTypes">
 		<fileTypes
-			extension="gossip"
+			extension="tima"
 			type="text">
 		</fileTypes>
 	</extension>

@@ -97,7 +97,7 @@ public class NewTimaProject extends BasicNewResourceWizard {
 			}
 			else {
 				folder.getFile(String.format("%s.%s", project.getName(), "cc")).create(new ByteArrayInputStream(new byte[]{}), true, null);
-				folder.getFile(String.format("%s.%s", project.getName(), "gossip")).create(new ByteArrayInputStream(new byte[]{}), true, null);
+				folder.getFile(String.format("%s.%s", project.getName(), "tima")).create(new ByteArrayInputStream(new byte[]{}), true, null);
 			}
 		} catch (CoreException e) {
 			// TODO Auto-generated catch block
