@@ -56,7 +56,7 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 		imageHelper.getImage(
 			if (t.guards.msg != null)
 				"receive.png"
-			else if (t.guards.externalAction != null)
+			else if (t.guards.externalGuard != null)
 				"action.png"
 			else
 				"clock.png"
