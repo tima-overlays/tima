@@ -47,9 +47,9 @@ Actions:
 ;
 
 Action:
-	 builtinAction=BuiltinAction |
-	 externalAction=ExternalAction |
-	 msgAction=MessageAction
+	 BuiltinAction |
+	 ExternalAction |
+	 MessageAction
 ;
 
 fragment
@@ -61,36 +61,52 @@ Field:
 	name=ID ':' value=STRING
 ;
 
-BuiltinAction:
-	name=ID Fields?
+BuiltinAction returns Action:
+	{BuiltinAction} name=ID Fields?
 ;
 
-ExternalAction:
-	name=EXTERNAL_NAME
+ExternalAction returns Action:
+	{ExternalAction} name=EXTERNAL_NAME
 ;
 
-MessageAction:
-	'!' type=[Message]
+MessageAction returns Action:
+	{MessageAction} '!' type=[Message]
 	('(' Fields? ')' | Fields)?
-	'@' (broadcast='*' |address=STRING | target=[Automata])
+	'@' target=MessageTarget
 ;
 
-Transition:
-	TK_GUARD guards=Guard '=>' target=[State]
+MessageTarget:
+	{BroadcastTarget} '*' |
+	{UnicastTarget} address=STRING |
+	{InternalTarget} automata=[Automata]
+;
+
+Transition returns Transition:
+	TK_GUARD (
+		{TimeoutTransition} timeout?='timeout' |
+		{GuardedTransition} guard=Guard
+	) '=>' target=[State]
 	Actions?
 ;
 
-Guard:
-	(	msgGuard=MessageGuard|
-		builtinGuard=BuiltinAction |
-		externalGuard=ExternalAction)
-		('within' value=INT unit=TimeUnit)?
-	| 'timeout' {Guard} //value=INT unit=Unit
+Guard returns Guard:
+	(	MessageGuard|
+		BuiltinGuard |
+		ExternalGuard)
+	(within ?= 'within' value=INT unit=TimeUnit)?
 ;
 
-MessageGuard:
-	'?'
-	(wildcard ?= '_' | msg=MessagePattern)
+ExternalGuard returns Guard:
+	{ExternalGuard} name=EXTERNAL_NAME
+;
+
+MessageGuard returns Guard:
+	{MessageGuard} '?'
+	msgPattern=MessagePattern
+;
+
+BuiltinGuard returns Guard:
+	{BuiltInGuard} name=ID Fields?
 ;
 
 MessagePattern:
@@ -112,19 +128,9 @@ Expressions:
 ;
 
 Expression:
-	field=ID
-	| value=STRING
+	{FieldExpression} field = ID |
+	{StringExpression} value=STRING
 ;
-
-fragment
-Patterns: patterns+=Pattern (',' patterns+=Pattern)* ;
-
-Pattern:
-	name=ID '=' value=STRING
-	| name=ID 'likes' value=STRING
-	| op=ID '('  ')' 
-;
-
 
 enum TimeUnit: MSEC='msec' | SEC='sec';
 

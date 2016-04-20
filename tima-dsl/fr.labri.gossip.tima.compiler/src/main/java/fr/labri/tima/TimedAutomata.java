@@ -168,12 +168,11 @@ public class TimedAutomata<C> implements ITimedAutomata<C> {
 		}
 		
 		private List<Next> nextStates (State<C> state) {
-			int m;
 			List<Transition> nexts =  new ArrayList<>(_transitions.get(state));
 			List<Next> result = new ArrayList<>();
 			int offset = 0;
 			while(true) {
-				m = nextDeadLine(nexts, offset);
+				int m = nextDeadLine(nexts, offset);
 				if(m != Integer.MAX_VALUE) {
 					result.add(selectNextState(m - offset, m, nexts));
 					offset = m;
