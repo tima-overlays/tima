@@ -29,9 +29,9 @@ class TimaAction<C> extends ActionAdapter<C> {
 		
 		private def dsl2cpp(String auto_name, Action g) {
 			isMessage = false
-			if (g.msg != null) {
-				msg_id = g.msg.msg.msg.name + "_MSG_ID"
-				automaton_dst = g.msg.target.name // FIXME
+			if (g.msgAction != null) {
+				msg_id = g.msgAction.type + "_MSG_ID"
+				automaton_dst = g.msgAction.target.name // FIXME switch case if broadcast, local or remote
 				src_id = auto_name + "_AUTOMATON_ID"
 				isMessage = true
 				'''tima::Mailbox::send''' //

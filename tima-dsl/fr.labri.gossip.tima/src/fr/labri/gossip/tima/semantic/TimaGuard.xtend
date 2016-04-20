@@ -26,12 +26,17 @@ class TimaGuard<C> implements Predicate<C> {
 	
 	/** Create a c++ representation of a guard */
 	private def dsl2cpp(String automatonName, Guard g) {
-		if (g.msg != null) {
-			messageID = g.msg.msg.name
+		if (g.msgGuard != null) {
+			if (g.msgGuard.wildcard) {
+				
+			} else {
+				messageID = g.msgGuard.msg.type.name;
 //			if (g.source != null) {
 //				sourceID = g.source.name
 				guardType = GuardType.LOCAL_MESSAGE_GUARD
 				'''tima::Mailbox::exists'''
+				
+			}
 //			}
 //			else {
 //				guardType = GuardType.NETWORK_MESSAGE_GUARD

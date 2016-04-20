@@ -4,16 +4,23 @@ generate dSL "http://www.labri.fr/gossip/tima/DSL"
 
 Model:
 	header=Header
-	('messages' messages+=Message*)?
+	messages+=Message*
 	automatons+=Automata*
 ;
- 
+
+Header:
+	TK_MODULE name=ID
+	Summary?
+;
+
+fragment
+Summary : TK_SUMMARY summary=STRING;
+
 Message:
 	name=ID
 	('(' Fields ')')?
 	(':' FieldDeclaration)?
 ;
-
 
 fragment
 FieldDeclaration:
@@ -21,30 +28,28 @@ FieldDeclaration:
 ;
 
 Automata:
-	'automaton' name=ID states+=State* 
+	TK_AUTOMATON name=ID
+	Summary?
+	states+=State* 
 ;
 
 State:
-	modifiers+=Modifier* 'state' name=ID actions+=CompoundAction* transitions+=Transition*
+	StateModifiers TK_STATE name=ID Actions? transitions+=Transition*
 ;
 
-Modifier:
-	(urgent='urgent') | (initial='initial') | (term='terminate')
-;
+fragment
+StateModifiers:
+	urgent?='urgent'? & initial?='initial'?;
 
-CompoundAction:
-	name=ActionType actions+=Action+	
+fragment
+Actions:
+	TK_ACTION actions+=Action+
 ;
-
-//Action:
-//	 externalAction=ExternalAction |
-//	 '!' msg=MessageType ( 'with' fields+=Field+)? '@' (address=STRING':')?target=[Automata]
-//;
 
 Action:
 	 builtinAction=BuiltinAction |
 	 externalAction=ExternalAction |
-	 msg=SendMessageAction
+	 msgAction=MessageAction
 ;
 
 fragment
@@ -64,34 +69,70 @@ ExternalAction:
 	name=EXTERNAL_NAME
 ;
 
-SendMessageAction:
-	'!' msg=MessageType
-	 	('(' Fields? ')' | Fields)?
-	 	'@' (address=STRING | target=[Automata])
+MessageAction:
+	'!' type=[Message]
+	('(' Fields? ')' | Fields)?
+	'@' (broadcast='*' |address=STRING | target=[Automata])
 ;
 
 Transition:
-	'when' guards=Guard '=>' target=[State]
+	TK_GUARD guards=Guard '=>' target=[State]
+	Actions?
 ;
 
 Guard:
-	('?' msg=MessageType |
-	builtinGuard=BuiltinAction |
-	externalGuard=ExternalAction) ('within' value=INT unit=TimeUnit)?
+	(	msgGuard=MessageGuard|
+		builtinGuard=BuiltinAction |
+		externalGuard=ExternalAction)
+		('within' value=INT unit=TimeUnit)?
 	| 'timeout' {Guard} //value=INT unit=Unit
 ;
 
-MessageType: 
-	msg=[Message] |
-	'_' {MessageType}
+MessageGuard:
+	'?'
+	(wildcard ?= '_' | msg=MessagePattern)
 ;
 
-
-Header:
-	'name' name=ID ('description' description=STRING)?
+MessagePattern:
+	type=[Message]
+	('(' patterns+=PatternExpression ')')?
 ;
+
+PatternExpression:
+	operands+=Expression Operator operands+=Expression |
+	Operator '(' Expressions ')'
+;
+
+fragment
+Operator: operator=(ID|'='|'<>'|'>='|'<='|'<'|'>');
+
+fragment
+Expressions:
+	operands+=Expression (',' operands+=Expression)*
+;
+
+Expression:
+	field=ID
+	| value=STRING
+;
+
+fragment
+Patterns: patterns+=Pattern (',' patterns+=Pattern)* ;
+
+Pattern:
+	name=ID '=' value=STRING
+	| name=ID 'likes' value=STRING
+	| op=ID '('  ')' 
+;
+
 
 enum TimeUnit: MSEC='msec' | SEC='sec';
-enum ActionType: DO='do' | ON_LEAVE='do-on-leave' | EACH_TIME='do-each_time';
+
+terminal TK_AUTOMATON: 'automaton';
+terminal TK_STATE: 'state';
+terminal TK_ACTION: 'do';
+terminal TK_GUARD: 'when';
+terminal TK_MODULE: 'module';
+terminal TK_SUMMARY: 'summary';
 
 terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';

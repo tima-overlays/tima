@@ -32,8 +32,8 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 		val s = if (ele == null) 'empty' else {
 		if (ele.externalAction != null)
 			'''C++: «ele.externalAction.name»'''
-		else if (ele.msg != null) 
-			'''Send message "«ele.msg.msg.msg.name»" to "«ele.msg.target.name»"'''
+		else if (ele.msgAction != null) 
+			'''Send message "«ele.msgAction.type.name»" to "«ele.msgAction.target.name»"'''
 		} // TODO builin
 		s
 	}
@@ -54,7 +54,7 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
     
     def image(Transition t) {
 		imageHelper.getImage(
-			if (t.guards.msg != null)
+			if (t.guards.msgGuard != null)
 				"receive.png"
 			else if (t.guards.externalGuard != null)
 				"action.png"
