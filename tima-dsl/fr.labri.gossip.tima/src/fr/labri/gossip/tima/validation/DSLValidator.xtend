@@ -4,7 +4,6 @@
 package fr.labri.gossip.tima.validation
 
 import org.eclipse.xtext.validation.Check
-import fr.labri.gossip.tima.dSL.Modifier
 import fr.labri.gossip.tima.dSL.DSLPackage
 import com.google.inject.Inject
 import fr.labri.gossip.tima.dSL.Automata
@@ -44,9 +43,9 @@ class DSLValidator extends AbstractDSLValidator {
 
 	@Check(FAST)
 	def checkOneAndOnlyOneInitialState(Automata a) {
-		if (a.states.filter[it.isInitial].size != 1) {
-			error('An automata must have one and only one initial state', 
-					DSLPackage.Literals.AUTOMATA__NAME)
+		if (a.states.filter[it.initial].size != 1) {
+			error('An automata must have one and only one initial state', null); 
+					//DSLPackage.Literals.AUTOMATA__NAME) // FIXME
 		}
 	}
 	
@@ -80,24 +79,4 @@ class DSLValidator extends AbstractDSLValidator {
 						DSLPackage.Literals.MESSAGE__NAME, DUPLICATED_MESSAGE_NAME)
 		}
 	}
-	
-	@Check(FAST)
-	def checkSingleTimeModifier(Modifier s) {
-		val state = s.eContainer as fr.labri.gossip.tima.dSL.State
-		if (state.modifiers.filter[it.sameModifier(s)].size > 1) {
-			if (s.initial != null) {
-				error('You cannot repeat modifiers in a state', 
-						DSLPackage.Literals.MODIFIER__INITIAL, INVALID_MODIFIER)
-			}
-			if (s.term != null) {
-				error('You cannot repeat modifiers in a state', 
-						DSLPackage.Literals.MODIFIER__TERM, INVALID_MODIFIER)
-			}
-			if (s.urgent != null) {
-				error('You cannot repeat modifiers in a state', 
-						DSLPackage.Literals.MODIFIER__URGENT, INVALID_MODIFIER)
-			}
-		}
-	}
-	
 }

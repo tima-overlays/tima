@@ -1,20 +1,22 @@
-name simple_gossip_push
+module simple_gossip_push
+summary "This is a good implementation (because it's made by Inti) ;)"
 
-messages
-	// local messages
-	gossip_time
-	hello_time 
-	new_rumor_time
-	// remote messages
-	hello
-	rumor
+// local messages
+gossip_time
+hello_time 
+new_rumor_time
+
+// remote messages
+hello
+rumor
 
 automaton Main
 	initial state w
 		on ? hello within 1000 msec => s_remembering_hello
 		on ? rumor within 1000 msec => s_taking_note_of_rumor
 		on ? new_rumor_time within 1000 msec => s_new_gossiping
-		on ? hello_time within 1000 msec => s_greeting
+		on ? hello_time within 1000 msec => w
+		do `C::greet`
 		on ? gossip_time within 500 msec => s_gossiping
 		on timeout => s_loop
 		
@@ -22,23 +24,14 @@ automaton Main
 		on `C::True` => w
 		
 	urgent state s_gossiping
-		on `C::no_rumors_to_spread` within 1 sec => w
-		on `C::True` => s_do_gossip
-	
-	urgent state s_do_gossip
-		action
-			`C::gossip`
-		on `C::True` => w
-		
-	urgent state s_greeting
-		action
-			`C::greet`
-		on `C::True` => w
+		when `C::no_rumors_to_spread` within 1 sec => w
+		when `C::True` => w
+		do `C::gossip`
 		
 	urgent state s_new_gossiping 
-		action
+		do
 			`C::spread_new_rumor`
-		on `C::True` => w 
+		when `C::True` => w 
 		
 	urgent state s_remembering_hello
 		action

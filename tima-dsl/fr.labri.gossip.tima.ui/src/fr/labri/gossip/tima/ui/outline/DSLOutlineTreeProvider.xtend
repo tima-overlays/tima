@@ -5,7 +5,6 @@ package fr.labri.gossip.tima.ui.outline
 
 import com.google.inject.Inject
 import fr.labri.gossip.tima.dSL.Action
-import fr.labri.gossip.tima.dSL.CompoundAction
 import fr.labri.gossip.tima.dSL.State
 import fr.labri.gossip.tima.dSL.Transition
 import org.eclipse.jface.viewers.StyledString
@@ -54,8 +53,8 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
 		val s = if (a == null) x.append('empty') else {
 			if (a.externalAction != null)
 				x.appendBlackText('''«a.externalAction.name»''')
-			else if (a.msg != null && a.msg.msg != null && a.msg.target != null) { // TODO remote message
-				x.appendNiceText('Send message ').appendBlackText('''«a.msg.msg.msg.name»''').append(' to ').appendBlackText('''«a.msg.target.name»''')
+			else if (a.msgAction != null && a.msgAction.type != null && a.msgAction.target != null) { // TODO remote message
+				x.appendNiceText('Send message ').appendBlackText('''«a.msgAction.type.name»''').append(' to ').appendBlackText('''«a.msgAction.target.name»''')
 			}
 			else { // buildin
 				x.append('unknown')
@@ -78,7 +77,7 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
 	  textStyle
 	}
 
-	def _createChildren(CompoundAction s, Action a) {
+	def _createChildren(Action s, Action a) {
 		// nothing to create
 	}
 	

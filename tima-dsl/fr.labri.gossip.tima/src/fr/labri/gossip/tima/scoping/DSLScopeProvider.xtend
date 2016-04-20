@@ -10,8 +10,8 @@ import fr.labri.gossip.tima.dSL.DSLPackage
 import org.eclipse.xtext.EcoreUtil2
 import fr.labri.gossip.tima.dSL.Message
 import org.eclipse.xtext.scoping.Scopes
-import fr.labri.gossip.tima.dSL.MessageType
 import fr.labri.gossip.tima.dSL.Automata
+import fr.labri.gossip.tima.dSL.MessagePattern
 
 /**
  * This class contains custom scoping description.
@@ -23,8 +23,8 @@ class DSLScopeProvider extends AbstractDSLScopeProvider {
 	
 
   override getScope(EObject context, EReference reference) {
-      if(context instanceof MessageType
-          && reference == DSLPackage.Literals.MESSAGE_TYPE__MSG){
+      if(context instanceof MessagePattern
+          && reference == DSLPackage.Literals.MESSAGE_PATTERN__TYPE){
         val rootElement = EcoreUtil2.getRootContainer(context);
         val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Message);
         val existingScope = Scopes.scopeFor(candidates);
@@ -32,7 +32,7 @@ class DSLScopeProvider extends AbstractDSLScopeProvider {
         
         return existingScope;
       }
-      else if (context instanceof Action && reference == DSLPackage.Literals.SEND_MESSAGE_ACTION__TARGET){
+      else if (context instanceof Action && reference == DSLPackage.Literals.MESSAGE_ACTION__TYPE){
       	val rootElement = EcoreUtil2.getRootContainer(context);
         val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Automata);
         val existingScope = Scopes.scopeFor(candidates);

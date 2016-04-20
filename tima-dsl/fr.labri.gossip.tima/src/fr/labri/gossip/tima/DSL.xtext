@@ -49,7 +49,7 @@ Actions:
 Action:
 	 builtinAction=BuiltinAction |
 	 externalAction=ExternalAction |
-	 msg=MessageAction
+	 msgAction=MessageAction
 ;
 
 fragment
@@ -81,7 +81,7 @@ Transition:
 ;
 
 Guard:
-	(	msg=MessageGuard|
+	(	msgGuard=MessageGuard|
 		builtinGuard=BuiltinAction |
 		externalGuard=ExternalAction)
 		('within' value=INT unit=TimeUnit)?
@@ -90,8 +90,7 @@ Guard:
 
 MessageGuard:
 	'?'
-	('_' {Wildcard}
-	| msg=MessagePattern)
+	(wildcard ?= '_' | msg=MessagePattern)
 ;
 
 MessagePattern:
