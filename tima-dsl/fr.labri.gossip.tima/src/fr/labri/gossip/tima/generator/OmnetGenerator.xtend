@@ -6,12 +6,14 @@ import org.eclipse.xtext.generator.IGeneratorContext
 
 class OmnetGenerator extends NativeGenerator {
 	
-	override generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
+	override def void generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		super.generateFiles(automata, name, fsa, context)
 		
 		fsa.generateFile('''«name»/«name»_inet.ned''', omnet_inet_app_descriptor(name, name + "_inet"))
-		fsa.generateFile('''«name»/«name»_inet.h''', omnet_inet_app_header(name+"_inet"))
-		fsa.generateFile('''«name»/«name»_inet.cc''', omnet_inet_app_code(name+"_inet"))
+		fsa.generateFile('''«name»/«name»_inet.h''', omnet_inet_app_header(name + "_inet"))
+		fsa.generateFile('''«name»/«name»_inet.cc''', 
+			omnet_inet_app_code(name + "_inet")
+		)
 	}
 	
 	def omnet_inet_app_descriptor(String package_name, String project_name){
@@ -44,7 +46,7 @@ class OmnetGenerator extends NativeGenerator {
 	'''
 	}
 	
-	def omnet_inet_app_code(String project_name) {
+	def String omnet_inet_app_code(String project_name) {
 	'''
 	#include "«project_name».h"
 	#include "Tima_m.h"

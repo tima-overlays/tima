@@ -7,63 +7,67 @@ import fr.labri.gossip.tima.ir.IRAutomata
 import java.util.LinkedHashMap
 import java.util.HashMap
 import fr.labri.Utils
+import java.util.List
 
-class NativeGenerator {
+class NativeGenerator extends AutomataGenerator {
 	
-	def generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
+	override def void generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		fsa.generateFile('''«name»/«name».cc''', native_version(name, automata))
 		fsa.generateFile('''«name»/«name».h''', native_version_header(name, automata))
 	}
 	
-	def native_version_header(String name, LinkedHashMap<String, ITimedAutomata<String>> map, List<Message> messages) {
-		val classes = new LinkedHashMap<String,HashMap<String, Boolean>>
-		for (entry : map.entrySet) {
-			val a = entry.value
-			for (state : a.states) {
-				// guards
-				for (follower : a.getFollowers(state).filter[Utils.indexOf(it, a.states) != a.asCompiled.getTimeoutDestination(state)]) {
-					val pred = a.getPredicate(state, follower).toString
-					val members = pred.split("::")
-					if (members.get(0) != "tima") {
-						if (!classes.containsKey(members.get(0))) {
-							classes.put(members.get(0), new HashMap<String, Boolean>)
-						} 
-						classes.get(members.get(0)).put(members.get(1), false)
-					}
-				}
-				// actions
-				for (act : state.actions) {
-					for (aaa : (act as TimaAction<String>).pre_actions) {
-						val members = aaa.type.split("::")
-						if (members.get(0) != "tima") {
-							if (!classes.containsKey(members.get(0))) {
-								classes.put(members.get(0), new HashMap<String, Boolean>)
-							} 
-							classes.get(members.get(0)).put(members.get(1), true)
-						}	
-					}
-					for (aaa : (act as TimaAction<String>).post_actions) {
-						val members = aaa.type.split("::")
-						if (members.get(0) != "tima") {
-							if (!classes.containsKey(members.get(0))) {
-								classes.put(members.get(0), new HashMap<String, Boolean>)
-							} 
-							classes.get(members.get(0)).put(members.get(1), true)
-						}	
-					}
-					for (aaa : (act as TimaAction<String>).each_actions) {
-						val members = aaa.type.split("::")
-						if (members.get(0) != "tima") {
-							if (!classes.containsKey(members.get(0))) {
-								classes.put(members.get(0), new HashMap<String, Boolean>)
-							} 
-							classes.get(members.get(0)).put(members.get(1), true)
-						}	
-					}
-				}
-			}
-		
-		}
+	def native_version_header(String name, IRAutomata automata) {
+		/*
+		 *  This code is commented because it is not portable. It implies that a developer
+		 *  has to learn specific details to implement a protocol for a specific target.
+		 */
+//		val classes = new LinkedHashMap<String,HashMap<String, Boolean>>
+//		for (automaton : automata.automata.values) {
+//			for (node : automaton.nodes) {
+//				// guards
+//				for (t : node.transtions.filter[it != node.timeoutTarget && it instanceof IRAutomata.ExternalGuard]) {
+//					val guard = (t.guard as IRAutomata.ExternalGuard)
+//					val members = guard.externalName.split("::") // FIXME: this absolutely non-portable 
+//					if (members.get(0) != "tima") {
+//						if (!classes.containsKey(members.get(0))) {
+//							classes.put(members.get(0), new HashMap<String, Boolean>)
+//						} 
+//						classes.get(members.get(0)).put(members.get(1), false)
+//					}
+//				}
+//				// actions
+//				for (act : state.actions) {
+//					for (aaa : (act as TimaAction<String>).pre_actions) {
+//						val members = aaa.type.split("::")
+//						if (members.get(0) != "tima") {
+//							if (!classes.containsKey(members.get(0))) {
+//								classes.put(members.get(0), new HashMap<String, Boolean>)
+//							} 
+//							classes.get(members.get(0)).put(members.get(1), true)
+//						}	
+//					}
+//					for (aaa : (act as TimaAction<String>).post_actions) {
+//						val members = aaa.type.split("::")
+//						if (members.get(0) != "tima") {
+//							if (!classes.containsKey(members.get(0))) {
+//								classes.put(members.get(0), new HashMap<String, Boolean>)
+//							} 
+//							classes.get(members.get(0)).put(members.get(1), true)
+//						}	
+//					}
+//					for (aaa : (act as TimaAction<String>).each_actions) {
+//						val members = aaa.type.split("::")
+//						if (members.get(0) != "tima") {
+//							if (!classes.containsKey(members.get(0))) {
+//								classes.put(members.get(0), new HashMap<String, Boolean>)
+//							} 
+//							classes.get(members.get(0)).put(members.get(1), true)
+//						}	
+//					}
+//				}
+//			}
+//		
+//		}
 		'''
 		#ifndef __«name»__
 		#define __«name»__
@@ -77,42 +81,42 @@ class NativeGenerator {
 		/** ID for each automaton */
 		enum AUTOMATA_ID {
 			ANY_AUTOMATON_ID,
-			«FOR a: map.entrySet SEPARATOR ','»
-				«a.key»_AUTOMATON_ID
+			«FOR a: automata.automata.values SEPARATOR ','»
+				«a.name»_AUTOMATON_ID
 			«ENDFOR»
 		};
 		
 		enum MESSAGES_ID {
 			ANY_MSG_ID,
-			«FOR m : messages SEPARATOR ','»
+			«FOR m : automata.messages.values SEPARATOR ','»
 				«m.name»_MSG_ID
 			«ENDFOR»
 		};
 		
-		«FOR m : messages SEPARATOR '\n'»
+		«FOR m : automata.messages.values SEPARATOR '\n'»
 			struct Message«m.name.toFirstUpper» : public tima::Message {
 				Message«m.name.toFirstUpper»(): Message(«m.name»_MSG_ID, 0) {}
 			};		
 		«ENDFOR»
 		
-		«FOR clazz: classes.keySet SEPARATOR '\n'»
-			class «clazz» {
-			public:
-				«FOR method: classes.get(clazz).entrySet»
-				«IF !method.value»
-				static bool «method.key»(std::string& name, tima::TimaNativeContext* context);
-				«ELSE»
-				static void «method.key»(std::string& name, tima::TimaNativeContext* context);
-				«ENDIF»
-				«ENDFOR»
-			};
-		«ENDFOR»
+«««		«FOR clazz: classes.keySet SEPARATOR '\n'»
+«««			class «clazz» {
+«««			public:
+«««				«FOR method: classes.get(clazz).entrySet»
+«««				«IF !method.value»
+«««				static bool «method.key»(std::string& name, tima::TimaNativeContext* context);
+«««				«ELSE»
+«««				static void «method.key»(std::string& name, tima::TimaNativeContext* context);
+«««				«ENDIF»
+«««				«ENDFOR»
+«««			};
+«««		«ENDFOR»
 		
 		#endif
 		'''
 	}
 	
-	def native_version(String project_name, LinkedHashMap<String, ITimedAutomata<String>> map, List<Message> messages) {
+	def native_version(String project_name, IRAutomata automata) {
 	'''
 	#include "automata.h"
 	#include "tima.h"
@@ -123,39 +127,23 @@ class NativeGenerator {
 	int
 	get_msg_id_from_name(const char* name)
 	{
-		«FOR m : messages»
+		«FOR m : automata.messages.values»
 			if (!strcmp(name, "«m.name»"))
 				return MESSAGES_ID::«m.name»_MSG_ID;
 		«ENDFOR»
 		return -1;
 	}
 	
-	«FOR a: map.entrySet SEPARATOR '\n'»
-	/** Automaton «a.key» */
+	«FOR a: automata.automata.values SEPARATOR '\n'»
+	/** Automaton «a.name» */
 	
-	«FOR state: a.value.states SEPARATOR '\n'»
-		«FOR act : state.actions»
+	«FOR node: a.nodes SEPARATOR '\n'»
+		«FOR act : node.actions»
 		static void
-		«a.key»_«state.name»_pre_action(std::string& name, tima::TimaNativeContext* ctx)
+		«a.name»_«node.name»_do(std::string& name, tima::TimaNativeContext* ctx)
 		{
 			tima::TimaNativeContext* ctx2;
 			«FOR act_simple : (act as TimaAction<String>).pre_actions»
-				«actionStep(act_simple)»
-			«ENDFOR»
-		}
-		static void
-		«a.key»_«state.name»_post_action(std::string& name, tima::TimaNativeContext* ctx)
-		{
-			tima::TimaNativeContext* ctx2;
-			«FOR act_simple : (act as TimaAction<String>).post_actions»
-				«actionStep(act_simple)»
-			«ENDFOR»
-		}
-		static void
-		«a.key»_«state.name»_each_action(std::string& name, tima::TimaNativeContext* ctx)
-		{
-			tima::TimaNativeContext* ctx2;
-			«FOR act_simple : (act as TimaAction<String>).each_actions»
 				«actionStep(act_simple)»
 			«ENDFOR»
 		}
