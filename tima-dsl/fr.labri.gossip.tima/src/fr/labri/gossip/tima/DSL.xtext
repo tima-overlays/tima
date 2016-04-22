@@ -4,16 +4,23 @@ generate dSL "http://www.labri.fr/gossip/tima/DSL"
 
 Model:
 	header=Header
-	('messages' messages+=Message*)?
+	messages+=Message*
 	automatons+=Automata*
 ;
- 
+
+Header:
+	TK_MODULE name=ID
+	Summary?
+;
+
+fragment
+Summary : TK_SUMMARY summary=STRING;
+
 Message:
 	name=ID
 	('(' Fields ')')?
 	(':' FieldDeclaration)?
 ;
-
 
 fragment
 FieldDeclaration:
@@ -21,30 +28,28 @@ FieldDeclaration:
 ;
 
 Automata:
-	'automaton' name=ID states+=State* 
+	TK_AUTOMATON name=ID
+	Summary?
+	states+=State* 
 ;
 
 State:
-	modifiers+=Modifier* 'state' name=ID actions+=CompoundAction* transitions+=Transition*
+	StateModifiers TK_STATE name=ID Actions? transitions+=Transition*
 ;
 
-Modifier:
-	(urgent='urgent') | (initial='initial') | (term='terminate')
-;
+fragment
+StateModifiers:
+	urgent?='urgent'? & initial?='initial'?;
 
-CompoundAction:
-	name=ActionType actions+=Action+	
+fragment
+Actions:
+	TK_ACTION actions+=Action+
 ;
-
-//Action:
-//	 externalAction=ExternalAction |
-//	 '!' msg=MessageType ( 'with' fields+=Field+)? '@' (address=STRING':')?target=[Automata]
-//;
 
 Action:
-	 builtinAction=BuiltinAction |
-	 externalAction=ExternalAction |
-	 msg=SendMessageAction
+	 BuiltinAction |
+	 ExternalAction |
+	 MessageAction
 ;
 
 fragment
@@ -56,42 +61,84 @@ Field:
 	name=ID ':' value=STRING
 ;
 
-BuiltinAction:
-	name=ID Fields?
+BuiltinAction returns Action:
+	{BuiltinAction} name=ID Fields?
 ;
 
-ExternalAction:
-	name=EXTERNAL_NAME
+ExternalAction returns Action:
+	{ExternalAction} name=EXTERNAL_NAME
 ;
 
-SendMessageAction:
-	'!' msg=MessageType
-	 	('(' Fields? ')' | Fields)?
-	 	'@' (address=STRING | target=[Automata])
+MessageAction returns Action:
+	{MessageAction} '!' type=[Message]
+	('(' Fields? ')' | Fields)?
+	'@' target=MessageTarget
 ;
 
-Transition:
-	'when' guards=Guard '=>' target=[State]
+MessageTarget:
+	{BroadcastTarget} '*' |
+	{UnicastTarget} address=STRING |
+	{InternalTarget} automata=[Automata]
 ;
 
-Guard:
-	('?' msg=MessageType |
-	builtinGuard=BuiltinAction |
-	externalGuard=ExternalAction) ('within' value=INT unit=TimeUnit)?
-	| 'timeout' {Guard} //value=INT unit=Unit
+Transition returns Transition:
+	TK_GUARD (
+		{TimeoutTransition} timeout?='timeout' |
+		{GuardedTransition} guard=Guard
+	) '=>' target=[State]
+	Actions?
 ;
 
-MessageType: 
-	msg=[Message] |
-	'_' {MessageType}
+Guard returns Guard:
+	(	MessageGuard|
+		BuiltinGuard |
+		ExternalGuard)
+	(within ?= 'within' value=INT unit=TimeUnit)?
 ;
 
+ExternalGuard returns Guard:
+	{ExternalGuard} name=EXTERNAL_NAME
+;
 
-Header:
-	'name' name=ID ('description' description=STRING)?
+MessageGuard returns Guard:
+	{MessageGuard} '?'
+	msgPattern=MessagePattern
+;
+
+BuiltinGuard returns Guard:
+	{BuiltInGuard} name=ID Fields?
+;
+
+MessagePattern:
+	type=[Message]
+	('(' patterns+=PatternExpression ')')?
+;
+
+PatternExpression:
+	operands+=Expression Operator operands+=Expression |
+	Operator '(' Expressions ')'
+;
+
+fragment
+Operator: operator=(ID|'='|'<>'|'>='|'<='|'<'|'>');
+
+fragment
+Expressions:
+	operands+=Expression (',' operands+=Expression)*
+;
+
+Expression:
+	{FieldExpression} field = ID |
+	{StringExpression} value=STRING
 ;
 
 enum TimeUnit: MSEC='msec' | SEC='sec';
-enum ActionType: DO='do' | ON_LEAVE='do-on-leave' | EACH_TIME='do-each_time';
+
+terminal TK_AUTOMATON: 'automaton';
+terminal TK_STATE: 'state';
+terminal TK_ACTION: 'do';
+terminal TK_GUARD: 'when';
+terminal TK_MODULE: 'module';
+terminal TK_SUMMARY: 'summary';
 
 terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';
