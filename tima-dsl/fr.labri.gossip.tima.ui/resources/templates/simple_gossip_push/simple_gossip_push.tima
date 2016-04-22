@@ -52,7 +52,7 @@ automaton ticker_gossip
 		on `C::False` within 700 msec => s2
 		on timeout => s1
 	urgent state s1
-		action
+		do
 			! gossip_time @ Main
 		on `C::True` => s0
 	state s2
@@ -68,7 +68,7 @@ automaton ticker_newgossip
 		on `C::False` within 5000 msec => s2
 		on timeout => s1
 	urgent state s1
-		action
+		do
 			! new_rumor_time @ Main
 		on `C::True` => s0
 	state s2
@@ -86,7 +86,7 @@ automaton ticker_hello
 		on `C::False` within 1500 msec => s2
 		on timeout => s1
 	urgent state s1
-		action
+		do
 			! hello_time @ Main
 		on `C::True` => s0
 	state s2

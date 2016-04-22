@@ -143,7 +143,4 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-
-	<groupId>fr.labri.gossip.tima</groupId>
-	<version>1.0.0-SNAPSHOT</version>
 </project>
