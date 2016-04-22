@@ -32,7 +32,7 @@ class DSLScopeProvider extends AbstractDSLScopeProvider {
         
         return existingScope;
       }
-      else if (context instanceof Action && reference == DSLPackage.Literals.ACTION__TARGET){
+      else if (context instanceof Action && reference == DSLPackage.Literals.SEND_MESSAGE_ACTION__TARGET){
       	val rootElement = EcoreUtil2.getRootContainer(context);
         val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Automata);
         val existingScope = Scopes.scopeFor(candidates);

@@ -6,12 +6,11 @@ import fr.labri.gossip.tima.dSL.Guard
 import fr.labri.tima.TimedAutomata
 import org.eclipse.emf.ecore.resource.Resource
 import fr.labri.gossip.tima.dSL.Automata
-import java.util.ArrayList
-import fr.labri.tima.ITimedAutomata.Action
 import java.util.LinkedHashMap
 import fr.labri.tima.ITimedAutomata
-import java.util.LinkedList
 import fr.labri.gossip.tima.semantic.TimaAction.SimpleTimaAction
+import fr.labri.gossip.tima.dSL.ActionType
+import fr.labri.gossip.tima.dSL.TimeUnit
 
 class DSLSemantic {
 	/** Is the state initial? */
@@ -39,9 +38,9 @@ class DSLSemantic {
 		// FIXME: avoid using these horrible constants
 		if (g.value == 0)
 			TimedAutomata.INFINITY
-		else if (g.unit == "sec")
+		else if (g.unit == TimeUnit.SEC)
 			g.value*1000
-		else if (g.unit == "msec")
+		else if (g.unit == TimeUnit.MSEC)
 			g.value
 		else TimedAutomata.INFINITY
 	}
@@ -66,13 +65,13 @@ class DSLSemantic {
 				if (s.actions != null && s.actions.size > 0) {
 					for (action : s.actions) {
 						switch (action.name) {
-							case "pre-action": {
+							case ActionType.DO: {
 								action.actions.forEach[aaaa.pre_actions.add(new SimpleTimaAction<String>(a.name, it))]
 							}
-							case "post-action": {
+							case ActionType.ON_LEAVE: {
 								action.actions.forEach[aaaa.post_actions.add(new SimpleTimaAction<String>(a.name, it))]
 							}
-							case "action": {
+							case ActionType.EACH_TIME: {
 								action.actions.forEach[aaaa.each_actions.add(new SimpleTimaAction<String>(a.name, it))]
 							}
 						}
@@ -89,7 +88,7 @@ class DSLSemantic {
 				val source = hm.get(s.name)
 				for (t : s.transitions) {
 					val target = hm.get(t.target.name)
-					if (t.guards.msg != null || t.guards.externalAction != null) {
+					if (t.guards.msg != null || t.guards.externalGuard != null) {
 						val timeout = t.guards.toMilliseconds
 //						System.out.println(source + " " + target + " " + dsl2cpp(t.guards).toString);
 						automata.addTransition(source, timeout, new TimaGuard<String>(a.name, t.guards), target)

@@ -10,6 +10,14 @@ Model:
  
 Message:
 	name=ID
+	('(' Fields ')')?
+	(':' FieldDeclaration)?
+;
+
+
+fragment
+FieldDeclaration:
+	declaredFields+=ID (',' declaredFields+=ID)*
 ;
 
 Automata:
@@ -25,31 +33,52 @@ Modifier:
 ;
 
 CompoundAction:
-	name=('post-action'|'do'|'pre-action') actions+=Action+	
+	name=ActionType actions+=Action+	
 ;
+
+//Action:
+//	 externalAction=ExternalAction |
+//	 '!' msg=MessageType ( 'with' fields+=Field+)? '@' (address=STRING':')?target=[Automata]
+//;
 
 Action:
+	 builtinAction=BuiltinAction |
 	 externalAction=ExternalAction |
-	 '!' msg=MessageType ( 'with' fields+=Field+)? '@' (address=STRING':')?target=[Automata]
+	 msg=SendMessageAction
 ;
 
+fragment
+Fields:
+	fields+=Field (',' fields+=Field)*
+;
 
 Field:
-	name=ID '=' value=STRING
+	name=ID ':' value=STRING
+;
+
+BuiltinAction:
+	name=ID Fields?
 ;
 
 ExternalAction:
-	'::' name=ID '::' method=ID
+	name=EXTERNAL_NAME
+;
+
+SendMessageAction:
+	'!' msg=MessageType
+	 	('(' Fields? ')' | Fields)?
+	 	'@' (address=STRING | target=[Automata])
 ;
 
 Transition:
-	'on' guards=Guard '=>' target=[State]
+	'when' guards=Guard '=>' target=[State]
 ;
 
 Guard:
-	'?' msg=MessageType ('within'value=INT unit=UNIT)? |
-	externalAction=ExternalAction ('within' value=INT unit=UNIT)? |
-	'timeout' {Guard} //value=INT unit=Unit
+	('?' msg=MessageType |
+	builtinGuard=BuiltinAction |
+	externalGuard=ExternalAction) ('within' value=INT unit=TimeUnit)?
+	| 'timeout' {Guard} //value=INT unit=Unit
 ;
 
 MessageType: 
@@ -62,4 +91,7 @@ Header:
 	'name' name=ID ('description' description=STRING)?
 ;
 
-terminal UNIT: 'sec' | 'msec';
+enum TimeUnit: MSEC='msec' | SEC='sec';
+enum ActionType: DO='do' | ON_LEAVE='do-on-leave' | EACH_TIME='do-each_time';
+
+terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';
