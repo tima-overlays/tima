@@ -32,17 +32,21 @@ public class IRAutomata {
 	}
 
 	public static class Automaton {
-		String name;
+		public String name;
 		
 		public Automaton(String name) {
 			this.name = name;
 		}
 		
-		Node entryPoint;
+		public Node entryPoint;
 		List<Node> nodes;
 
 		public void add(Node node) {
 			nodes.add(node);
+		}
+
+		public List<Node> getNodes() {
+		  return nodes;
 		}
 	}
 	
@@ -61,7 +65,7 @@ public class IRAutomata {
 	}
 	
 	public static class NamedNode extends Node {
-		String name;
+		public String name;
 		public NamedNode(String name) {
 			this.name = name;
 		}
@@ -95,6 +99,14 @@ public class IRAutomata {
 			guard = g;
 			actions = acts;
 		}
+		
+		public Node getTarget() {
+			return target;
+		}
+		
+		public Guard getGuard() {
+			return guard;
+		}
 	}
 	
 	public static class Message {
@@ -103,6 +115,10 @@ public class IRAutomata {
 		public Message(String n, List<String> f) {
 			name = n;
 			fields = f;
+		}
+		
+		public String getName() {
+			return name;
 		}
 	}
 	
@@ -146,6 +162,9 @@ public class IRAutomata {
 			builtinName = name;
 			arguments = args;
 		}
+		public String getBuiltinName() {
+			return builtinName;
+		}
 	}
 	abstract static private class ExternalElement {
 		public ExternalElement(String name) {
@@ -153,6 +172,10 @@ public class IRAutomata {
 		}
 
 		String externalName;
+		
+		public String getExternalName() {
+			return externalName;
+		}
 	}
 	public static class BuiltinGuard extends BuiltinElement implements Guard {
 		public BuiltinGuard(String name, Map<String, String> args) {
@@ -192,6 +215,10 @@ public class IRAutomata {
 		public MessageGuard(Message msg, List<Pattern> args) {
 			message = msg;
 			arguments = args;
+		}
+		
+		public Message getMessageType() {
+			return message;
 		}
 	}
 	
