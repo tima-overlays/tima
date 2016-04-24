@@ -16,6 +16,7 @@ import org.eclipse.swt.graphics.RGB
 import org.eclipse.xtext.ui.editor.outline.impl.DefaultOutlineTreeProvider
 import org.eclipse.xtext.ui.editor.utils.TextStyle
 import org.eclipse.xtext.ui.label.StylerFactory
+import fr.labri.gossip.tima.dSL.MessageType
 
 /**
  * Customization of the default outline structure.
@@ -60,7 +61,7 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
     
     def _text(MessageAction a) {
 		val x = new StyledString()
-		x.appendNiceText('Send message ').appendBlackText(a.type.name)
+		x.appendNiceText('Send message ')//.appendBlackText(a.type.name)
     }
  
 	def getTypeTextStyle1() {
@@ -69,6 +70,11 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
 	  textStyle.setStyle(SWT.ITALIC)
 	  textStyle
 	}
+	
+	def _text(MessageType msg) {
+		val x = new StyledString()
+		x.appendBlackText(msg.name)
+    }
 	
 	def getTypeTextStyle2() {
 	  val textStyle = new TextStyle()

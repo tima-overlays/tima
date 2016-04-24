@@ -4,8 +4,8 @@ generate dSL "http://www.labri.fr/gossip/tima/DSL"
 
 Model:
 	header=Header
-	messages+=Message*
-	automatons+=Automata*
+	messages+=MessageType*
+	automatons+=Automaton*
 ;
 
 Header:
@@ -16,7 +16,7 @@ Header:
 fragment
 Summary : TK_SUMMARY summary=STRING;
 
-Message:
+MessageType:
 	name=ID
 	('(' Fields ')')?
 	(':' FieldDeclaration)?
@@ -27,7 +27,7 @@ FieldDeclaration:
 	declaredFields+=ID (',' declaredFields+=ID)*
 ;
 
-Automata:
+Automaton:
 	TK_AUTOMATON name=ID
 	Summary?
 	states+=State* 
@@ -46,7 +46,7 @@ Actions:
 	TK_ACTION actions+=Action+
 ;
 
-Action:
+Action returns Action:
 	 BuiltinAction |
 	 ExternalAction |
 	 MessageAction
@@ -70,15 +70,13 @@ ExternalAction returns Action:
 ;
 
 MessageAction returns Action:
-	{MessageAction} '!' type=[Message]
-	('(' Fields? ')' | Fields)?
-	'@' target=MessageTarget
+	{MessageAction} '!' type=[MessageType] ('(' Fields? ')')? '@' target=MessageTarget
 ;
 
 MessageTarget:
 	{BroadcastTarget} '*' |
 	{UnicastTarget} address=STRING |
-	{InternalTarget} automata=[Automata]
+	{InternalTarget} automata=[Automaton]
 ;
 
 Transition returns Transition:
@@ -110,7 +108,7 @@ BuiltinGuard returns Guard:
 ;
 
 MessagePattern:
-	type=[Message]
+	type=[MessageType]
 	('(' patterns+=PatternExpression ')')?
 ;
 

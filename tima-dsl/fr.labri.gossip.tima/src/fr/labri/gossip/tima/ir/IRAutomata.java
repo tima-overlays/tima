@@ -1,5 +1,6 @@
 package fr.labri.gossip.tima.ir;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +40,7 @@ public class IRAutomata {
 		}
 		
 		public Node entryPoint;
-		List<Node> nodes;
+		List<Node> nodes = new ArrayList<>();
 
 		public void add(Node node) {
 			nodes.add(node);
@@ -53,9 +54,9 @@ public class IRAutomata {
 	public static abstract class Node {
 		public int timeout;
 		public Node timeoutTarget;
-		public List<Transition> transtions;
+		public List<Transition> transtions = new ArrayList<>();
 		
-		public List<Action> actions;
+		public List<Action> actions  = new ArrayList<>();
 
 		abstract public NamedNode getReferenceNode() ;
 

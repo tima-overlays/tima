@@ -4,21 +4,20 @@
 package fr.labri.gossip.tima.ui.labeling
 
 import com.google.inject.Inject
-import fr.labri.gossip.tima.dSL.Action
-import fr.labri.gossip.tima.dSL.Automata
+import fr.labri.gossip.tima.dSL.BuiltInGuard
+import fr.labri.gossip.tima.dSL.BuiltinAction
+import fr.labri.gossip.tima.dSL.ExternalAction
+import fr.labri.gossip.tima.dSL.ExternalGuard
+import fr.labri.gossip.tima.dSL.GuardedTransition
+import fr.labri.gossip.tima.dSL.MessageAction
+import fr.labri.gossip.tima.dSL.MessageGuard
+import fr.labri.gossip.tima.dSL.TimeoutTransition
 import fr.labri.gossip.tima.dSL.Transition
 import org.eclipse.emf.edit.ui.provider.AdapterFactoryLabelProvider
 import org.eclipse.xtext.ui.IImageHelper
 import org.eclipse.xtext.ui.label.DefaultEObjectLabelProvider
-import fr.labri.gossip.tima.dSL.BuiltinAction
-import fr.labri.gossip.tima.dSL.ExternalAction
-import fr.labri.gossip.tima.dSL.MessageAction
-import fr.labri.gossip.tima.dSL.TimeoutTransition
-import fr.labri.gossip.tima.dSL.GuardedTransition
-import fr.labri.gossip.tima.dSL.Guard
-import fr.labri.gossip.tima.dSL.MessageGuard
-import fr.labri.gossip.tima.dSL.BuiltInGuard
-import fr.labri.gossip.tima.dSL.ExternalGuard
+import fr.labri.gossip.tima.dSL.Automaton
+import fr.labri.gossip.tima.dSL.MessageType
 
 /**
  * Provides labels for EObjects.
@@ -65,6 +64,10 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 		'''transition to «t.target.name»'''	
 	}
 	
+	def text(MessageType msg) {
+		'''Msg: «msg.name»'''
+	}
+	
 	def image(TimeoutTransition t) {
 		imageHelper.getImage("clock.png")
 	}
@@ -84,9 +87,8 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 	dispatch def String iconName(ExternalGuard guard) {
 		"action.png"
 	}
-	
     
-    def image(Automata s) {
+    def image(Automaton s) {
 		imageHelper.getImage('automata.png')
     }
 }

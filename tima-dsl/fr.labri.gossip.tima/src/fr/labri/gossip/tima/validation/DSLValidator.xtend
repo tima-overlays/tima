@@ -6,11 +6,11 @@ package fr.labri.gossip.tima.validation
 import org.eclipse.xtext.validation.Check
 import fr.labri.gossip.tima.dSL.DSLPackage
 import com.google.inject.Inject
-import fr.labri.gossip.tima.dSL.Automata
 import fr.labri.gossip.tima.dSL.Transition
 import fr.labri.gossip.tima.semantic.DSLSemantic
-import fr.labri.gossip.tima.dSL.Message
 import fr.labri.gossip.tima.dSL.Model
+import fr.labri.gossip.tima.dSL.Automaton
+import fr.labri.gossip.tima.dSL.MessageType
 
 /**
  * This class contains custom validation rules. 
@@ -42,7 +42,7 @@ class DSLValidator extends AbstractDSLValidator {
 //	}
 
 	@Check(FAST)
-	def checkOneAndOnlyOneInitialState(Automata a) {
+	def checkOneAndOnlyOneInitialState(Automaton a) {
 		if (a.states.filter[it.initial].size != 1) {
 			error('An automata must have one and only one initial state', null); 
 					//DSLPackage.Literals.AUTOMATA__NAME) // FIXME
@@ -51,17 +51,17 @@ class DSLValidator extends AbstractDSLValidator {
 	
 	@Check(NORMAL)
 	def checkSingleTransitionBetweenStates(Transition t) {
-		val state = t.eContainer as fr.labri.gossip.tima.dSL.State
-		val target = t.target
-		if (state.transitions.filter[it.target == target].size > 1) {
-			error('Two different transition in a state cannot point to the same state', 
-						DSLPackage.Literals.TRANSITION__TARGET, DUPLICATED_TARGET)
-		}
+//		val state = t.eContainer as fr.labri.gossip.tima.dSL.State
+//		val target = t.target
+//		if (state.transitions.filter[it.target == target].size > 1) {
+//			error('Two different transition in a state cannot point to the same state', 
+//						DSLPackage.Literals.TRANSITION__TARGET, DUPLICATED_TARGET)
+//		}
 	}
 	
 	@Check(FAST)
 	def checkUniqueStates(fr.labri.gossip.tima.dSL.State s) {
-		val auto = s.eContainer as Automata
+		val auto = s.eContainer as Automaton
 		val f = auto.states.filter[it.name == s.name].size > 1
 		if (f) {
 			error('Duplicated State name', 
@@ -70,13 +70,13 @@ class DSLValidator extends AbstractDSLValidator {
 	}
 	
 	@Check(FAST)
-	def checkUniqueMaessage(Message s) {
+	def checkUniqueMaessage(MessageType s) {
 		val model = s.eContainer as Model
 		if (model.messages == null) return
 		val f = model.messages.filter[it.name == s.name].size > 1
 		if (f) {
 			error('Duplicated message name', 
-						DSLPackage.Literals.MESSAGE__NAME, DUPLICATED_MESSAGE_NAME)
+						DSLPackage.Literals.MESSAGE_TYPE__NAME, DUPLICATED_MESSAGE_NAME)
 		}
 	}
 }

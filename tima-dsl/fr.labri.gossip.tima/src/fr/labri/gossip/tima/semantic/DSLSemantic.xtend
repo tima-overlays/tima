@@ -1,35 +1,31 @@
 package fr.labri.gossip.tima.semantic
 
-import fr.labri.gossip.tima.dSL.State
-import fr.labri.gossip.tima.dSL.Guard
-import fr.labri.tima.TimedAutomata
-import org.eclipse.emf.ecore.resource.Resource
-import fr.labri.gossip.tima.dSL.Automata
-import java.util.LinkedHashMap
-import fr.labri.tima.ITimedAutomata
-import fr.labri.gossip.tima.semantic.TimaAction.SimpleTimaAction
-import fr.labri.gossip.tima.dSL.TimeUnit
-import fr.labri.gossip.tima.ir.IRAutomata
-import java.util.Map
-import fr.labri.gossip.tima.dSL.GuardedTransition
-import fr.labri.gossip.tima.dSL.ExternalGuard
-import fr.labri.gossip.tima.dSL.BuiltInGuard
-import fr.labri.gossip.tima.dSL.MessageGuard
-import fr.labri.gossip.tima.dSL.FieldExpression
-import fr.labri.gossip.tima.ir.IRAutomata.MessageFieldOperand
-import fr.labri.gossip.tima.dSL.StringExpression
-import fr.labri.gossip.tima.ir.IRAutomata.StringOperand
 import fr.labri.gossip.tima.dSL.Action
-import fr.labri.gossip.tima.dSL.ExternalAction
-import fr.labri.gossip.tima.dSL.BuiltinAction
-import fr.labri.gossip.tima.dSL.MessageAction
-import fr.labri.gossip.tima.dSL.Message
+import fr.labri.gossip.tima.dSL.Automaton
 import fr.labri.gossip.tima.dSL.BroadcastTarget
-import fr.labri.gossip.tima.dSL.UnicastTarget
+import fr.labri.gossip.tima.dSL.BuiltInGuard
+import fr.labri.gossip.tima.dSL.BuiltinAction
+import fr.labri.gossip.tima.dSL.ExternalAction
+import fr.labri.gossip.tima.dSL.ExternalGuard
+import fr.labri.gossip.tima.dSL.FieldExpression
+import fr.labri.gossip.tima.dSL.Guard
+import fr.labri.gossip.tima.dSL.GuardedTransition
 import fr.labri.gossip.tima.dSL.InternalTarget
-import fr.labri.gossip.tima.ir.IRAutomata.Automaton
-import java.util.Iterator
+import fr.labri.gossip.tima.dSL.MessageAction
+import fr.labri.gossip.tima.dSL.MessageGuard
+import fr.labri.gossip.tima.dSL.State
+import fr.labri.gossip.tima.dSL.StringExpression
+import fr.labri.gossip.tima.dSL.TimeUnit
 import fr.labri.gossip.tima.dSL.TimeoutTransition
+import fr.labri.gossip.tima.dSL.UnicastTarget
+import fr.labri.gossip.tima.ir.IRAutomata
+import fr.labri.gossip.tima.ir.IRAutomata.MessageFieldOperand
+import fr.labri.gossip.tima.ir.IRAutomata.StringOperand
+import fr.labri.tima.TimedAutomata
+import java.util.Iterator
+import java.util.Map
+import org.eclipse.emf.ecore.resource.Resource
+import fr.labri.gossip.tima.dSL.MessageType
 
 class DSLSemantic {
 
@@ -52,77 +48,40 @@ class DSLSemantic {
 		m = m + (if (s.urgent) TimedAutomata.URGENT else 0)
 	}
 	
-	/** transforms a model in DSL representation to TIMA representation */
-	def toTima(Resource resource) {
-		val automatons = new LinkedHashMap<String, ITimedAutomata<String>>()
-		for (a: resource.allContents.filter(Automata).toIterable) {
-			val automata = new TimedAutomata<String>() // add name
-			val hm = newLinkedHashMap()
-			for (s : a.states) {
-				// actions
-				val aaaa = new TimaAction<String>
-				if (s.actions != null && s.actions.size > 0) {
-					s.actions.forEach[aaaa.pre_actions.add(new SimpleTimaAction<String>(a.name, it))]
-				}
-				// add the state
-				val state = new TimaState<String>(s.name, getModifiers(s), newLinkedList(aaaa))
-				hm.put(s.name, state)
-				if (s.isInitial) {
-					automata.initial = state
-				}
-			}
-			for (s : a.states) {
-				val source = hm.get(s.name)
-//				for (t : s.transitions) {
-//					val target = hm.get(t.target.name)
-//					 FIXME deal with actions in transition
-//					if (t.gguards.msgGuard != null || t.guards.externalGuard != null) {
-//						val timeout = t.guards.toMilliseconds
-//						System.out.println(source + " " + target + " " + dsl2cpp(t.guards).toString);
-//						automata.addTransition(source, timeout, new TimaGuard<String>(a.name, t.guards), target)
-//					} else{
-//						automata.addDefaultTransition(source, target)
-//					}
-//				}
-			}
-			automatons.put(a.name, automata)
-		}
-		automatons
-	}
 	
 	def toIR(Resource resource) {
 		val builder = new IRBuilder
-		builder.createMessages(resource.allContents.filter(Message))
-		builder.createAutomata(resource.allContents.filter(Automata))
+		builder.createMessages(resource.allContents.filter(MessageType))
+		builder.createAutomata(resource.allContents.filter(Automaton))
 		builder.automata
 	}
 	
 	static class IRBuilder {
 		val automata = new IRAutomata
 
-		def createMessages(Iterator<Message> msgs) {
+		def createMessages(Iterator<MessageType> msgs) {
 			msgs.forEach[automata.messages.put(it.name, newMessage(it))]
 		}
 		
-		def createAutomata(Iterator<Automata> autos) {
+		def createAutomata(Iterator<Automaton> autos) {
 			autos.forEach[createAutomaton(it)]
 		}
 		
-		def createAutomaton(Automata a) {
+		def createAutomaton(Automaton a) {
 			val builder = new IRAutomatonBuilder(this, a)
 			builder.createAutomata(a)
 			automata.add(builder.automaton)
 		}
 		
-		def IRAutomata.Message getMessage(Message msg) {
+		def IRAutomata.Message getMessage(MessageType msg) {
 			automata.messages.get(msg.name)
 		}
 		
-		def IRAutomata.Automaton getAutomaton(Automata a) {
+		def IRAutomata.Automaton getAutomaton(Automaton a) {
 			automata.automata.get(a.name)
 		}
 		
-		def newMessage(Message msg) {
+		def newMessage(MessageType msg) {
 			if (msg.fields == null) // FIXME ugly
 				new IRAutomata.Message(msg.name, msg.declaredFields.map[it])
 			else
@@ -135,14 +94,17 @@ class DSLSemantic {
 		val IRBuilder autoBuilder
 		val Map<State, IRAutomata.Node> states = newHashMap()
 
-		new(IRBuilder builder, Automata auto) {
+		new(IRBuilder builder, Automaton auto) {
 			autoBuilder = builder
 			automaton = new IRAutomata.Automaton(auto.name)
 		}
 		
-		def createAutomata(Automata a) {
+		def createAutomata(Automaton a) {
 			a.states.forEach[states.put(it, new IRAutomata.NamedNode(it.name))]
-			states.forEach[x, y| buildTransitions(x)]
+			states.forEach[x, y| 
+				automaton.add(y)
+				buildTransitions(x)
+			]
 		}
 		
 		def buildTransitions(State state) {
@@ -158,17 +120,20 @@ class DSLSemantic {
 		def void buildTransitions(State state, IRAutomata.Node node, int timeout) {
 			val newTimeout = minAbove(timeout, state.transitions.filter(GuardedTransition))
 			if (newTimeout != -1) {
-				node.timeout = newTimeout
+				node.timeout = newTimeout - Math.max(0, timeout); // remove previous timeout (or elapsed time)
 				val more = state.transitions.filter(GuardedTransition).map [
-					if (it.guard.value > newTimeout)
+					if (it.guard.milliseconds >= newTimeout)
 						node.addTransition(newTransition(it))
-					Math.max(0, it.guard.value - newTimeout)].reduce[s, v| s + v]
+					Math.max(0, it.guard.milliseconds - newTimeout)
+				].reduce[s, v| s + v]
+				
 				if (more > 0) {
 					val newNode = new IRAutomata.DerivedNode(node)
+					automaton.add(newNode)
 					node.timeoutTarget = newNode
 					buildTransitions(state, newNode, newTimeout)
 				} else {
-					val timeoutTarget = state.transitions.findFirst[it instanceof TimeoutTransition]
+					val timeoutTarget = state.transitions.findFirst[it instanceof TimeoutTransition].target
 					node.timeoutTarget = states.get(timeoutTarget)
 				} 
 			}
@@ -212,15 +177,19 @@ class DSLSemantic {
 		}
 		
 		def minAbove(int value, Iterable<GuardedTransition> trans) {
-			var min = -1;
+			var min = Integer.MAX_VALUE;
 			for (t : trans) {
 				if (t.guard.within) {
-					val v = t.guard.value
-					if (v > value && v < min) // FIXME unit
+					val v = t.guard.milliseconds
+					if (v > value && v < min)
 						min = v
 				}
 			}
-			min
+			if (min == Integer.MAX_VALUE) - 1 else min
+		}
+	
+		def milliseconds(Guard g) {
+			(if (g.unit == TimeUnit.SEC) 1000 else 1) * g.value
 		}
 	}
 }

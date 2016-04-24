@@ -8,10 +8,9 @@ import org.eclipse.emf.ecore.EReference
 import fr.labri.gossip.tima.dSL.Action
 import fr.labri.gossip.tima.dSL.DSLPackage
 import org.eclipse.xtext.EcoreUtil2
-import fr.labri.gossip.tima.dSL.Message
 import org.eclipse.xtext.scoping.Scopes
-import fr.labri.gossip.tima.dSL.Automata
 import fr.labri.gossip.tima.dSL.MessagePattern
+import fr.labri.gossip.tima.dSL.Automaton
 
 /**
  * This class contains custom scoping description.
@@ -23,21 +22,21 @@ class DSLScopeProvider extends AbstractDSLScopeProvider {
 	
 
   override getScope(EObject context, EReference reference) {
-      if(context instanceof MessagePattern
-          && reference == DSLPackage.Literals.MESSAGE_PATTERN__TYPE){
-        val rootElement = EcoreUtil2.getRootContainer(context);
-        val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Message);
-        val existingScope = Scopes.scopeFor(candidates);
-        // Scope that filters out the context element from the candidates list
-        
-        return existingScope;
-      }
-      else if (context instanceof Action && reference == DSLPackage.Literals.MESSAGE_ACTION__TYPE){
-      	val rootElement = EcoreUtil2.getRootContainer(context);
-        val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Automata);
-        val existingScope = Scopes.scopeFor(candidates);
-        return existingScope;
-      }
+//      if(context instanceof MessagePattern
+//          && reference == DSLPackage.Literals.MESSAGE_PATTERN__TYPE){
+//        val rootElement = EcoreUtil2.getRootContainer(context);
+//        val candidates = EcoreUtil2.getAllContentsOfType(rootElement, MessageType);
+//        val existingScope = Scopes.scopeFor(candidates);
+//        // Scope that filters out the context element from the candidates list
+//        
+//        return existingScope;
+//      }
+//      else if (context instanceof Action && reference == DSLPackage.Literals.MESSAGE_ACTION__TYPE){
+//      	val rootElement = EcoreUtil2.getRootContainer(context);
+//        val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Automaton);
+//        val existingScope = Scopes.scopeFor(candidates);
+//        return existingScope;
+//      }
   
       return super.getScope(context, reference);
   }

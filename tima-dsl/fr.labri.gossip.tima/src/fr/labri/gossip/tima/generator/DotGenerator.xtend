@@ -22,30 +22,26 @@ class DotGenerator extends NamedNodeGenerator {
 		digraph «a.name» {
 			«FOR state : a.nodes»
 				«FOR t : state.transtions»
-					«generatedNames.get(state)» -> «generatedNames.get(t.target)» [label=«t.guard.toDot»];
+					«generatedNames.get(state)» -> «generatedNames.get(t.target)» [label="«t.guard.toDot»/«state.timeout»"];
 				«ENDFOR»
-				
+				«IF state.timeoutTarget != null »
+				«generatedNames.get(state)» -> «generatedNames.get(state.timeoutTarget)» [style=dotted];
+				«ENDIF»
 			«ENDFOR»
 		 }
 		'''
 	}
 	
 	dispatch def toDot(IRAutomata.BuiltinGuard g) {
-		'''
-			«g.builtinName»
-		'''
+		'''«g.builtinName»'''
 	}
 	
 	dispatch def toDot(IRAutomata.ExternalGuard g) {
-		'''
-			«g.externalName»
-		'''
+		'''«g.externalName.substring(1, g.externalName.length - 1)»'''
 	}
 	
 	dispatch def toDot(IRAutomata.MessageGuard g) {
-		'''
-			«g.messageType.name»
-		'''
+		'''«g.messageType.name»'''
 	}
 	
 }
