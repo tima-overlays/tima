@@ -2,11 +2,10 @@ package fr.labri.gossip.tima.semantic
 
 import fr.labri.tima.ITimedAutomata.Predicate
 import fr.labri.gossip.tima.dSL.Guard
-import static fr.labri.gossip.tima.semantic.MicroUtil.*
 
 class TimaGuard<C> implements Predicate<C> {
 	
-	val String type
+	val String type = ''
 	
 	public var String messageID = "ANY"
 	public var String sourceID = "ANY"
@@ -21,37 +20,37 @@ class TimaGuard<C> implements Predicate<C> {
 	public GuardType guardType
 	
 	new(String automatonName, Guard g) {
-		this.type = dsl2cpp(automatonName, g).toString
+//		this.type = dsl2cpp(automatonName, g).toString
 	}
 	
 	/** Create a c++ representation of a guard */
-	private def dsl2cpp(String automatonName, Guard g) {
-		if (g.msgGuard != null) {
-			if (g.msgGuard.wildcard) {
-				
-			} else {
-				messageID = g.msgGuard.msg.type.name;
-//			if (g.source != null) {
-//				sourceID = g.source.name
-				guardType = GuardType.LOCAL_MESSAGE_GUARD
-				'''tima::Mailbox::exists'''
-				
-			}
+//	private def dsl2cpp(String automatonName, Guard g) {
+//		if (g.msgGuard != null) {
+//			if (g.msgGuard.wildcard) {
+//				
+//			} else {
+//				messageID = g.msgGuard.msg.type.name;
+////			if (g.source != null) {
+////				sourceID = g.source.name
+//				guardType = GuardType.LOCAL_MESSAGE_GUARD
+//				'''tima::Mailbox::exists'''
+//				
 //			}
-//			else {
-//				guardType = GuardType.NETWORK_MESSAGE_GUARD
-//				'''tima::Mailbox::exists_network_message'''
-//			}
-		}
-		else if (g.externalGuard != null) {
-			guardType = GuardType.GENERIC_GUARD
-			'''«unMangleString(g.externalGuard.name)»'''
-		}
-		else {
-			guardType = GuardType.TIMEOUT_GUARD
-			'''timeout'''
-		}
-	}
+////			}
+////			else {
+////				guardType = GuardType.NETWORK_MESSAGE_GUARD
+////				'''tima::Mailbox::exists_network_message'''
+////			}
+//		}
+//		else if (g.externalGuard != null) {
+//			guardType = GuardType.GENERIC_GUARD
+//			'''«unMangleString(g.externalGuard.name)»'''
+//		}
+//		else {
+//			guardType = GuardType.TIMEOUT_GUARD
+//			'''timeout'''
+//		}
+//	}
 	
 	override getType() {
 		type

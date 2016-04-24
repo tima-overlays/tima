@@ -5,12 +5,14 @@ package fr.labri.gossip.tima.ui.outline
 
 import com.google.inject.Inject
 import fr.labri.gossip.tima.dSL.Action
+import fr.labri.gossip.tima.dSL.BuiltinAction
+import fr.labri.gossip.tima.dSL.ExternalAction
+import fr.labri.gossip.tima.dSL.MessageAction
 import fr.labri.gossip.tima.dSL.State
 import fr.labri.gossip.tima.dSL.Transition
 import org.eclipse.jface.viewers.StyledString
 import org.eclipse.swt.SWT
 import org.eclipse.swt.graphics.RGB
-import org.eclipse.xtext.ui.IImageHelper
 import org.eclipse.xtext.ui.editor.outline.impl.DefaultOutlineTreeProvider
 import org.eclipse.xtext.ui.editor.utils.TextStyle
 import org.eclipse.xtext.ui.label.StylerFactory
@@ -24,8 +26,6 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
  	@Inject 
 	StylerFactory stylerFactory;
 	
-	@Inject
-    private IImageHelper imageHelper;
 	
 	
 	def _text(Transition t) {
@@ -48,20 +48,20 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
 		s
 	}
 	
-	def _text(Action a) {
+	def _text(ExternalAction a) {
 		val x = new StyledString()
-		val s = if (a == null) x.append('empty') else {
-			if (a.externalAction != null)
-				x.appendBlackText('''«a.externalAction.name»''')
-			else if (a.msgAction != null && a.msgAction.type != null && a.msgAction.target != null) { // TODO remote message
-				x.appendNiceText('Send message ').appendBlackText('''«a.msgAction.type.name»''').append(' to ').appendBlackText('''«a.msgAction.target.name»''')
-			}
-			else { // buildin
-				x.append('unknown')
-			}
-		}
-		s
-	}
+		x.appendBlackText(a.name)
+    }
+    
+    def _text(BuiltinAction a) {
+		val x = new StyledString()
+		x.appendBlackText(a.name)
+    }
+    
+    def _text(MessageAction a) {
+		val x = new StyledString()
+		x.appendNiceText('Send message ').appendBlackText(a.type.name)
+    }
  
 	def getTypeTextStyle1() {
 	  val textStyle = new TextStyle()

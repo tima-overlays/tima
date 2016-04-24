@@ -10,6 +10,15 @@ import fr.labri.gossip.tima.dSL.Transition
 import org.eclipse.emf.edit.ui.provider.AdapterFactoryLabelProvider
 import org.eclipse.xtext.ui.IImageHelper
 import org.eclipse.xtext.ui.label.DefaultEObjectLabelProvider
+import fr.labri.gossip.tima.dSL.BuiltinAction
+import fr.labri.gossip.tima.dSL.ExternalAction
+import fr.labri.gossip.tima.dSL.MessageAction
+import fr.labri.gossip.tima.dSL.TimeoutTransition
+import fr.labri.gossip.tima.dSL.GuardedTransition
+import fr.labri.gossip.tima.dSL.Guard
+import fr.labri.gossip.tima.dSL.MessageGuard
+import fr.labri.gossip.tima.dSL.BuiltInGuard
+import fr.labri.gossip.tima.dSL.ExternalGuard
 
 /**
  * Provides labels for EObjects.
@@ -27,41 +36,55 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 	}
 
 	// Labels and icons can be computed like this:
+	def text(MessageAction action) '''
+	Send «action.type.name»
+	'''
 	
-	def text(Action ele) {
-		val s = if (ele == null) 'empty' else {
-		if (ele.externalAction != null)
-			'''C++: «ele.externalAction.name»'''
-		else if (ele.msgAction != null) 
-			'''Send message "«ele.msgAction.type.name»" to "«ele.msgAction.target.name»"'''
-		} // TODO builin
-		s
+	def text(BuiltinAction action ){
+		action.name
 	}
 	
-	def text(Transition t){
-		val s = '''transition to «t.target.name»'''	
-		s
+	def text(ExternalAction action ){
+		action.name
 	}
 	
-	def image(Action a) {
-		imageHelper.getImage(
-			if (a.externalAction != null)
-				"action.png"
-			else
-				"send.png"
-		)
+
+	def image(ExternalAction a) {
+		imageHelper.getImage("action.png")
     }
     
-    def image(Transition t) {
-		imageHelper.getImage(
-			if (t.guards.msgGuard != null)
-				"receive.png"
-			else if (t.guards.externalGuard != null)
-				"action.png"
-			else
-				"clock.png"
-		)
+    def image(BuiltinAction a) {
+		imageHelper.getImage("action.png")
     }
+    
+    def image(MessageAction a) {
+		imageHelper.getImage("send.png")
+    }
+    
+    def text(Transition t){
+		'''transition to «t.target.name»'''	
+	}
+	
+	def image(TimeoutTransition t) {
+		imageHelper.getImage("clock.png")
+	}
+    
+    def image(GuardedTransition t) {
+		imageHelper.getImage(t.guard.iconName)
+    }
+	
+	dispatch def String iconName(MessageGuard guard) {
+		"receive.png"
+	}
+	
+	dispatch def String iconName(BuiltInGuard guard) {
+		"action.png"
+	}
+	
+	dispatch def String iconName(ExternalGuard guard) {
+		"action.png"
+	}
+	
     
     def image(Automata s) {
 		imageHelper.getImage('automata.png')
