@@ -1,15 +1,11 @@
 package fr.labri.gossip.tima.generator
 
+import fr.labri.Utils
+import fr.labri.gossip.tima.ir.IRAutomata
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
-import fr.labri.gossip.tima.dSL.Message
-import fr.labri.gossip.tima.ir.IRAutomata
-import java.util.LinkedHashMap
-import java.util.HashMap
-import fr.labri.Utils
-import java.util.List
 
-class NativeGenerator extends AutomataGenerator {
+class NativeGenerator extends NamedNodeGenerator {
 	
 	override def void generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		fsa.generateFile('''«name»/«name».cc''', native_version(name, automata))
@@ -117,6 +113,8 @@ class NativeGenerator extends AutomataGenerator {
 	}
 	
 	def native_version(String project_name, IRAutomata automata) {
+		val names = newHashMap(automata.automata.values.map[it.name -> it.names])
+		var counter = 0;
 	'''
 	#include "automata.h"
 	#include "tima.h"
@@ -134,64 +132,70 @@ class NativeGenerator extends AutomataGenerator {
 		return -1;
 	}
 	
-	«FOR a: automata.automata.values SEPARATOR '\n'»
-	/** Automaton «a.name» */
+	«FOR automaton: automata.automata.values SEPARATOR '\n'»
+	/** Automaton «automaton.name» */
 	
-	«FOR node: a.nodes SEPARATOR '\n'»
-		«FOR act : node.actions»
+	«FOR node: automaton.nodes SEPARATOR '\n'»
+		
 		static void
-		«a.name»_«node.name»_do(std::string& name, tima::TimaNativeContext* ctx)
+		«automaton.name»_«names.get(automaton.name).get(node)»_do(std::string& name, tima::TimaNativeContext* ctx)
 		{
 			tima::TimaNativeContext* ctx2;
-			«FOR act_simple : (act as TimaAction<String>).pre_actions»
-				«actionStep(act_simple)»
+			«FOR act : node.actions»
+			«act.IR2Target»;
 			«ENDFOR»
 		}
+		
+		«FOR t: node.transtions SEPARATOR '\n'»
+		static void
+		«automaton.name»_«names.get(automaton.name).get(node)»_«counter++»_do() {
+			
+		}
 		«ENDFOR»
-	«ENDFOR»
-	
-	«FOR state: a.value.states SEPARATOR '\n'»
-		static struct tima::Transition «a.key»_«state.name»[] = {
-		«FOR follower : a.value.getFollowers(state).filter[Utils.indexOf(it, a.value.states) != a.value.asCompiled.getTimeoutDestination(state)] SEPARATOR ','»
+		
+		«{counter = 0; null}»
+		static struct tima::Transition «automaton.name»_«names.get(automaton.name).get(node)»[] = {
+		«FOR t: node.transtions SEPARATOR ','»
 			{
-				.dst = «Utils.indexOf(follower, a.value.states)»,
-				.guard = «a.value.getPredicate(state, follower).type»,
-				.msg_id = MESSAGES_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).messageID»_MSG_ID,
-				.src_id = AUTOMATA_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).sourceID»_AUTOMATON_ID
+				.dst = «Utils.indexOf(t.target, automaton.nodes)»,
+				.action = «automaton.name»_«names.get(automaton.name).get(node)»_«counter++»_do
+				.guard = «t.guard.IR2Target»,
+«««				.msg_id = MESSAGES_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).messageID»_MSG_ID,
+«««				.src_id = AUTOMATA_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).sourceID»_AUTOMATON_ID
 			}
 		«ENDFOR»
 		};
+		
 	«ENDFOR»
 	
-	static struct tima::State «a.key»_states[] = {
-	«FOR state: a.value.states SEPARATOR ','»
+	
+	static struct tima::State «automaton.name»_states[] = {
+	«FOR node: automaton.nodes SEPARATOR ','»
 		{
-		.name = "«state.name»",
-		.urgent = «IF (MicroUtil.isUrgent(state))»true«ELSE»false«ENDIF»,
-		.timeout = «IF (a.value.asCompiled).getStateTimeOut(state)==-1»tima::never_timeout«ELSE»«(a.value.asCompiled).getStateTimeOut(state)»«ENDIF», // milliseconds
-		.timeout_destination = «IF (a.value.asCompiled).getTimeoutDestination(state)==-1»tima::null_destination«ELSE»«(a.value.asCompiled).getTimeoutDestination(state)»«ENDIF»,
-		.nr_transitions = «numberOfFollowers(a.value, state)», // without taking into account the default transition
-		.transitions = «a.key»_«state.name»,
-		.pre_action = «a.key»_«state.name»_pre_action,
-		.post_action = «a.key»_«state.name»_post_action,
-		.each_action = «a.key»_«state.name»_each_action
+		.name = "«names.get(automaton.name).get(node)»",
+«««		.urgent = «IF (MicroUtil.isUrgent(state))»true«ELSE»false«ENDIF»,
+		.timeout = «IF node.timeout ==-1»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // milliseconds
+		.timeout_destination = «IF node.timeout==-1»tima::null_destination«ELSE»«Utils.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
+		.nr_transitions = «node.transtions.size», // without taking into account the default transition
+		.transitions = «automaton.name»_«names.get(automaton.name).get(node)»,
+		.action = «automaton.name»_«names.get(automaton.name).get(node)»_do,
 		}
 	«ENDFOR»
 	};
 	
-	static struct tima::Automata «a.key» = {
-		.name = "«a.key»",
-		.initial = «Utils.indexOf(a.value.initialState, a.value.states)»,
-		.nr_states = «a.value.states.length»,
-		.states = «a.key»_states
+	static struct tima::Automaton «automaton.name» = {
+		.name = "«automaton.name»",
+		.initial = «Utils.indexOf(automaton.entryPoint, automaton.nodes)»,
+		.nr_states = «automaton.nodes.length»,
+		.states = «automaton.name»_states
 	};
 	
 	«ENDFOR»
 	
-	static const uint32_t nr_automatas = «map.size»;
+	static const uint32_t nr_automaton = «automata.automata.size»;
 	
 	static struct tima::Automata* automatons [] = {
-		«FOR name : map.keySet SEPARATOR ','»
+		«FOR name : automata.automata.keySet SEPARATOR ','»
 		&«name»
 		«ENDFOR»
 	};
@@ -211,4 +215,27 @@ class NativeGenerator extends AutomataGenerator {
 	'''
 	}
 	
+	dispatch def void IR2Target(IRAutomata.BuiltinAction action) {
+		
+	}
+	
+	dispatch def void IR2Target(IRAutomata.ExternalAction action) {
+		
+	}
+	
+	dispatch def void IR2Target(IRAutomata.MessageAction action) {
+		
+	}
+	
+	dispatch def void IR2Target(IRAutomata.MessageGuard action) {
+		
+	}
+	
+	dispatch def void IR2Target(IRAutomata.ExternalGuard action) {
+		
+	}
+	
+	dispatch def void IR2Target(IRAutomata.BuiltinGuard action) {
+		
+	}
 }
