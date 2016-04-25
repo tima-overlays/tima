@@ -134,6 +134,7 @@ class DSLSemantic {
 					buildTransitions(state, newNode, newTimeout)
 				} else {
 					val timeoutTarget = state.transitions.findFirst[it instanceof TimeoutTransition].target
+					// FIXME, timeout should have associated actions
 					node.timeoutTarget = states.get(timeoutTarget)
 				} 
 			}
@@ -142,16 +143,24 @@ class DSLSemantic {
 		def IRAutomata.Transition newTransition(GuardedTransition t) {
 			val g = t.guard
 			val guard = switch g {
-				ExternalGuard: new IRAutomata.ExternalGuard(g.name)
-				BuiltInGuard: new IRAutomata.BuiltinGuard(g.name, newHashMap(g.fields.map[it.name -> it.value]))
-				MessageGuard: new IRAutomata.MessageGuard(autoBuilder.getMessage(g.msgPattern.type), g.msgPattern.patterns.map[
-					new IRAutomata.Pattern(it.operator, it.operands.map[
-						switch it {
-							FieldExpression: new MessageFieldOperand(it.field)
-							StringExpression: new StringOperand(it.value)
-						}
+				ExternalGuard: {
+					new IRAutomata.ExternalGuard(g.name)
+	
+				}
+				BuiltInGuard: { 
+					new IRAutomata.BuiltinGuard(g.name, newHashMap(g.fields.map[it.name -> it.value]))	
+				}
+				MessageGuard:  {
+					new IRAutomata.MessageGuard(autoBuilder.getMessage(g.msgPattern.type), g.msgPattern.patterns.map[
+						new IRAutomata.Pattern(it.operator, it.operands.map[
+							switch it {
+								FieldExpression: new MessageFieldOperand(it.field)
+								StringExpression: new StringOperand(it.value)
+							}
+							])
 					])
-				])
+				
+				}
 			}
 			new IRAutomata.Transition(states.get(t.target), guard, t.actions.map[newAction(it)])
 		}

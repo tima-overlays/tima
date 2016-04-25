@@ -4,6 +4,10 @@ import fr.labri.Utils
 import fr.labri.gossip.tima.ir.IRAutomata
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
+import fr.labri.gossip.tima.ir.IRAutomata.Automaton
+import fr.labri.gossip.tima.ir.IRAutomata.Node
+import java.util.HashMap
+import java.util.Map
 
 class NativeGenerator extends NamedNodeGenerator {
 	
@@ -112,8 +116,10 @@ class NativeGenerator extends NamedNodeGenerator {
 		'''
 	}
 	
+	var Map<String, Map<IRAutomata.Node, String>> names = null
+	
 	def native_version(String project_name, IRAutomata automata) {
-		val names = newHashMap(automata.automata.values.map[it.name -> it.names])
+		names = newHashMap(automata.automata.values.map[it.name -> it.names])
 		var counter = 0;
 	'''
 	#include "automata.h"
@@ -138,7 +144,7 @@ class NativeGenerator extends NamedNodeGenerator {
 	«FOR node: automaton.nodes SEPARATOR '\n'»
 		
 		static void
-		«automaton.name»_«names.get(automaton.name).get(node)»_do(std::string& name, tima::TimaNativeContext* ctx)
+		«node_action_name(automaton, node)»(std::string& name, tima::TimaNativeContext* ctx)
 		{
 			tima::TimaNativeContext* ctx2;
 			«FOR act : node.actions»
@@ -148,46 +154,69 @@ class NativeGenerator extends NamedNodeGenerator {
 		
 		«FOR t: node.transtions SEPARATOR '\n'»
 		static void
-		«automaton.name»_«names.get(automaton.name).get(node)»_«counter++»_do() {
-			
+		«get_transition_action_name(automaton, node, counter)»()
+		{
+			/*transition from «names.get(automaton.name).get(node)» to «names.get(automaton.name).get(t.target)» */
+			tima::TimaNativeContext* ctx2;
+			«FOR act : t.getActions()»
+			«act.IR2Target»;
+			«ENDFOR»
 		}
+		
+		static bool
+		«get_transition_guard_name(automaton, node, counter++)»()
+		{
+			tima::TimaNativeContext* ctx2;
+			return «t.guard.IR2Target»;
+		}
+		
 		«ENDFOR»
 		
+		«IF node.timeoutTarget != null»
+«««		static void
+«««		«automaton.name»_«names.get(automaton.name).get(node)»_timeout_do() {
+«««			tima::TimaNativeContext* ctx2;
+«««			«FOR act : t.getActio»
+«««			«act.IR2Target»;
+«««			«ENDFOR»
+«««		}
+		«ENDIF»
+		
 		«{counter = 0; null}»
-		static struct tima::Transition «automaton.name»_«names.get(automaton.name).get(node)»[] = {
-		«FOR t: node.transtions SEPARATOR ','»
+		static struct tima::Transition «get_name_for_transitions(automaton, node)»[] = {
+			«FOR t: node.transtions SEPARATOR ','»
 			{
 				.dst = «Utils.indexOf(t.target, automaton.nodes)»,
-				.action = «automaton.name»_«names.get(automaton.name).get(node)»_«counter++»_do
-				.guard = «t.guard.IR2Target»,
+				.action = «get_transition_action_name(automaton, node, counter)»,
+				.guard = «get_transition_guard_name(automaton, node, counter++)»
 «««				.msg_id = MESSAGES_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).messageID»_MSG_ID,
 «««				.src_id = AUTOMATA_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).sourceID»_AUTOMATON_ID
 			}
-		«ENDFOR»
+			«ENDFOR»
 		};
 		
 	«ENDFOR»
 	
 	
-	static struct tima::State «automaton.name»_states[] = {
-	«FOR node: automaton.nodes SEPARATOR ','»
+	static struct tima::State «get_automaton_structure_name(automaton)»[] = {
+		«FOR node: automaton.nodes SEPARATOR ','»
 		{
 		.name = "«names.get(automaton.name).get(node)»",
 «««		.urgent = «IF (MicroUtil.isUrgent(state))»true«ELSE»false«ENDIF»,
 		.timeout = «IF node.timeout ==-1»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // milliseconds
 		.timeout_destination = «IF node.timeout==-1»tima::null_destination«ELSE»«Utils.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
 		.nr_transitions = «node.transtions.size», // without taking into account the default transition
-		.transitions = «automaton.name»_«names.get(automaton.name).get(node)»,
-		.action = «automaton.name»_«names.get(automaton.name).get(node)»_do,
+		.transitions = &«get_name_for_transitions(automaton, node)»,
+		.action = «node_action_name(automaton, node)»,
 		}
-	«ENDFOR»
+		«ENDFOR»
 	};
 	
 	static struct tima::Automaton «automaton.name» = {
 		.name = "«automaton.name»",
 		.initial = «Utils.indexOf(automaton.entryPoint, automaton.nodes)»,
 		.nr_states = «automaton.nodes.length»,
-		.states = «automaton.name»_states
+		.states = &«get_automaton_structure_name(automaton)»
 	};
 	
 	«ENDFOR»
@@ -215,27 +244,55 @@ class NativeGenerator extends NamedNodeGenerator {
 	'''
 	}
 	
-	dispatch def void IR2Target(IRAutomata.BuiltinAction action) {
+	def get_transition_guard_name(Automaton automaton, Node node, int i) {
+		'''«automaton.name»_«names.get(automaton.name).get(node)»_transition_guard_«i»'''
+	}
+	
+	def get_name_for_transitions(Automaton automaton, Node node) {
+		'''«automaton.name»_transitions_for_«names.get(automaton.name).get(node)»'''
+	}
+	
+	def get_automaton_structure_name(Automaton automaton) {
+		'''«automaton.name»_states'''
+	}
+	
+	def node_action_name(Automaton automaton, Node node) {
+		'''«automaton.name»_«names.get(automaton.name).get(node)»_do'''
+	}
+	
+	def get_transition_action_name(Automaton automaton, Node node, int i) {
+		'''«automaton.name»_«names.get(automaton.name).get(node)»_transition_«i»_do'''
+	}
+	
+	dispatch def IR2Target(IRAutomata.BuiltinAction action) {
+		throw new UnsupportedOperationException("Really? Do we have some builtin action?");
+	}
+	
+	dispatch def IR2Target(IRAutomata.ExternalAction action)
+		'''«action.externalName.substring(1, action.externalName.length-1)»'''
+	
+	dispatch def IR2Target(IRAutomata.MessageAction action) {
 		
 	}
 	
-	dispatch def void IR2Target(IRAutomata.ExternalAction action) {
-		
+	dispatch def IR2Target(IRAutomata.MessageGuard g) {
+		'''message'''
 	}
 	
-	dispatch def void IR2Target(IRAutomata.MessageAction action) {
-		
-	}
+	dispatch def IR2Target(IRAutomata.ExternalGuard g)
+		'''«g.externalName.substring(1, g.externalName.length-1)»'''
 	
-	dispatch def void IR2Target(IRAutomata.MessageGuard action) {
-		
-	}
-	
-	dispatch def void IR2Target(IRAutomata.ExternalGuard action) {
-		
-	}
-	
-	dispatch def void IR2Target(IRAutomata.BuiltinGuard action) {
-		
+	dispatch def IR2Target(IRAutomata.BuiltinGuard g) {
+		switch (g.builtinName) {
+			case "true": {
+				'true'
+			}
+			case "false": {
+				'false'
+			}
+			default: {
+				throw new UnsupportedOperationException("Really? Do we have some builtin action?");
+			}
+		}
 	}
 }

@@ -108,6 +108,10 @@ public class IRAutomata {
 		public Guard getGuard() {
 			return guard;
 		}
+		
+		public List<Action> getActions() {
+			return actions;
+		}
 	}
 	
 	public static class Message {
