@@ -1,39 +1,24 @@
 package fr.labri.gossip.tima.ui.builder;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Map;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
-import org.eclipse.core.commands.operations.OperationStatus;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-import org.xml.sax.helpers.DefaultHandler;
+
+import fr.labri.gossip.tima.Util;
 
 public class TimaBuilder extends IncrementalProjectBuilder {
 
@@ -80,7 +65,7 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 			app.mkdir();
 			
 			// copy semantic
-			copy(semantic_file, new File(app.getAbsoluteFile(), semantic_file.getName()));
+			Util.copy(semantic_file, new File(app.getAbsoluteFile(), semantic_file.getName()), false);
 			
 			// copy all files under src-gen/${app}
 			f.accept(new IResourceVisitor() {
@@ -88,7 +73,7 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 				public boolean visit(IResource resource) throws CoreException {
 					if (resource.getType() == IResource.FILE) {
 						// copy file from the project to the external location
-						copy(f.getFile(resource.getName()), new File(app.getAbsolutePath(), resource.getName()));
+						Util.copy(f.getFile(resource.getName()), new File(app.getAbsolutePath(), resource.getName()), true);
 					}
 					return true;
 				}
@@ -99,54 +84,13 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 			Enumeration<URL> l = bundle.findEntries(pathToResources,"*", true);
 			while (l!=null && l.hasMoreElements()) {
 				URL e = l.nextElement();
-				copy(e, new File(app.getAbsolutePath(),  
-						e.getFile().replace(pathToResources, "")));
+				Util.copy(e, new File(app.getAbsolutePath(),  
+						e.getFile().replace(pathToResources, "")), true);
 			}
 		}
 		return null;
 	}
 	
-	protected void copy(URL src, File dst) {;
-		if (dst.exists()) return;
-		try {
-			InputStream in = src.openStream();
-			OutputStream out = new FileOutputStream(dst);
-			byte[] buffer = new byte[1024];
-			int len;
-			while ((len = in.read(buffer)) != -1) {
-			    out.write(buffer, 0, len);
-			}
-			in.close();
-			out.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	protected void copy(IFile src, File dst) {
-		File source = new File(src.getLocationURI());
-		try {
-			InputStream in = new FileInputStream(source);
-			OutputStream out = new FileOutputStream(dst);
-			byte[] buffer = new byte[1024];
-			int len;
-			while ((len = in.read(buffer)) != -1) {
-			    out.write(buffer, 0, len);
-			}
-			in.close();
-			out.close();
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 	/*
 	 * (non-Javadoc)
 	 * 
