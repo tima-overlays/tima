@@ -178,10 +178,11 @@ class DSLSemantic {
 		}
 		
 		def IRAutomata.MessageTarget newMessageTarget(MessageAction action) {
-			switch action {
+			val target = action.target
+			switch target {
 				BroadcastTarget: new IRAutomata.MessageTarget.Broadcast
-				UnicastTarget: new IRAutomata.MessageTarget.Unicast(action.address)
-				InternalTarget: new IRAutomata.MessageTarget.Internal(autoBuilder.getAutomaton(action.automata))
+				UnicastTarget: new IRAutomata.MessageTarget.Unicast(target.address)
+				InternalTarget: new IRAutomata.MessageTarget.Internal(autoBuilder.getAutomaton(target.automata))
 			}
 		}
 		

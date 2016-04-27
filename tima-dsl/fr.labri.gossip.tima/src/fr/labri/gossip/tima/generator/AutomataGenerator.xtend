@@ -5,5 +5,9 @@ import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
 
 abstract class AutomataGenerator {
-	abstract def void generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context)
+	protected IRAutomata automata
+	new (IRAutomata a) {
+		automata = a
+	}
+	abstract def void generateFiles(String name, IFileSystemAccess2 fsa, IGeneratorContext context)
 }

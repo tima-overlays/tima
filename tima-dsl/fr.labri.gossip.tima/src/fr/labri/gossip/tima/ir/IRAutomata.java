@@ -18,13 +18,13 @@ public class IRAutomata {
 		}
 		
 		public static class Unicast implements MessageTarget {
-			String target;
+			public String target;
 			public Unicast(String t) {
 				target = t;
 			}
 		}
 		public static class Internal implements MessageTarget {
-			Automaton target;
+			public Automaton target;
 			public Internal(Automaton t) {
 				target = t;
 			}
@@ -203,9 +203,9 @@ public class IRAutomata {
 		}
 	}
 	public static class MessageAction implements Action {
-		MessageTarget target;
-		Message message;
-		Map<String, String> arguments;
+		public MessageTarget target;
+		public Message message;
+		public Map<String, String> arguments;
 		
 		public MessageAction(MessageTarget t, Message msg, Map<String, String> args) {
 			target = t;

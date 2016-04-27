@@ -6,8 +6,12 @@ import org.eclipse.xtext.generator.IGeneratorContext
 
 class OmnetGenerator extends NativeGenerator {
 	
-	override def void generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
-		super.generateFiles(automata, name, fsa, context)
+	new(IRAutomata a) {
+		super(a)
+	}
+	
+	override def void generateFiles(String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
+		super.generateFiles(name, fsa, context)
 		
 		fsa.generateFile('''«name»/«name»_inet.ned''', omnet_inet_app_descriptor(name, name + "_inet"))
 		fsa.generateFile('''«name»/«name»_inet.h''', omnet_inet_app_header(name + "_inet"))

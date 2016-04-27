@@ -8,7 +8,10 @@ import java.util.Map
  * This class provides operations to name Derived Nodes
  */
 abstract class NamedNodeGenerator extends AutomataGenerator {
-	
+
+	new(IRAutomata a) {
+		super(a)
+	}	
 	
 	/**
 	 * Obtain name of referenced node

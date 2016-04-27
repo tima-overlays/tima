@@ -28,8 +28,8 @@ class DSLGenerator extends AbstractGenerator {
 		val automata = dslSemantic.toIR(resource)
 		val name = resource.allContents.filter(Header).toList.get(0).name
 
-		new DotGenerator().generateFiles(automata, name, fsa, context)		
-		new NativeGenerator().generateFiles(automata, name, fsa, context)
+		new DotGenerator(automata).generateFiles(name, fsa, context)		
+		new NativeGenerator(automata).generateFiles(name, fsa, context)
 		
 	}
 	

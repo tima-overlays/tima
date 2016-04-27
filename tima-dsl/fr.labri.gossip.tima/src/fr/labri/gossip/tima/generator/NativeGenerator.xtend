@@ -6,17 +6,20 @@ import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
 import fr.labri.gossip.tima.ir.IRAutomata.Automaton
 import fr.labri.gossip.tima.ir.IRAutomata.Node
-import java.util.HashMap
 import java.util.Map
 
 class NativeGenerator extends NamedNodeGenerator {
 	
-	override def void generateFiles(IRAutomata automata, String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
-		fsa.generateFile('''«name»/«name».cc''', native_version(name, automata))
-		fsa.generateFile('''«name»/«name».h''', native_version_header(name, automata))
+	new(IRAutomata a) {
+		super(a)
 	}
 	
-	def native_version_header(String name, IRAutomata automata) {
+	override def void generateFiles(String name, IFileSystemAccess2 fsa, IGeneratorContext context) {
+		fsa.generateFile('''«name»/«name».cc''', native_version(name))
+		fsa.generateFile('''«name»/«name».h''', native_version_header(name))
+	}
+	
+	def native_version_header(String name) {
 		/*
 		 *  This code is commented because it is not portable. It implies that a developer
 		 *  has to learn specific details to implement a protocol for a specific target.
@@ -118,7 +121,7 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	var Map<String, Map<IRAutomata.Node, String>> names = null
 	
-	def native_version(String project_name, IRAutomata automata) {
+	def native_version(String project_name) {
 		names = newHashMap(automata.automata.values.map[it.name -> it.names])
 		var counter = 0;
 	'''
