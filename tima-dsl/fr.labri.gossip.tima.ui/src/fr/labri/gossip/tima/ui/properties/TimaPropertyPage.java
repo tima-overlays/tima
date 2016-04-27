@@ -1,5 +1,11 @@
 package fr.labri.gossip.tima.ui.properties;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.swt.SWT;
@@ -15,18 +21,20 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.PropertyPage;
 
+import fr.labri.gossip.tima.Util;
+import fr.labri.gossip.tima.generator.Generators;
 import fr.labri.gossip.tima.ui.builder.TimaNature;
 
 public class TimaPropertyPage extends PropertyPage {
 
 	private static final String PATH_TITLE = "Path to OMNet++/INET application folders";
-//	private static final String OWNER_TITLE = "&Owner:";
-//	private static final String OWNER_PROPERTY = "OWNER";
-//	private static final String DEFAULT_OWNER = "John Doe";
+	public static final String TARGETS_TITLE = "Targets language to generate";
 
 	private Text ownerText;
 	
 	private String path;
+	private Set<String> targets = new HashSet<>();
+	private Map<String, Button> targetsButton = new HashMap<>();
 
 	/**
 	 * Constructor for SamplePropertyPage.
@@ -48,7 +56,6 @@ public class TimaPropertyPage extends PropertyPage {
 			path = getElement().getAdapter(org.eclipse.core.resources.IProject.class).getPersistentProperty(TimaNature.KEY_PATH_OMNET);
 			pathValueText.setText(path);
 		} catch (CoreException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		
@@ -58,7 +65,6 @@ public class TimaPropertyPage extends PropertyPage {
 			
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// TODO Auto-generated method stub
 				DirectoryDialog dialog = new DirectoryDialog(getShell(), SWT.OPEN);
 				dialog.setFilterPath(path);
 				path = dialog.open();
@@ -68,12 +74,31 @@ public class TimaPropertyPage extends PropertyPage {
 			
 			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
-				// TODO Auto-generated method stub
-				
 			}
 		});
 	}
 
+	private void addSecondSection(Composite parent) {
+		Composite composite = createDefaultComposite(parent);
+
+		//Label for path field
+		Label targetsLabel = new Label(composite, SWT.NONE);
+		targetsLabel.setText(TARGETS_TITLE);
+
+		try {
+			Util.unserialize(getElement().getAdapter(org.eclipse.core.resources.IProject.class).getPersistentProperty(TimaNature.KEY_TARGETS), targets);
+		} catch (CoreException e1) {
+		}
+
+		for (String generator: Generators.generators.keySet()) {
+			Button btn = new Button(composite, SWT.CHECK);
+			btn.setText(generator);
+			btn.setSelection(targets.contains(generator));
+			btn.pack();
+			targetsButton.put(generator, btn);
+		}
+	}
+	
 	/**
 	 * @see PreferencePage#createContents(Composite)
 	 */
@@ -88,7 +113,7 @@ public class TimaPropertyPage extends PropertyPage {
 
 		addFirstSection(composite);
 //		addSeparator(composite);
-//		addSecondSection(composite);
+		addSecondSection(composite);
 		return composite;
 	}
 
@@ -111,14 +136,24 @@ public class TimaPropertyPage extends PropertyPage {
 		// Populate the owner text field with the default value
 		path = TimaNature.DEFAULT_PATH_TO_OMNET;
 		ownerText.setText(TimaNature.DEFAULT_PATH_TO_OMNET);
+		
+		Util.unserialize(TimaNature.DEFAULT_TARGETS, targets);
+		for (Entry<String, Button> entry: targetsButton.entrySet()) {
+			entry.getValue().setSelection(targets.contains(entry.getKey()));
+		}
 	}
 	
 	public boolean performOk() {
-		// store the value in the owner text field
 		try {
-			getElement().getAdapter(org.eclipse.core.resources.IProject.class).setPersistentProperty(
-				TimaNature.KEY_PATH_OMNET,
-				path);
+			getElement().getAdapter(org.eclipse.core.resources.IProject.class).
+				setPersistentProperty(TimaNature.KEY_PATH_OMNET, path);
+			targets.clear();
+			for (Entry<String, Button> entry: targetsButton.entrySet()) {
+				if(entry.getValue().getSelection())
+					targets.add(entry.getKey());
+			}
+			getElement().getAdapter(org.eclipse.core.resources.IProject.class).
+				setPersistentProperty(TimaNature.KEY_TARGETS, Util.serialize(targets));
 		} catch (CoreException e) {
 			return false;
 		}

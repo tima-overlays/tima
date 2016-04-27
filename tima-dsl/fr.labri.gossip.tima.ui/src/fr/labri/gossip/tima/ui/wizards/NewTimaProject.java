@@ -1,76 +1,74 @@
 package fr.labri.gossip.tima.ui.wizards;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.net.URL;
 import java.util.Enumeration;
 
-import org.eclipse.core.internal.resources.ProjectDescription;
-import org.eclipse.core.resources.IBuildConfiguration;
-import org.eclipse.core.resources.ICommand;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jface.wizard.ProgressMonitorPart;
-import org.eclipse.ui.dialogs.WizardNewLinkPage;
+import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.ui.dialogs.WizardNewProjectCreationPage;
 import org.eclipse.ui.wizards.newresource.BasicNewResourceWizard;
-import org.eclipse.xtext.util.Arrays;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
+import fr.labri.gossip.tima.Util;
 import fr.labri.gossip.tima.ui.builder.TimaNature;
 
 
 public class NewTimaProject extends BasicNewResourceWizard {
 	
-	private WizardNewProjectCreationPage _pageOne;
-	private WizardSelectFolder _pageTwo;
-	private WizardSelectTemplate _pageThree;
+	private WizardNewProjectCreationPage _projectNamePage;
+	private WizardSelectTargets _targetsPage;
+	private WizardSelectFolder _omnetPage;
+	private WizardSelectTemplate _templatePage;
 
 	@Override
 	public void addPages() {
-		// TODO Auto-generated method stub
-		_pageOne = new WizardNewProjectCreationPage("Tima Project Wizard");
-	    _pageOne.setTitle("Tima Project");
-	    _pageOne.setDescription("Create a project to define network protocols using TIMA.");
-	    addPage(_pageOne);
+		_projectNamePage = new WizardNewProjectCreationPage("Tima Project Wizard");
+	    _projectNamePage.setTitle("Tima Project");
+	    _projectNamePage.setDescription("Create a project to define network protocols using TIMA.");
+	    addPage(_projectNamePage);
 	    
-	    _pageTwo = new WizardSelectFolder("Path to OMNET++/Inet");
-	    _pageTwo.setTitle("Path to OMNET++/Inet");
-	    _pageTwo.setDescription("You must have a working Omnet/inet installation. This path must point to 'applications' in INET's source");
-	    _pageTwo.setInitialPath(TimaNature.DEFAULT_PATH_TO_OMNET);
-	    addPage(_pageTwo);
+	    _targetsPage = new WizardSelectTargets("Target languages");
+	    _targetsPage.setTitle("Select target languages");
+	    _targetsPage.setDescription("Select target languages that will be generated for this project.");
+	    addPage(_targetsPage);
 	    
-	    _pageThree = new WizardSelectTemplate("Select template");
-	    _pageThree.setTitle("Select template to use");
-	    addPage(_pageThree);
+	    _omnetPage = new WizardSelectFolder("Path to OMNET++/Inet");
+	    _omnetPage.setTitle("Path to OMNET++/Inet");
+	    _omnetPage.setDescription("You must have a working Omnet/inet installation. This path must point to 'applications' in INET's source");
+	    _omnetPage.setInitialPath(TimaNature.DEFAULT_PATH_TO_OMNET);
+	    addPage(_omnetPage);
+	    
+	    _templatePage = new WizardSelectTemplate("Select template");
+	    _templatePage.setTitle("Select template to use");
+	    addPage(_templatePage);
 	} 
 
 	@Override
 	public boolean canFinish() {
-		return _pageTwo.isPageComplete() && _pageOne.canFlipToNextPage();
+		return _omnetPage.isPageComplete() && _projectNamePage.canFlipToNextPage();
 	}
 
 	@Override
 	public boolean performFinish() {
-		IProject project = _pageOne.getProjectHandle();
+		IProject project = _projectNamePage.getProjectHandle();
 		try {
-			IProjectDescription pd =  project.getWorkspace().newProjectDescription(_pageOne.getName());
+			IProjectDescription pd =  project.getWorkspace().newProjectDescription(_projectNamePage.getName());
 			project.create(pd, new NullProgressMonitor());
 			// open project
 			project.open(new NullProgressMonitor());
 			// set path to omnetpp
-			project.setPersistentProperty(TimaNature.KEY_PATH_OMNET, _pageTwo.getPath());
+			project.setPersistentProperty(TimaNature.KEY_PATH_OMNET, _omnetPage.getPath());
+			project.setPersistentProperty(TimaNature.KEY_TARGETS, Util.serialize(_targetsPage.getTargets()));
+
 			// add natures
 			pd = project.getDescription();
 			pd.setNatureIds(new String[] { "org.eclipse.xtext.ui.shared.xtextNature", TimaNature.NATURE_ID });
@@ -78,8 +76,8 @@ public class NewTimaProject extends BasicNewResourceWizard {
 			// create structure
 			IFolder folder = project.getFolder("src");
 			folder.create(true, true, new NullProgressMonitor());
-			if (_pageThree.useTemplate()) {
-				URL e = _pageThree.getTemplate();
+			if (_templatePage.useTemplate()) {
+				URL e = _templatePage.getTemplate();
 				Bundle bundle = FrameworkUtil.getBundle(getClass());
 				Enumeration<URL> l2 = bundle.findEntries(e.getPath(), "*", false);
 				while (l2!=null && l2.hasMoreElements()) {
@@ -90,7 +88,6 @@ public class NewTimaProject extends BasicNewResourceWizard {
 						dst.create(stream, true, new NullProgressMonitor());
 						stream.close();
 					} catch (IOException e1) {
-						// TODO Auto-generated catch block
 						e1.printStackTrace();
 					}
 				}
@@ -100,9 +97,22 @@ public class NewTimaProject extends BasicNewResourceWizard {
 				folder.getFile(String.format("%s.%s", project.getName(), "tima")).create(new ByteArrayInputStream(new byte[]{}), true, null);
 			}
 		} catch (CoreException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return true;
+	}
+	
+	@Override
+	public IWizardPage getNextPage(IWizardPage currentPage) {
+		if (currentPage == _targetsPage && !((WizardSelectTargets)currentPage).getTargets().contains("omnet")) // FIXME should be constant
+			return _templatePage;
+		return super.getNextPage(currentPage);
+	}
+	
+	@Override
+	public IWizardPage getPreviousPage(IWizardPage currentPage) {
+		if (currentPage == _templatePage && !((WizardSelectTargets)currentPage).getTargets().contains("omnet")) // FIXME should be constant
+			return _targetsPage;
+		return super.getPreviousPage(currentPage);
 	}
 }

@@ -229,5 +229,7 @@
 		<module>../fr.labri.gossip.tima.ui.tests</module>
 		<module>../fr.labri.gossip.tima.feature</module>
 		<module>../fr.labri.gossip.tima.updateSite</module>
+		<module>generator</module>
+		<module>fr.labri.gossip.tima.generator</module>
 	</modules>
 </project>

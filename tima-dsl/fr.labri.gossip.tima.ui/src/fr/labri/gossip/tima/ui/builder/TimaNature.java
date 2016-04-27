@@ -17,8 +17,10 @@ public class TimaNature implements IProjectNature {
 	private IProject project;
 	
 	public static final String DEFAULT_PATH_TO_OMNET = "/home/inti/work/app/omnetpp-4.6/samples/inet/src/inet/applications";
-	
 	public static final QualifiedName KEY_PATH_OMNET = new QualifiedName("Tima DSL", "Path To OMNet++/Inet");
+
+	public static final String DEFAULT_TARGETS = "";
+	public static final QualifiedName KEY_TARGETS = new QualifiedName("Tima DSL", "Generated Target");
 
 	/*
 	 * (non-Javadoc)
@@ -45,6 +47,9 @@ public class TimaNature implements IProjectNature {
 		if (project.getPersistentProperty(KEY_PATH_OMNET) == null) {
 			project.setPersistentProperty(KEY_PATH_OMNET, DEFAULT_PATH_TO_OMNET);
 		}
+		if (project.getPersistentProperty(KEY_TARGETS) == null) {
+			project.setPersistentProperty(KEY_TARGETS, DEFAULT_TARGETS);
+		}
 	}
 
 	/*
@@ -53,8 +58,10 @@ public class TimaNature implements IProjectNature {
 	 * @see org.eclipse.core.resources.IProjectNature#deconfigure()
 	 */
 	public void deconfigure() throws CoreException {
-		IProjectDescription description = getProject().getDescription();
 		project.setPersistentProperty(KEY_PATH_OMNET, null);
+		project.setPersistentProperty(KEY_TARGETS, null);
+		
+		IProjectDescription description = getProject().getDescription();
 		ICommand[] commands = description.getBuildSpec();
 		for (int i = 0; i < commands.length; ++i) {
 			if (commands[i].getBuilderName().equals(TimaBuilder.BUILDER_ID)) {

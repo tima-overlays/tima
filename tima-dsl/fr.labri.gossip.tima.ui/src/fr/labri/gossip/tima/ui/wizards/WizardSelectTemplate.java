@@ -1,32 +1,20 @@
 package fr.labri.gossip.tima.ui.wizards;
 
-import java.awt.Checkbox;
-import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.viewers.CheckboxCellEditor;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.DirectoryDialog;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
-import org.eclipse.swt.widgets.Text;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
-
-import fr.labri.gossip.tima.ui.builder.TimaNature;
 
 public class WizardSelectTemplate extends WizardPage {
 	

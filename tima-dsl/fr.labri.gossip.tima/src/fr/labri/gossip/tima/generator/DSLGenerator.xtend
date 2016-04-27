@@ -13,6 +13,10 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.generator.AbstractGenerator
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
+import fr.labri.gossip.tima.Util
+import org.eclipse.core.resources.ResourcesPlugin
+import org.eclipse.core.runtime.QualifiedName
+import java.util.HashSet
 
 /**
  * Generates code from your model files on save.
@@ -24,13 +28,21 @@ class DSLGenerator extends AbstractGenerator {
 	@Inject
 	extension DSLSemantic dslSemantic;
 
+	private val KEY_TARGETS = new QualifiedName("Tima DSL", "Generated Target"); // FIXME remove-me quickly
+
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		val automata = dslSemantic.toIR(resource)
 		val name = resource.allContents.filter(Header).toList.get(0).name
 
-		new DotGenerator(automata).generateFiles(name, fsa, context)		
-		new NativeGenerator(automata).generateFiles(name, fsa, context)
-		
+		val iresource = ResourcesPlugin.getWorkspace().getRoot().findMember(resource.URI.toPlatformString(true)); // FIXME more than ugly
+		val targets = Util.unserialize(iresource.project.getPersistentProperty(KEY_TARGETS), new HashSet<String>());
+		for (String target: targets)
+			try {
+				println('''Calling «target» generator''')
+				Generators.getGenerator(target, automata).generateFiles(name, fsa, context)
+			} catch(Exception e) {
+				System.err.println("Unable to call generator " + target)
+			}
 	}
 	
 	def actionStep(SimpleTimaAction<String> act_simple)

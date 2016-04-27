@@ -30,11 +30,12 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 	protected IProject[] build(int kind, Map<String, String> args,
 			IProgressMonitor monitor) throws CoreException {
 		
+		// FIXME check the properties to do things related for a backend
 		String destination = getProject().getPersistentProperty(TimaNature.KEY_PATH_OMNET);
 		if (!new File(destination).exists()) {
 			IMarker marker = getProject().createMarker(WRONG_OMNETPP_PATH);
 			marker.setAttribute(IMarker.MESSAGE, WRONG_OMNETPP_PATH);
-			marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
+			marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);
 			return null;
 //			throw new CoreException(new OperationStatus(IStatus.ERROR, "", 0, "Cannot create an INET applications without defined INET path. Add it to the properties (Tima Property Page).", null));
 		}

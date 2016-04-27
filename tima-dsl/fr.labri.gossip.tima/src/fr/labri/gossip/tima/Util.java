@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.util.Collection;
 
 import org.eclipse.core.resources.IFile;
 
@@ -51,5 +52,28 @@ public class Util {
 		}
 		in.close();
 		out.close();
+	}
+
+	public static String serialize(Collection<String> collection) {
+		StringBuffer buffer = new StringBuffer();
+		boolean first = true;
+		
+		for(String value: collection) {
+			if (first) {
+				first = false;
+			} else {
+				buffer.append(", ");
+			}
+			buffer.append(value);
+		}
+		return buffer.toString();
+	}
+	
+	public static <C extends Collection<String>> C unserialize(String serialized, C collection) {
+		collection.clear();
+		if (serialized == null) return collection;
+		for(String s: serialized.split(", "))
+			collection.add(s);
+		return collection;
 	}
 }
