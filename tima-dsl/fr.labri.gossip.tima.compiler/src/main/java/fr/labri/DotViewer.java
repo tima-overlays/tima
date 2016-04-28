@@ -9,7 +9,7 @@ import java.util.Map;
 public class DotViewer {
 	public final static String DOTTY_PATH = System.getProperty("dotty.path", "/usr/local/bin/dotty");
 	public final static String ENV_PATH = System.getProperty("system.path", "PATH");
-	
+
 	public static Process view(String dot) {
 		try {
 			ProcessBuilder pb = new ProcessBuilder(DOTTY_PATH, "-").redirectErrorStream(true);

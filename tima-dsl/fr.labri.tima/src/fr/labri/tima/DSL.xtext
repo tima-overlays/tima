@@ -1,0 +1,142 @@
+grammar fr.labri.tima.DSL with org.eclipse.xtext.common.Terminals
+
+generate dSL "http://www.labri.fr/tima/DSL"
+
+Model:
+	header=Header
+	messages+=MessageType*
+	automatons+=Automaton*
+;
+
+Header:
+	TK_MODULE name=ID
+	Summary?
+;
+
+fragment
+Summary : TK_SUMMARY summary=STRING;
+
+MessageType:
+	name=ID
+	('(' Fields ')')?
+	(':' FieldDeclaration)?
+;
+
+fragment
+FieldDeclaration:
+	declaredFields+=ID (',' declaredFields+=ID)*
+;
+
+Automaton:
+	TK_AUTOMATON name=ID
+	Summary?
+	states+=State* 
+;
+
+State:
+	StateModifiers TK_STATE name=ID Actions? transitions+=Transition*
+;
+
+fragment
+StateModifiers:
+	urgent?='urgent'? & initial?='initial'?;
+
+fragment
+Actions:
+	TK_ACTION actions+=Action+
+;
+
+Action returns Action:
+	 BuiltinAction |
+	 ExternalAction |
+	 MessageAction
+;
+
+fragment
+Fields:
+	fields+=Field (',' fields+=Field)*
+;
+
+Field:
+	name=ID ':' value=STRING
+;
+
+BuiltinAction returns Action:
+	{BuiltinAction} name=ID Fields?
+;
+
+ExternalAction returns Action:
+	{ExternalAction} name=EXTERNAL_NAME
+;
+
+MessageAction returns Action:
+	{MessageAction} '!' type=[MessageType] ('(' Fields? ')')? '@' target=MessageTarget
+;
+
+MessageTarget:
+	{BroadcastTarget} '*' |
+	{UnicastTarget} address=STRING |
+	{InternalTarget} automata=[Automaton]
+;
+
+Transition returns Transition:
+	TK_GUARD (
+		{TimeoutTransition} timeout?='timeout' |
+		{GuardedTransition} guard=Guard
+	) '=>' target=[State]
+	Actions?
+;
+
+Guard returns Guard:
+	(	MessageGuard|
+		BuiltinGuard |
+		ExternalGuard)
+	(within ?= 'within' value=INT unit=TimeUnit)?
+;
+
+ExternalGuard returns Guard:
+	{ExternalGuard} name=EXTERNAL_NAME
+;
+
+MessageGuard returns Guard:
+	{MessageGuard} '?'
+	msgPattern=MessagePattern
+;
+
+BuiltinGuard returns Guard:
+	{BuiltInGuard} name=ID Fields?
+;
+
+MessagePattern:
+	type=[MessageType]
+	('(' patterns+=PatternExpression ')')?
+;
+
+PatternExpression:
+	operands+=Expression Operator operands+=Expression |
+	Operator '(' Expressions ')'
+;
+
+fragment
+Operator: operator=(ID|'='|'<>'|'>='|'<='|'<'|'>');
+
+fragment
+Expressions:
+	operands+=Expression (',' operands+=Expression)*
+;
+
+Expression:
+	{FieldExpression} field = ID |
+	{StringExpression} value=STRING
+;
+
+enum TimeUnit: MSEC='msec' | SEC='sec';
+
+terminal TK_AUTOMATON: 'automaton';
+terminal TK_STATE: 'state';
+terminal TK_ACTION: 'do';
+terminal TK_GUARD: 'when';
+terminal TK_MODULE: 'module';
+terminal TK_SUMMARY: 'summary';
+
+terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';

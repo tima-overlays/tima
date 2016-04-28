@@ -3,12 +3,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-  		<groupId>fr.labri.gossip.tima</groupId>
-  		<artifactId>fr.labri.gossip.tima.parent</artifactId>
+  		<groupId>fr.labri.tima</groupId>
+  		<artifactId>fr.labri.tima.parent</artifactId>
   		<version>1.0.0-SNAPSHOT</version>
-  		<relativePath>../fr.labri.gossip.tima.parent</relativePath>
+  		<relativePath>../fr.labri.tima.parent</relativePath>
   	</parent>
-    <artifactId>fr.labri.gossip.tima.compiler</artifactId>
+    <artifactId>fr.labri.tima.compiler</artifactId>
     <packaging>jar</packaging>
 
     <name>tima-compiler</name>

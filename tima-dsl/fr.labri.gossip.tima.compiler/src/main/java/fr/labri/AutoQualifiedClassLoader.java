@@ -2,11 +2,11 @@ package fr.labri;
 
 public class AutoQualifiedClassLoader extends ClassLoader {
 	final String _prefix;
-	
+
 	public AutoQualifiedClassLoader(String prefix) {
 		this(prefix, getSystemClassLoader());
 	}
-	
+
 	public AutoQualifiedClassLoader(String prefix, ClassLoader parent) {
 		super(parent);
 		_prefix = prefix.endsWith(".") ? prefix : prefix + ".";

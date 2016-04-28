@@ -1,0 +1,35 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: fr.labri.tima
+Bundle-Vendor: LaBRI SE
+Bundle-Version: 1.0.0.qualifier
+Bundle-SymbolicName: fr.labri.tima; singleton:=true
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.xtext,
+ org.eclipse.xtext.xbase,
+ org.eclipse.equinox.common;bundle-version="3.5.0",
+ org.eclipse.emf.ecore,
+ org.eclipse.xtext.xbase.lib,
+ org.antlr.runtime,
+ org.eclipse.xtext.util,
+ org.eclipse.xtend.lib,
+ org.eclipse.emf.common,
+ org.eclipse.core.resources,
+ org.eclipse.core.runtime,
+ org.eclipse.ui,
+ org.eclipse.osgi
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Export-Package: fr.labri.tima.dSL,
+ fr.labri.tima.dSL.impl,
+ fr.labri.tima.dSL.util,
+ fr.labri.tima.generator,
+ fr.labri.tima.parser.antlr,
+ fr.labri.tima.parser.antlr.internal,
+ fr.labri.tima.scoping,
+ fr.labri.tima.serializer,
+ fr.labri.tima.services,
+ fr.labri.tima.validation,
+ fr.labri.tima,
+ fr.labri.tima.ir
+Import-Package: org.apache.log4j
+Bundle-ClassPath: .
