@@ -41,6 +41,13 @@ Workflow {
 			validator = {
 //				composedCheck = "org.eclipse.xtext.validation.NamesAreUniqueValidator"
 			}
+			
+			// Code generator
+			fragment = generator.GeneratorFragment2 {
+  				generateJavaMain = false
+  				generateMwe = false
+  				generateStub = true
+			}
 		}
 	}
 }

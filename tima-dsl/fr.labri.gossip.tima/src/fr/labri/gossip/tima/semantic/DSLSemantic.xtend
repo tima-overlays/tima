@@ -21,33 +21,12 @@ import fr.labri.gossip.tima.dSL.UnicastTarget
 import fr.labri.gossip.tima.ir.IRAutomata
 import fr.labri.gossip.tima.ir.IRAutomata.MessageFieldOperand
 import fr.labri.gossip.tima.ir.IRAutomata.StringOperand
-import fr.labri.tima.TimedAutomata
 import java.util.Iterator
 import java.util.Map
 import org.eclipse.emf.ecore.resource.Resource
 import fr.labri.gossip.tima.dSL.MessageType
 
 class DSLSemantic {
-
-	/** Convert the value of timeout to milliseconds */
-	public def toMilliseconds(Guard g) {
-		// FIXME: avoid using these horrible constants
-		if (g.value == 0)
-			TimedAutomata.INFINITY
-		else if (g.unit == TimeUnit.SEC)
-			g.value*1000
-		else if (g.unit == TimeUnit.MSEC)
-			g.value
-		else TimedAutomata.INFINITY
-	}
-	
-	/** Modifiers of a state */
-	def getModifiers(State s) {
-		var m = 0
-		m = m + (if (s.initial) TimedAutomata.INITIAL else 0)
-		m = m + (if (s.urgent) TimedAutomata.URGENT else 0)
-	}
-	
 	
 	def toIR(Resource resource) {
 		val builder = new IRBuilder

@@ -21,7 +21,6 @@ import org.osgi.framework.FrameworkUtil;
 import fr.labri.gossip.tima.Util;
 
 public class TimaBuilder extends IncrementalProjectBuilder {
-
 	
 	public static final String BUILDER_ID = "fr.labri.gossip.tima.ui.timabuilder";
 	private static final String WRONG_OMNETPP_PATH = "Wrong Path to OMNETPP/INET";
@@ -30,6 +29,12 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 	protected IProject[] build(int kind, Map<String, String> args,
 			IProgressMonitor monitor) throws CoreException {
 		
+		IFolder src_folder = getProject().getFolder("src");
+		IFolder folder = getProject().getFolder("src-gen");
+		if (!folder.exists()) {
+			return null;
+		}
+		
 		// FIXME check the properties to do things related for a backend
 		String destination = getProject().getPersistentProperty(TimaNature.KEY_PATH_OMNET);
 		if (!new File(destination).exists()) {
@@ -37,20 +42,10 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 			marker.setAttribute(IMarker.MESSAGE, WRONG_OMNETPP_PATH);
 			marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_WARNING);
 			return null;
-//			throw new CoreException(new OperationStatus(IStatus.ERROR, "", 0, "Cannot create an INET applications without defined INET path. Add it to the properties (Tima Property Page).", null));
 		}
-		IFolder src_folder = getProject().getFolder("src");
-		IFolder folder = getProject().getFolder("src-gen");
-		if (!folder.exists()) {
-//			IMarker marker = getProject().createMarker(UNDEFINED_OMNETPP_PATH);
-//			marker.setAttribute(IMarker.MESSAGE, WRONG_OMNETPP_PATH);
-//			marker.setAttribute(IMarker.SEVERITY, IMarker.SEVERITY_ERROR);
-			return null;
-//			throw new CoreException(new OperationStatus(IStatus.ERROR, "", 0, "Cannot create an INET applications without defined protocols", null));
-		}
+
 		final ArrayList<IFolder> apps = new ArrayList<IFolder>();
 		folder.accept(new IResourceVisitor() {
-			
 			@Override
 			public boolean visit(IResource resource) throws CoreException {
 				boolean isFolder = resource.getType() == IResource.FOLDER;
@@ -59,6 +54,7 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 				return true;
 			}
 		}, 1, false);
+		
 		for (IFolder f: apps) {
 			String name = f.getName();
 			IFile semantic_file =  src_folder.getFile(name + "_semantic.cc");
@@ -79,6 +75,7 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 					return true;
 				}
 			}, 1, false);
+			
 			// copy Tima runtime
 			Bundle bundle = FrameworkUtil.getBundle(getClass());
 			String pathToResources = "resources/code";
@@ -91,51 +88,4 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 		}
 		return null;
 	}
-	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.core.internal.events.InternalBuilder#build(int,
-	 *      java.util.Map, org.eclipse.core.runtime.IProgressMonitor)
-	 */
-//	protected IProject[] build(int kind, Map args, IProgressMonitor monitor)
-//			throws CoreException {
-//		if (kind == FULL_BUILD) {
-//			fullBuild(monitor);
-//		} else {
-//			IResourceDelta delta = getDelta(getProject());
-//			if (delta == null) {
-//				fullBuild(monitor);
-//			} else {
-//				incrementalBuild(delta, monitor);
-//			}
-//		}
-//		return null;
-//	}
-
-	@Override
-	protected void clean(IProgressMonitor monitor) throws CoreException {
-		
-		super.clean(monitor);
-	}
-	
-//	protected void clean(IProgressMonitor monitor) throws CoreException {
-//		// delete markers set and files created
-////		getProject().deleteMarkers(MARKER_TYPE, true, IResource.DEPTH_INFINITE);
-//	}
-
-	
-//	protected void fullBuild(final IProgressMonitor monitor)
-//			throws CoreException {
-//		try {
-//			getProject().accept(new SampleResourceVisitor());
-//		} catch (CoreException e) {
-//		}
-//	}
-//
-//	protected void incrementalBuild(IResourceDelta delta,
-//			IProgressMonitor monitor) throws CoreException {
-//		// the visitor does the work.
-//		delta.accept(new SampleDeltaVisitor());
-//	}
 }

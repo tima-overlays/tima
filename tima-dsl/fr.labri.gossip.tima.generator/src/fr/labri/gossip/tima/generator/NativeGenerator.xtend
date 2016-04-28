@@ -1,6 +1,6 @@
 package fr.labri.gossip.tima.generator
 
-import fr.labri.Utils
+import fr.labri.gossip.tima.Util
 import fr.labri.gossip.tima.ir.IRAutomata
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
@@ -189,7 +189,7 @@ class NativeGenerator extends NamedNodeGenerator {
 		static struct tima::Transition «get_name_for_transitions(automaton, node)»[] = {
 			«FOR t: node.transtions SEPARATOR ','»
 			{
-				.dst = «Utils.indexOf(t.target, automaton.nodes)»,
+				.dst = «Util.indexOf(t.target, automaton.nodes)»,
 				.action = «get_transition_action_name(automaton, node, counter)»,
 				.guard = «get_transition_guard_name(automaton, node, counter++)»
 «««				.msg_id = MESSAGES_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).messageID»_MSG_ID,
@@ -207,7 +207,7 @@ class NativeGenerator extends NamedNodeGenerator {
 		.name = "«names.get(automaton.name).get(node)»",
 «««		.urgent = «IF (MicroUtil.isUrgent(state))»true«ELSE»false«ENDIF»,
 		.timeout = «IF node.timeout ==-1»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // milliseconds
-		.timeout_destination = «IF node.timeout==-1»tima::null_destination«ELSE»«Utils.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
+		.timeout_destination = «IF node.timeout==-1»tima::null_destination«ELSE»«Util.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
 		.nr_transitions = «node.transtions.size», // without taking into account the default transition
 		.transitions = &«get_name_for_transitions(automaton, node)»,
 		.action = «node_action_name(automaton, node)»,
@@ -217,7 +217,7 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	static struct tima::Automaton «automaton.name» = {
 		.name = "«automaton.name»",
-		.initial = «Utils.indexOf(automaton.entryPoint, automaton.nodes)»,
+		.initial = «Util.indexOf(automaton.entryPoint, automaton.nodes)»,
 		.nr_states = «automaton.nodes.length»,
 		.states = &«get_automaton_structure_name(automaton)»
 	};

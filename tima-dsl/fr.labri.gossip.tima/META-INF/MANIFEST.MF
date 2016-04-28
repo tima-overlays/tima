@@ -19,17 +19,17 @@ Require-Bundle: org.eclipse.xtext,
  org.eclipse.ui,
  org.eclipse.osgi
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Export-Package: fr.labri.gossip.tima.generator,
- fr.labri.gossip.tima,
- fr.labri.gossip.tima.validation,
- fr.labri.gossip.tima.scoping,
- fr.labri.gossip.tima.dSL.util,
- fr.labri.gossip.tima.serializer,
- fr.labri.gossip.tima.parser.antlr,
+Export-Package: fr.labri.gossip.tima,
  fr.labri.gossip.tima.dSL,
  fr.labri.gossip.tima.dSL.impl,
+ fr.labri.gossip.tima.dSL.util,
+ fr.labri.gossip.tima.parser.antlr,
  fr.labri.gossip.tima.parser.antlr.internal,
- fr.labri.gossip.tima.services
+ fr.labri.gossip.tima.ir,
+ fr.labri.gossip.tima.scoping,
+ fr.labri.gossip.tima.serializer,
+ fr.labri.gossip.tima.services,
+ fr.labri.gossip.tima.validation,
+ fr.labri.gossip.tima.generator
 Import-Package: org.apache.log4j
-Bundle-ClassPath: .,
- lib/tima-0.0.1-SNAPSHOT.jar
+Bundle-ClassPath: .

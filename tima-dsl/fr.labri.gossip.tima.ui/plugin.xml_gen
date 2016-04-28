@@ -407,4 +407,52 @@
 			type="text">
 		</fileTypes>
 	</extension>
+	<extension point="org.eclipse.xtext.builder.participant">
+		<participant
+			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.builder.IXtextBuilderParticipant"
+			fileExtensions="tima"/>
+	</extension>
+	<extension point="org.eclipse.ui.preferencePages">
+		<page
+			category="fr.labri.gossip.tima.DSL"
+			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.builder.preferences.BuilderPreferencePage"
+			id="fr.labri.gossip.tima.DSL.compiler.preferencePage"
+			name="Compiler">
+			<keywordReference id="fr.labri.gossip.tima.ui.keyword_DSL"/>
+		</page>
+	</extension>
+	<extension point="org.eclipse.ui.propertyPages">
+		<page
+			category="fr.labri.gossip.tima.DSL"
+			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.builder.preferences.BuilderPreferencePage"
+			id="fr.labri.gossip.tima.DSL.compiler.propertyPage"
+			name="Compiler">
+			<keywordReference id="fr.labri.gossip.tima.ui.keyword_DSL"/>
+			<enabledWhen>
+				<adapt type="org.eclipse.core.resources.IProject"/>
+			</enabledWhen>
+			<filter name="projectNature" value="org.eclipse.xtext.ui.shared.xtextNature"/>
+		</page>
+	</extension>
+	<extension point="org.eclipse.ui.menus">
+		<menuContribution locationURI="popup:#TextEditorContext?after=xtext.ui.openDeclaration">
+			<command
+				commandId="org.eclipse.xtext.ui.OpenGeneratedFileCommand"
+				id="fr.labri.gossip.tima.DSL.OpenGeneratedCode"
+				style="push">
+				<visibleWhen checkEnabled="false">
+					<reference definitionId="fr.labri.gossip.tima.DSL.Editor.opened" />
+				</visibleWhen>
+			</command>
+		</menuContribution>
+	</extension>
+	<extension point="org.eclipse.ui.handlers">
+		<handler
+			class="fr.labri.gossip.tima.ui.DSLExecutableExtensionFactory:org.eclipse.xtext.ui.generator.trace.OpenGeneratedFileHandler"
+			commandId="org.eclipse.xtext.ui.OpenGeneratedFileCommand">
+			<activeWhen>
+				<reference definitionId="fr.labri.gossip.tima.DSL.Editor.opened" />
+			</activeWhen>
+		</handler>
+	</extension>
 </plugin>
