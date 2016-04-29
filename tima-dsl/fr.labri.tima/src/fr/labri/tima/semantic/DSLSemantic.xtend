@@ -26,7 +26,7 @@ import java.util.Map
 import org.eclipse.emf.ecore.resource.Resource
 import fr.labri.tima.dSL.MessageType
 
-class DSLSemantic {
+public class DSLSemantic {
 
 	def toIR(Resource resource) {
 		val builder = new IRBuilder
