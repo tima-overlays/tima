@@ -50,6 +50,13 @@ Bundle-ClassPath: .,
  jdi.jar,
  jdimodel.jar
 Bundle-Activator: fr.labri.tima.generator.ui.Activator
-Export-Package: fr.labri.tima.ui.builder;uses:="org.eclipse.core.runtime,org.eclipse.core.resources,org.eclipse.core.commands",
+Export-Package: fr.labri.tima.generator.ui;
+  uses:="org.osgi.framework,
+   com.google.inject,
+   org.eclipse.core.resources,
+   org.eclipse.xtext.ui.guice,
+   org.eclipse.ui.plugin,
+   org.eclipse.xtext.service",
+ fr.labri.tima.ui.builder;uses:="org.eclipse.core.runtime,org.eclipse.core.resources,org.eclipse.core.commands",
  fr.labri.tima.ui.properties;uses:="org.eclipse.swt.widgets,org.eclipse.ui.dialogs",
  fr.labri.tima.ui.wizards;uses:="org.eclipse.swt.widgets,org.eclipse.jface.wizard,org.eclipse.ui.wizards.newresource"
