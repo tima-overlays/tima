@@ -22,7 +22,7 @@ import fr.labri.tima.Util;
 
 public class TimaBuilder extends IncrementalProjectBuilder {
 	
-	public static final String BUILDER_ID = "fr.labri.tima.ui.timabuilder";
+	public static final String BUILDER_ID = "fr.labri.tima.generator.ui.timabuilder";
 	private static final String WRONG_OMNETPP_PATH = "Wrong Path to OMNETPP/INET";
 
 	@Override

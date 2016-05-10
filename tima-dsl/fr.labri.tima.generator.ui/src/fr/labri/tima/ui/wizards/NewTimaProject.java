@@ -10,7 +10,10 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.ui.dialogs.WizardNewProjectCreationPage;
@@ -71,8 +74,20 @@ public class NewTimaProject extends BasicNewResourceWizard {
 
 			// add nature
 			pd = project.getDescription();
-			pd.setNatureIds(new String[] { "org.eclipse.xtext.ui.shared.xtextNature", TimaNature.NATURE_ID });
-			project.setDescription(pd, new NullProgressMonitor());
+			
+			// validate the natures
+			IWorkspace workspace = ResourcesPlugin.getWorkspace();
+			String[] newNatures = new String[] { "org.eclipse.xtext.ui.shared.xtextNature", TimaNature.NATURE_ID };
+			IStatus status = workspace.validateNatureSet(newNatures);
+			// only apply new nature, if the status is ok
+			if (status.getCode() == IStatus.OK) {
+			  pd.setNatureIds(newNatures);
+			  project.setDescription(pd, new NullProgressMonitor());
+			} 
+			else {
+				return false;
+			}
+
 			// create structure
 			IFolder folder = project.getFolder("src");
 			folder.create(true, true, new NullProgressMonitor());

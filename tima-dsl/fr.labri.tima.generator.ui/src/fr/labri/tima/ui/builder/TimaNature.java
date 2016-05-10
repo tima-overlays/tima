@@ -12,7 +12,7 @@ public class TimaNature implements IProjectNature {
 	/**
 	 * ID of this project nature
 	 */
-	public static final String NATURE_ID = "fr.labri.tima.ui.timaNature";
+	public static final String NATURE_ID = "fr.labri.tima.generator.ui.timaNature";
 
 	private IProject project;
 	
