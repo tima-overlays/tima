@@ -12,36 +12,36 @@ rumor
 
 automaton Main
 	initial state w
-		on ? hello within 1000 msec => s_remembering_hello
-		on ? rumor within 1000 msec => s_taking_note_of_rumor
-		on ? new_rumor_time within 1000 msec => s_new_gossiping
-		on ? hello_time within 1000 msec => w
-		do `C::greet`
-		on ? gossip_time within 500 msec => s_gossiping
-		on timeout => s_loop
+		when ? hello within 1000 msec => s_remembering_hello
+		when ? rumor within 1000 msec => s_taking_note_of_rumor
+		when ? new_rumor_time within 1000 msec => s_new_gossiping
+		when ? hello_time within 1000 msec => w
+			do `C::greet`
+		when ? gossip_time within 500 msec => s_gossiping
+		when timeout => s_loop
 		
 	urgent state s_loop
-		on `C::True` => w
+		when true => w
 		
 	urgent state s_gossiping
 		when `C::no_rumors_to_spread` within 1 sec => w
-		when `C::True` => w
+		when true => w
 		do `C::gossip`
 		
 	urgent state s_new_gossiping 
 		do
 			`C::spread_new_rumor`
-		when `C::True` => w 
+		when true => w 
 		
 	urgent state s_remembering_hello
-		action
+		do
 			`C::store_sender`
-		on `C::True` => w
+		when true => w
 		
 	urgent state s_taking_note_of_rumor
-		action
+		do
 			`C::store_rumor`
-		on `C::True` => w
+		when true => w
 	
 /**
  * This is a ticker. It regularly sends a message to the Main automaton.
@@ -49,14 +49,14 @@ automaton Main
  */
 automaton ticker_gossip 
 	initial state s0
-		on `C::False` within 700 msec => s2
-		on timeout => s1
+		when false within 700 msec => s2
+		when timeout => s1
 	urgent state s1
 		do
 			! gossip_time @ Main
-		on `C::True` => s0
+		when true => s0
 	state s2
-		on `C::False` => s0
+		when false => s0
 		
 		
 /**
@@ -65,14 +65,14 @@ automaton ticker_gossip
  */
 automaton ticker_newgossip
 	initial state s0
-		on `C::False` within 5000 msec => s2
-		on timeout => s1
+		when false within 5000 msec => s2
+		when timeout => s1
 	urgent state s1
 		do
 			! new_rumor_time @ Main
-		on `C::True` => s0
+		when true => s0
 	state s2
-		on `C::False` => s0 
+		when false => s0 
 		
 /**
  * This is a ticker. It regularly sends a message to the Main automaton.
@@ -83,11 +83,11 @@ automaton ticker_newgossip
  */
 automaton ticker_hello
 	initial state s0
-		on `C::False` within 1500 msec => s2
-		on timeout => s1
+		when false within 1500 msec => s2
+		when timeout => s1
 	urgent state s1
 		do
 			! hello_time @ Main
-		on `C::True` => s0
+		when true => s0
 	state s2
-		on `C::False` => s0
+		when false => s0
