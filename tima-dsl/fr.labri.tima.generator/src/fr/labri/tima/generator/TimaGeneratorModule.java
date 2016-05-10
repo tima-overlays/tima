@@ -3,10 +3,10 @@ package fr.labri.tima.generator;
 import org.eclipse.xtext.generator.IGenerator2;
 import org.eclipse.xtext.service.AbstractGenericModule;
 
-import fr.labri.tima.generator.DSLGenerator;
+import fr.labri.tima.generator.DSLGenerator2;
 
 public class TimaGeneratorModule extends AbstractGenericModule {
 	public Class<? extends IGenerator2> bindIGenerator2() {
-		return DSLGenerator.class;
+		return DSLGenerator2.class;
 	}
 }

@@ -20,7 +20,7 @@ import fr.labri.tima.Util
  * 
  * See https://www.eclipse.org/Xtext/documentation/303_runtime_concepts.html#code-generation
  */
-class DSLGenerator extends AbstractGenerator {
+class DSLGenerator2 extends AbstractGenerator {
 
 	@Inject
 	extension DSLSemantic dslSemantic;
