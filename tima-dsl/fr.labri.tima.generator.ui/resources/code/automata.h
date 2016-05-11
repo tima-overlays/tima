@@ -13,6 +13,8 @@ const int32_t never_timeout = -1;
 
 struct Transition;
 
+typedef void (*StateAction_t)(std::string&, TimaNativeContext*);
+
 struct State {
   std::string name;
   bool urgent;
@@ -21,19 +23,20 @@ struct State {
   uint32_t nr_transitions;
   struct Transition* transitions;
 
-  void (*pre_action)(std::string&, TimaNativeContext*);
-  void (*post_action)(std::string&, TimaNativeContext*);
-  void (*each_action)(std::string&, TimaNativeContext*);
+  StateAction_t action;
 };
+
+typedef bool (*TransitionGuard_t)(const tima::TimaNativeContext*);
+typedef void (*TransitionAction_t)(const tima::TimaNativeContext*);
 
 struct Transition {
   uint32_t dst; // destination state
-  bool (*guard)(std::string&, TimaNativeContext*);
+  TransitionGuard_t guard;
+  TransitionAction_t action;
   int msg_id;
-  int src_id;
 };
 
-struct Automata {
+struct Automaton {
   std::string name;
 
   uint32_t initial;

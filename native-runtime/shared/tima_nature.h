@@ -29,8 +29,8 @@ public:
  virtual Message deserialize(int msg_id, const std::string& msg);
 
 
- void print_automata(std::vector<tima::Automata*>& automata);
- std::vector<tima::Automata*> build_stl_version();
+ void print_automata(std::vector<tima::Automaton*>& automata);
+ std::vector<tima::Automaton*> build_stl_version();
 
  AbstractTimaNature(std::string device_name) : device_name(device_name) {}
 

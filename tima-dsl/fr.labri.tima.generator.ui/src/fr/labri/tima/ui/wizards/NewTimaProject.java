@@ -108,7 +108,7 @@ public class NewTimaProject extends BasicNewResourceWizard {
 				}
 			}
 			else {
-				folder.getFile(String.format("%s.%s", project.getName(), "cc")).create(new ByteArrayInputStream(new byte[]{}), true, null);
+				folder.getFile(String.format("%s_semantic.%s", project.getName(), "cc")).create(new ByteArrayInputStream(new byte[]{}), true, null);
 				folder.getFile(String.format("%s.%s", project.getName(), "tima")).create(new ByteArrayInputStream(new byte[]{}), true, null);
 			}
 		} catch (CoreException e) {

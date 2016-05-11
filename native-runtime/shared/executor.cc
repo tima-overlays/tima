@@ -167,7 +167,7 @@ tima::Executor::global_deadline()
 }
 
 uint32_t
-tima::Executor::deadline(struct tima::Automata* a, int state_idx)
+tima::Executor::deadline(struct tima::Automaton* a, int state_idx)
 {
   return a->states[state_idx].timeout;
 }

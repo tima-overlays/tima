@@ -7,6 +7,7 @@ import org.eclipse.xtext.generator.IGeneratorContext
 import fr.labri.tima.ir.IRAutomata.Automaton
 import fr.labri.tima.ir.IRAutomata.Node
 import java.util.Map
+import fr.labri.tima.dSL.MessageGuard
 
 class NativeGenerator extends NamedNodeGenerator {
 	
@@ -145,32 +146,39 @@ class NativeGenerator extends NamedNodeGenerator {
 	/** Automaton «automaton.name» */
 	
 	«FOR node: automaton.nodes SEPARATOR '\n'»
+		«{counter = 0; null}»
 		
 		static void
 		«node_action_name(automaton, node)»(std::string& name, tima::TimaNativeContext* ctx)
 		{
+			«IF node.actions.length > 0»
 			tima::TimaNativeContext* ctx2;
+			«ENDIF»
 			«FOR act : node.actions»
-			«act.IR2Target»;
+«««			«act.IR2Target»;
 			«ENDFOR»
 		}
 		
 		«FOR t: node.transtions SEPARATOR '\n'»
+		
 		static void
-		«get_transition_action_name(automaton, node, counter)»()
+		«get_transition_action_name(automaton, node, counter)»(const tima::TimaNativeContext* ctx)
 		{
 			/*transition from «names.get(automaton.name).get(node)» to «names.get(automaton.name).get(t.target)» */
+			«IF t.actions.length > 0»
 			tima::TimaNativeContext* ctx2;
-			«FOR act : t.getActions()»
-			«act.IR2Target»;
+			«ENDIF»
+			«FOR act : t.actions»
+«««			«act.IR2Target»;
 			«ENDFOR»
 		}
 		
 		static bool
-		«get_transition_guard_name(automaton, node, counter++)»()
+		«get_transition_guard_name(automaton, node, counter++)»(const tima::TimaNativeContext* ctx)
 		{
 			tima::TimaNativeContext* ctx2;
-			return «t.guard.IR2Target»;
+«««			return «t.guard.IR2Target»;
+			return false;
 		}
 		
 		«ENDFOR»
@@ -186,12 +194,17 @@ class NativeGenerator extends NamedNodeGenerator {
 		«ENDIF»
 		
 		«{counter = 0; null}»
-		static struct tima::Transition «get_name_for_transitions(automaton, node)»[] = {
+		static const struct tima::Transition «get_name_for_transitions(automaton, node)»[] = {
 			«FOR t: node.transtions SEPARATOR ','»
 			{
-				.dst = «Util.indexOf(t.target, automaton.nodes)»,
-				.action = «get_transition_action_name(automaton, node, counter)»,
-				.guard = «get_transition_guard_name(automaton, node, counter++)»
+				dst : «Util.indexOf(t.target, automaton.nodes)»,
+				guard : «get_transition_guard_name(automaton, node, counter)»,
+				action : «get_transition_action_name(automaton, node, counter++)»,
+				«IF t.guard instanceof MessageGuard»
+				msg_id : 0
+				«ELSE»
+				msg_id : 0
+				«ENDIF»
 «««				.msg_id = MESSAGES_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).messageID»_MSG_ID,
 «««				.src_id = AUTOMATA_ID::«(a.value.getPredicate(state, follower) as TimaGuard<?>).sourceID»_AUTOMATON_ID
 			}
@@ -204,29 +217,30 @@ class NativeGenerator extends NamedNodeGenerator {
 	static struct tima::State «get_automaton_structure_name(automaton)»[] = {
 		«FOR node: automaton.nodes SEPARATOR ','»
 		{
-		.name = "«names.get(automaton.name).get(node)»",
-«««		.urgent = «IF (MicroUtil.isUrgent(state))»true«ELSE»false«ENDIF»,
-		.timeout = «IF node.timeout ==-1»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // millisecond
-		.timeout_destination = «IF node.timeout==-1»tima::null_destination«ELSE»«Util.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
-		.nr_transitions = «node.transtions.size», // without taking into account the default transition
-		.transitions = &«get_name_for_transitions(automaton, node)»,
-		.action = «node_action_name(automaton, node)»,
+			name : "«names.get(automaton.name).get(node)»",
+			urgent : false,
+	«««		.urgent = «IF (MicroUtil.isUrgent(state))»true«ELSE»false«ENDIF»,
+			timeout : «IF node.timeout ==-1»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // millisecond
+			timeout_destination : «IF node.timeout==-1»tima::null_destination«ELSE»«Util.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
+			nr_transitions : «node.transtions.size», // without taking into account the default transition
+			transitions : (struct tima::Transition*)&«get_name_for_transitions(automaton, node)»,
+			action : «node_action_name(automaton, node)»,
 		}
 		«ENDFOR»
 	};
 	
 	static struct tima::Automaton «automaton.name» = {
-		.name = "«automaton.name»",
-		.initial = «Util.indexOf(automaton.entryPoint, automaton.nodes)»,
-		.nr_states = «automaton.nodes.length»,
-		.states = &«get_automaton_structure_name(automaton)»
+		name : "«automaton.name»",
+		initial : «Util.indexOf(automaton.entryPoint, automaton.nodes)»,
+		nr_states : «automaton.nodes.length»,
+		states : (struct tima::State*)&«get_automaton_structure_name(automaton)»
 	};
 	
 	«ENDFOR»
 	
 	static const uint32_t nr_automaton = «automata.automata.size»;
 	
-	static struct tima::Automata* automatons [] = {
+	static struct tima::Automaton* automatons [] = {
 		«FOR name : automata.automata.keySet SEPARATOR ','»
 		&«name»
 		«ENDFOR»
@@ -235,10 +249,10 @@ class NativeGenerator extends NamedNodeGenerator {
 	uint32_t
 	get_nr_automatas()
 	{
-		return nr_automatas;
+		return nr_automaton;
 	}
 	
-	struct tima::Automata&
+	struct tima::Automaton&
 	get_automata(uint32_t idx)
 	{
 		return *automatons[idx];
