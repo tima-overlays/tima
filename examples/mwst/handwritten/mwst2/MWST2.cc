@@ -38,6 +38,7 @@ enum ControlMessageTypes {
     DISPLAY_TIME,
     TEST_DELAY,
     CONNECT_DELAY,
+    INITIATE_DEALY,
     I_REPORT,
     I_TEST,
     I_CONNECT
@@ -149,6 +150,13 @@ MWST2::handleMessageWhenUp(cMessage *msg)
                     cancelAndDelete(msg);
                 }
                 break;
+            case INITIATE_DEALY:
+                {
+                    Initiate* t = check_and_cast_nullable<Initiate*>(msg);
+                    send_initiate(t->getFragmentId(), t->getSender(), true);
+                    cancelAndDelete(msg);
+                }
+                break;
             default:
                 break;
         }
@@ -158,22 +166,18 @@ MWST2::handleMessageWhenUp(cMessage *msg)
         cPacket* pkt = PK(msg);
 
         bool done = processMessage<Hello>(pkt, &inet::MWST2::on_hello_received);
-        done = done || processMessage<Connect>(pkt, &inet::MWST2::on_connect_received);
-        done = done || processMessage<Initiate>(pkt, &inet::MWST2::on_initiate_received);
-        done = done || processMessage<Test>(pkt, &inet::MWST2::on_test_received);
-        done = done || processMessage<Accept>(pkt, &inet::MWST2::on_accept_received);
-        done = done || processMessage<Reject>(pkt, &inet::MWST2::on_reject_received);
-        done = done || processMessage<Report>(pkt, &inet::MWST2::on_report_received);
-        done = done || processMessage<ChangeRoot>(pkt, &inet::MWST2::on_change_root_received);
+        if (!done) {
+            done = done || processMessage<Connect>(pkt, &inet::MWST2::on_connect_received);
+            done = done || processMessage<Initiate>(pkt, &inet::MWST2::on_initiate_received);
+            done = done || processMessage<Test>(pkt, &inet::MWST2::on_test_received);
+            done = done || processMessage<Accept>(pkt, &inet::MWST2::on_accept_received);
+            done = done || processMessage<Reject>(pkt, &inet::MWST2::on_reject_received);
+            done = done || processMessage<Report>(pkt, &inet::MWST2::on_report_received);
+            done = done || processMessage<ChangeRoot>(pkt, &inet::MWST2::on_change_root_received);
 
-
-//        delete msg;
-
-        print_state();
-
-//        if (!done) {
-            delete pkt;
-//        }
+            print_state();
+        }
+        delete pkt;
 
     }
 
@@ -364,12 +368,20 @@ MWST2::send_connect(const std::string& j, bool now)
 
 
 void
-MWST2::send_initiate(const std::string& fragmentId, const std::string& j)
+MWST2::send_initiate(const std::string& fragmentId, const std::string& j, bool now)
 {
     Initiate* pkt = new Initiate("initiate");
     pkt->setSender(myself.c_str());
     pkt->setFragmentId(fragmentId.c_str());
-    socket.sendTo(pkt, addresses[j], destinationPort);
+    if (now) {
+        EV_TRACE << "Sending initiate to " << j << "(" << addresses[j] <<  ") \n";
+        socket.sendTo(pkt, addresses[j], destinationPort);
+    }
+    else {
+        pkt->setKind(INITIATE_DEALY);
+        pkt->setSender(j.c_str());
+        scheduleAt(simTime() + par("delay_test").doubleValue(), pkt);
+    }
 }
 
 void
@@ -461,15 +473,18 @@ MWST2::initiate(const std::string& new_fragment_name)
     best_edge = nil;
 
 
-    std::for_each(edges.begin(), edges.end(), [&] (std::string& i) {
+    for (auto i : edges) {
         if (parent != i &&
                 SE[i] == EdgeStates::Branch) {
 
-            send_initiate( FN , i);
+            send_initiate( FN , i, false);
             find_count++; // count of children being tested
+            finding.insert(i);
         }
-    });
+    }
 
+    // TODO: we should only send test messages once we have received the response to all initiate message
+    // For instance, in the on_report handler
     test();
 }
 
@@ -563,13 +578,13 @@ void
 MWST2::on_accept_received(const Accept* m)
 {
     std::string j = m->getSender();
-    EV_TRACE << "Accept Received from " << j << " best-w: " << bw << " w[j]: " << w[j] << " find_count: " << find_count<< " in_branch: " << parent <<  "\n";
-    print_state();
+        print_state();
 
     if (w[j] < bw) {
         best_edge = j;
         bw = w[j];
     }
+    EV_TRACE << "Accept Received from " << j << " best-w: " << bw << "(" << best_edge << ")" << " w[j]: " << w[j] << " find_count: " << find_count<< " in_branch: " << parent <<  "\n";
     test(); // TODO: try this change in the previous version
 }
 
@@ -592,6 +607,12 @@ void
 MWST2::report()
 {
     EV_INFO << "REPORT " << parent << " " << find_count << " " << test_edge <<  "\n";
+    if (find_count) {
+        EV_TRACE << "\t\tSome nodes still missing\n";
+        for (auto n: finding) {
+            EV_TRACE << "\t\t\t" << n << "\n";
+        }
+    }
     if (parent != nil) {
         if (find_count == 0 && test_edge == nil) {
             tested.clear();
@@ -623,14 +644,16 @@ MWST2::on_report_received(const Report* m)
     int ww = m->getWeight();
     std::string j = m->getSender();
 
-    EV_TRACE << "report Received from " << j << " with w:" << ww << " and bw: " << bw << " parent: " << parent <<  "\n";
     print_state();
 
     find_count --;
+    finding.erase(j);
     if (ww < bw) {
         bw = ww;
         best_edge = j;
     }
+
+    EV_TRACE << "report Received from " << j << " with w:" << ww << " and bw: " << "(" << best_edge << ")" << bw << " parent: " << parent <<  "\n";
     report();
 }
 

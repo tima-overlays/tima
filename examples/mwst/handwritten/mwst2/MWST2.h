@@ -98,6 +98,9 @@ class INET_API MWST2 : public ApplicationBase
     // find-count
     int find_count;
 
+    // set of nodes were I am finding
+    std::set< std::string > finding;
+
     // list of nodes trying to connect with me
     std::set<std::string> requesting;
 
@@ -114,7 +117,7 @@ class INET_API MWST2 : public ApplicationBase
 
 
     void send_connect(const std::string& j, bool now);
-    void send_initiate(const std::string& fragmentId, const std::string& j);
+    void send_initiate(const std::string& fragmentId, const std::string& j, bool now);
     void send_test(const std::string& framentId, const std::string& j, bool now);
 
     std::string create_unique_name(const std::string& a1, const std::string& a2);
