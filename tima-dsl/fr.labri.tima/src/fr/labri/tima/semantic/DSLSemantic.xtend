@@ -114,6 +114,7 @@ public class DSLSemantic {
 				} else {
 					val timeoutTarget = state.transitions.findFirst[it instanceof TimeoutTransition].target
 					// FIXME, timeout should have associated actions
+					node.addTimeoutActions(state.transitions.findFirst[it instanceof TimeoutTransition].actions.map[newAction(it)]);
 					node.timeoutTarget = states.get(timeoutTarget)
 				}
 			}
@@ -123,7 +124,9 @@ public class DSLSemantic {
 			val g = t.guard
 			val guard = switch g {
 				ExternalGuard: {
-					new IRAutomata.ExternalGuard(g.name)
+					new IRAutomata.ExternalGuard(g.name, newHashMap(g.fields.map[
+						it.name -> it.value
+					]))
 
 				}
 				BuiltInGuard: {
@@ -146,7 +149,9 @@ public class DSLSemantic {
 
 		def IRAutomata.Action newAction(Action action) {
 			switch action {
-				ExternalAction:	new IRAutomata.ExternalAction(action.name)
+				ExternalAction:	new IRAutomata.ExternalAction(action.name, newHashMap(action.fields.map[
+						it.name -> it.value
+					]))
 				BuiltinAction: new IRAutomata.BuiltinAction(action.name, newHashMap(action.fields.map[it.name -> it.value]))
 				MessageAction: new IRAutomata.MessageAction(
 					newMessageTarget(action),

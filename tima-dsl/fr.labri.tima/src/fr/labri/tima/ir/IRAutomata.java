@@ -55,14 +55,24 @@ public class IRAutomata {
 	public static abstract class Node {
 		public int timeout;
 		public Node timeoutTarget;
+		public List<Action> timeoutActions = new ArrayList<>();
+		
 		public List<Transition> transtions = new ArrayList<>();
 		
 		public List<Action> actions  = new ArrayList<>();
 
 		abstract public NamedNode getReferenceNode() ;
 
-		public void addTransition(Transition transition) {
+		public void addTransition(Transition transition) { 
 			transtions.add(transition);
+		}
+		
+		public void addTimeoutActions(List<Action> a) {
+			timeoutActions.addAll(a);
+		}
+		
+		public List<Action> getTimeoutActions() {
+			return timeoutActions;
 		}
 	}
 	
@@ -126,6 +136,10 @@ public class IRAutomata {
 		public String getName() {
 			return name;
 		}
+		
+		public List<String> getFields() {
+			return fields;
+		}
 	}
 	
 	public static class RemoteMessage extends Message {
@@ -173,14 +187,22 @@ public class IRAutomata {
 		}
 	}
 	abstract static private class ExternalElement {
-		public ExternalElement(String name) {
+		
+		Map<String, String> arguments;
+		
+		public ExternalElement(String name, Map<String, String> args) {
 			externalName = name;
+			arguments = args;
 		}
 
 		String externalName;
 		
 		public String getExternalName() {
 			return externalName;
+		}
+		
+		public Map<String, String> getArguments() {
+			return arguments;
 		}
 	}
 	public static class BuiltinGuard extends BuiltinElement implements Guard {
@@ -194,13 +216,13 @@ public class IRAutomata {
 		}
 	}
 	public static class ExternalGuard extends ExternalElement implements Guard {
-		public ExternalGuard(String name) {
-			super(name);
+		public ExternalGuard(String name, Map<String, String> args) {
+			super(name, args);
 		}
 	}
 	public static class ExternalAction extends ExternalElement implements Action {
-		public ExternalAction(String name) {
-			super(name);
+		public ExternalAction(String name, Map<String, String> args) {
+			super(name, args);
 		}
 	}
 	public static class MessageAction implements Action {
