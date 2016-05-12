@@ -100,7 +100,7 @@ tima::Executor::step(uint32_t milliseconds, bool only_urgents)
     if (only_urgents && !state->urgent) {
       continue;
     }
-    bool message_received = false;
+    bool msg_received = false;
     Message _the_message;
     // find valid transition
     uint i = 0 ;
@@ -112,8 +112,9 @@ tima::Executor::step(uint32_t milliseconds, bool only_urgents)
         delete ctx;
       }
       else {
-        message_received = true;
-        auto ctx = new MailboxContext(state->transitions[i].msg_id, state->transitions[i].src_id, nature->device_name, user_data);
+        msg_received = true;
+				/* TODO: fix this shit, the source */
+        auto ctx = new MailboxContext(state->transitions[i].msg_id, nature->device_name, user_data);
         found = state->transitions[i].guard(a->name, ctx);
         _the_message = ctx->read_message;
         delete ctx;
@@ -143,9 +144,9 @@ tima::Executor::step(uint32_t milliseconds, bool only_urgents)
     }
     if (must_execute_action) {
       timeouts[idx] = deadline(a, current_states[idx]);
-      auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(state->transitions[i].msg_id, state->transitions[i].src_id), message_received, nature);
+      auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(state->transitions[i].msg_id), msg_received, nature);
       ctx->msg = _the_message;
-      a->states[current_states[idx]].each_action(a->name, ctx);
+      a->states[current_states[idx]].action(a->name, ctx);
       delete ctx;
     }
   }

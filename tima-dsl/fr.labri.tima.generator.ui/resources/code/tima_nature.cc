@@ -4,8 +4,8 @@
 #include <sstream>
 
 /** For accessing automata */
-struct tima::Automaton& get_automata(uint32_t idx);
-uint32_t get_nr_automatas();
+struct tima::Automaton& get_automaton(uint32_t idx);
+uint32_t get_nr_automaton();
 
 std::string
 tima::AbstractTimaNature::serialize(const tima::Message& msg)
@@ -23,7 +23,7 @@ tima::AbstractTimaNature::serialize(const tima::Message& msg)
 tima::Message
 tima::AbstractTimaNature::deserialize(int msg_id, const std::string& payload)
 {
-  tima::Message msg(msg_id, 0);
+  tima::Message msg(msg_id);
   std::string s(payload);
   auto pos = s.find(';');
   while (pos > 0 && pos != std::string::npos) {
@@ -65,10 +65,10 @@ std::vector<tima::Automaton*>
 tima::AbstractTimaNature::build_stl_version()
 {
   std::vector<tima::Automaton*> automatas;
-  uint32_t n = get_nr_automatas();
+  uint32_t n = get_nr_automaton();
   for (size_t i = 0; i < n; i++) {
     /* code */
-    struct tima::Automaton* x = &get_automata(i);
+    struct tima::Automaton* x = &get_automaton(i);
     automatas.push_back(x);
   }
   return automatas;
