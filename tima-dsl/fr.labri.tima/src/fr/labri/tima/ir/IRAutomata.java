@@ -32,6 +32,33 @@ public class IRAutomata {
 		}
 
 	}
+	
+	public interface Expression {
+		public static class BinaryExpression implements Expression {
+			public Expression left;
+			public Expression right;
+			public String operator;
+			public BinaryExpression(Expression l, Expression r, String op) {
+				left = l;
+				right = r;
+				operator = op;
+			}
+		}
+		
+		public static class Constant  implements Expression {
+			public String value;
+			public Constant(String v) {
+				value = v;
+			}
+		}
+		
+		public static class Identifier  implements Expression {
+			public String name;
+			public Identifier(String n) {
+				name = n;
+			}
+		}
+	}
 
 	public static class Automaton {
 		public String name;
@@ -152,45 +179,37 @@ public class IRAutomata {
 	
 	public static class Pattern {
 		String operator;
-		List<Operand> operands;
+		List<Expression> operands;
 		
-		public Pattern(String op, List<Operand> ops) {
+		public Pattern(String op, List<Expression> ops) {
 			operator = op;
 			operands = ops;
 		}
 	}
-	
-	public static class Operand {}
-	public static class MessageFieldOperand extends Operand {
-		String field;
-		public MessageFieldOperand(String field) {
-			this.field = field;
-		}
-	}
-	public static class StringOperand extends Operand {
-		String value;
-		public StringOperand(String value) {
-			this.value = value;
-		}
-	}
+
 	
 	abstract static class BuiltinElement {
 		String builtinName;
-		Map<String, String> arguments;
+		List<Expression> arguments;
 		
-		protected BuiltinElement(String name, Map<String, String> args) {
+		protected BuiltinElement(String name, List<Expression> args) {
 			builtinName = name;
 			arguments = args;
 		}
 		public String getBuiltinName() {
 			return builtinName;
 		}
+		
+		public List<Expression> getArguments() {
+			return arguments;
+		}
 	}
+	
 	abstract static private class ExternalElement {
 		
-		Map<String, String> arguments;
+		List<Expression> arguments;
 		
-		public ExternalElement(String name, Map<String, String> args) {
+		public ExternalElement(String name, List<Expression> args) {
 			externalName = name;
 			arguments = args;
 		}
@@ -201,27 +220,27 @@ public class IRAutomata {
 			return externalName;
 		}
 		
-		public Map<String, String> getArguments() {
+		public List<Expression> getArguments() {
 			return arguments;
 		}
 	}
 	public static class BuiltinGuard extends BuiltinElement implements Guard {
-		public BuiltinGuard(String name, Map<String, String> args) {
+		public BuiltinGuard(String name, List<Expression> args) {
 			super(name, args);
 		}
 	}
 	public static class BuiltinAction extends BuiltinElement implements Action {
-		public BuiltinAction(String name, Map<String, String> args) {
+		public BuiltinAction(String name, List<Expression> args) {
 			super(name, args);
 		}
 	}
 	public static class ExternalGuard extends ExternalElement implements Guard {
-		public ExternalGuard(String name, Map<String, String> args) {
+		public ExternalGuard(String name, List<Expression> args) {
 			super(name, args);
 		}
 	}
 	public static class ExternalAction extends ExternalElement implements Action {
-		public ExternalAction(String name, Map<String, String> args) {
+		public ExternalAction(String name, List<Expression> args) {
 			super(name, args);
 		}
 	}

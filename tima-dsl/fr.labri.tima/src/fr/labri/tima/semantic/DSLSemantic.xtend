@@ -19,12 +19,11 @@ import fr.labri.tima.dSL.TimeUnit
 import fr.labri.tima.dSL.TimeoutTransition
 import fr.labri.tima.dSL.UnicastTarget
 import fr.labri.tima.ir.IRAutomata
-import fr.labri.tima.ir.IRAutomata.MessageFieldOperand
-import fr.labri.tima.ir.IRAutomata.StringOperand
 import java.util.Iterator
 import java.util.Map
 import org.eclipse.emf.ecore.resource.Resource
 import fr.labri.tima.dSL.MessageType
+import fr.labri.tima.dSL.Expression
 
 public class DSLSemantic {
 
@@ -84,6 +83,7 @@ public class DSLSemantic {
 				automaton.add(y)
 				buildTransitions(x)
 			]
+			automaton.entryPoint = states.get(a.states.findFirst[ it.initial ])
 		}
 
 		def buildTransitions(State state) {
@@ -124,35 +124,43 @@ public class DSLSemantic {
 			val g = t.guard
 			val guard = switch g {
 				ExternalGuard: {
-					new IRAutomata.ExternalGuard(g.name, newHashMap(g.fields.map[
-						it.name -> it.value
-					]))
+					new IRAutomata.ExternalGuard(g.name, g.operands.map[
+						newExpression(it)
+					])
 
 				}
 				BuiltInGuard: {
-					new IRAutomata.BuiltinGuard(g.name, newHashMap(g.fields.map[it.name -> it.value]))
+					new IRAutomata.BuiltinGuard(g.name,  g.operands.map[
+						newExpression(it)
+					])
 				}
 				MessageGuard:  {
 					new IRAutomata.MessageGuard(autoBuilder.getMessage(g.msgPattern.type), g.msgPattern.patterns.map[
 						new IRAutomata.Pattern(it.operator, it.operands.map[
-							switch it {
-								FieldExpression: new MessageFieldOperand(it.field)
-								StringExpression: new StringOperand(it.value)
-							}
-							])
+							newExpression(it)
+						])
 					])
 
 				}
 			}
 			new IRAutomata.Transition(states.get(t.target), guard, t.actions.map[newAction(it)])
 		}
+	
+		def newExpression(Expression e) {
+			switch e {
+				FieldExpression: new IRAutomata.Expression.Identifier(e.field)
+				StringExpression: new IRAutomata.Expression.Constant(e.value)
+			}
+		}
 
 		def IRAutomata.Action newAction(Action action) {
 			switch action {
-				ExternalAction:	new IRAutomata.ExternalAction(action.name, newHashMap(action.fields.map[
-						it.name -> it.value
-					]))
-				BuiltinAction: new IRAutomata.BuiltinAction(action.name, newHashMap(action.fields.map[it.name -> it.value]))
+				ExternalAction:	new IRAutomata.ExternalAction(action.name, action.operands.map[
+						newExpression(it)
+					])
+				BuiltinAction: new IRAutomata.BuiltinAction(action.name, action.operands.map[
+						newExpression(it)
+					])
 				MessageAction: new IRAutomata.MessageAction(
 					newMessageTarget(action),
 					autoBuilder.automata.messages.get(action.type.name),

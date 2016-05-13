@@ -13,8 +13,48 @@ import java.util.Map
 import org.eclipse.xtext.generator.IFileSystemAccess2
 import org.eclipse.xtext.generator.IGeneratorContext
 import java.util.List
+import java.util.LinkedList
+import java.util.HashMap
 
 class NativeGenerator extends NamedNodeGenerator {
+	
+	
+	static class GenerationContext {
+		var last_tmp = 0
+		val symbols = new LinkedList<Map<String, String>>
+		
+		def lastTmp() {
+			'''tmp«last_tmp»'''
+		}
+		
+		def nextTmp() {
+			last_tmp ++
+			'''tmp«last_tmp»'''
+		}
+		
+		def enterScope(Map<String, String> symbols) {
+			last_tmp = 0;
+			this.symbols.addFirst(symbols)
+		}
+		
+		def leaveScope() {
+			last_tmp = 0;
+			symbols.removeFirst
+		}
+		
+		def String symbol2Target(String symbol) {
+			val t = symbols.findFirst[ it.containsKey(symbol) ]
+			if (t != null) {
+				println("COJONEEEEEEEEEEEEEE " + t.get(symbol))
+				t.get(symbol)
+			}
+			else {
+				"EMPTYYYYYYYYYY"
+			}
+		}
+	}
+	
+	val context = new GenerationContext()
 	
 	new(IRAutomata a) {
 		super(a)
@@ -173,38 +213,15 @@ class NativeGenerator extends NamedNodeGenerator {
 					const std::string& name,
 					tima::TimaNativeContext* ctx)
 		{
+			«{context.enterScope(new HashMap<String, String>); null}»
 			«FOR act : node.actions»
 			«act.IR2Target»;
 			«ENDFOR»
+			«{context.leaveScope; null}»
 		}
 		
 		«FOR t: node.transtions SEPARATOR '\n'»
-		
-«««		/* forward declarations */
-		«t.actions.get_forward_declarations»
-		
-		static void
-		«get_transition_action_name(automaton, node, counter)»(
-					const std::string& name,
-					tima::TimaNativeContext* ctx)
-		{
-			/*transition from «names.get(automaton.name).get(node)» to «names.get(automaton.name).get(t.target)» */
-			«IF t.actions.length > 0»
-			«ENDIF»
-			«FOR act : t.actions»
-			«act.IR2Target»
-			«ENDFOR»
-		}
-		
-		static bool
-		«get_transition_guard_name(automaton, node, counter++)»(
-					const std::string& name,
-					tima::TimaNativeContext* ctx)
-		{
-«««			return «t.guard.IR2Target»;
-			return false;
-		}
-		
+		«t.IR2Target(automaton, node)»
 		«ENDFOR»
 		
 		«IF node.timeoutTarget != null»
@@ -217,9 +234,11 @@ class NativeGenerator extends NamedNodeGenerator {
 					const std::string& name,
 					tima::TimaNativeContext* ctx)
 		{
-		«FOR act : node.timeoutActions»
+			«{context.enterScope(new HashMap<String, String>); null}»
+			«FOR act : node.timeoutActions»
 			«act.IR2Target»
 			«ENDFOR»
+			«{context.leaveScope; null}»
 		}
 		«ENDIF»
 		
@@ -295,7 +314,7 @@ class NativeGenerator extends NamedNodeGenerator {
 		void «(act as fr.labri.tima.ir.IRAutomata.ExternalAction).externalName.simple_name»(
 					const std::string& name,
 					tima::TimaNativeContext* ctx,
-					«FOR p : act.arguments.entrySet SEPARATOR ','»
+					«FOR p : act.arguments SEPARATOR ','»
 						std::string
 					«ENDFOR»
 					);
@@ -304,24 +323,68 @@ class NativeGenerator extends NamedNodeGenerator {
 		
 	}
 	
-	private def get_timeout_action_name(Automaton automaton, Node node)
+	private def String get_timeout_action_name(Automaton automaton, Node node)
 		'''«automaton.name»_«names.get(automaton.name).get(node)»_timeout_do'''
 	
 	
-	dispatch def IR2Target(IRAutomata.BuiltinAction action) {
+	def String IR2Target(IRAutomata.Transition t, IRAutomata.Automaton automaton, IRAutomata.Node node) {
+		var counter = 0;
+		'''
+«««		/* forward declarations */
+		«t.actions.get_forward_declarations»
+		
+		static void
+		«get_transition_action_name(automaton, node, counter)»(
+					const std::string& name,
+					tima::TimaNativeContext* ctx)
+		{
+			/*transition from «names.get(automaton.name).get(node)» to «names.get(automaton.name).get(t.target)» */
+			«{context.enterScope(
+				switch t.guard {
+					IRAutomata.MessageGuard: getMessageSymbolTable((t.guard as IRAutomata.MessageGuard).messageType)
+					default: new HashMap<String, String>
+				}
+			); null}»
+			«FOR act : t.actions»
+			«act.IR2Target»
+			«ENDFOR»
+			«{context.leaveScope; null}»
+		}
+		
+		static bool
+		«get_transition_guard_name(automaton, node, counter++)»(
+					const std::string& name,
+					tima::TimaNativeContext* ctx)
+		{
+«««			return «t.guard.IR2Target»;
+			return false;
+		}
+		'''
+	}
+	
+	dispatch def String IR2Target(IRAutomata.BuiltinAction action) {
 		throw new UnsupportedOperationException("Really? Do we have some built-in action?");
 	}
 	
-	dispatch def IR2Target(IRAutomata.ExternalAction action) {
+	dispatch def String IR2Target(IRAutomata.ExternalAction action) {
 		/* steps:
 		 *  - build parameters
 		 *  - call operation
 		 */
+		val v = newLinkedList()
+		val i = newLinkedList()
+		for (a : action.arguments) {
+			v.add(a.IR2Target)
+			i.add(context.lastTmp)
+		}
 		'''
+		«FOR e : v»
+		«e»
+		«ENDFOR»
 		«action.externalName.substring(1, action.externalName.length-1)»(
 			name, ctx,
-			«FOR p : action.arguments.entrySet SEPARATOR ','»
-				"«p.value»"
+			«FOR tmp : i SEPARATOR ','»
+				«tmp»
 			«ENDFOR»
 		);
 		'''
@@ -335,22 +398,26 @@ class NativeGenerator extends NamedNodeGenerator {
 		 * 3 - build target
 		 * 4 - Send message
 		 */
-		var counter = 0
+		val msg = context.nextTmp
 		'''
-		«action.message.get_message_name» «get_temp(counter)»;
+		«action.message.get_message_name» «msg»;
 		«FOR f : action.arguments.entrySet»
-		«get_temp(counter)».«f.key»("«f.value»");
+		«msg».«f.key»("«f.value»");
 		«ENDFOR»
 		«IF action.message instanceof RemoteMessage»
-		((tima::ActionContext*)ctx)->broadcast(1000, «get_temp(counter)»);
+		((tima::ActionContext*)ctx)->broadcast(1000, «msg»);
 		«ELSE»
-		tima::Mailbox::send(«get_temp(counter)», «(action.target as MessageTarget.Unicast).target»)
+		tima::Mailbox::send(«msg», «(action.target as MessageTarget.Unicast).target»)
 		«ENDIF»
 		'''
 	}
 	
-	def get_temp(int i) {
-		'''tmp«i»'''
+	dispatch def IR2Target(IRAutomata.Expression.Constant c) {
+		'''std::string «context.nextTmp» = "«c.value»";'''
+	}
+	
+	dispatch def IR2Target(IRAutomata.Expression.Identifier i) {
+		'''std::string «context.nextTmp» = «context.symbol2Target(i.name)»;'''
 	}
 	
 	dispatch def IR2Target(IRAutomata.MessageGuard g) {
@@ -376,9 +443,18 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	/* A bunch of methods to keep consistent the definition of identifies  */
 	
+	private def Map<String, String> getMessageSymbolTable(IRAutomata.Message m) {
+		val t = new HashMap<String, String>
+		m.fields.forEach[
+			t.put(it, '''GET_FIELD(ctx, "«it»")''')
+		]
+		t
+	}
+	
 	private def simple_name(String s) {
 		s.substring(1, s.length-1)
 	}
+	
 	
 	private def get_message_name(Message m)
 		'''Message«m.name.toFirstUpper»'''

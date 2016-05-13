@@ -6,6 +6,9 @@
 #include <map>
 #include <memory>
 
+
+#define GET_FIELD(ctx, field) (((tima::ActionContext*)ctx)->msg.get(field))
+
 namespace tima {
 
 class Message {

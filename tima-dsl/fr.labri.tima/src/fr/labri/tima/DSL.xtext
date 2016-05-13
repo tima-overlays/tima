@@ -62,11 +62,11 @@ Field:
 ;
 
 BuiltinAction returns Action:
-	{BuiltinAction} name=ID ('(' Fields ')')?
+	{BuiltinAction} name=ID ('(' Expressions ')')?
 ;
 
 ExternalAction returns Action:
-	{ExternalAction} name=EXTERNAL_NAME ('(' Fields ')')?
+	{ExternalAction} name=EXTERNAL_NAME ('(' Expressions ')')?
 ;
 
 MessageAction returns Action:
@@ -95,7 +95,7 @@ Guard returns Guard:
 ;
 
 ExternalGuard returns Guard:
-	{ExternalGuard} name=EXTERNAL_NAME ('(' Fields ')')?
+	{ExternalGuard} name=EXTERNAL_NAME ('(' Expressions ')')?
 ;
 
 MessageGuard returns Guard:
@@ -104,7 +104,7 @@ MessageGuard returns Guard:
 ;
 
 BuiltinGuard returns Guard:
-	{BuiltInGuard} name=ID ('(' Fields ')')?
+	{BuiltInGuard} name=ID ('(' Expressions ')')?
 ;
 
 MessagePattern:
