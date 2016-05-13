@@ -58,7 +58,7 @@ Fields:
 ;
 
 Field:
-	name=ID ':' value=STRING
+	name=ID ':' value=Expression
 ;
 
 BuiltinAction returns Action:

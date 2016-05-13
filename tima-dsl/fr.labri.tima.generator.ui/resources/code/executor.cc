@@ -12,13 +12,14 @@
 void init_device_data(std::string& device_name,std::map<std::string, std::string>& options, void** ptr);
 
 namespace tima {
-	struct InnerGenericActionContext : public ActionContext {
+	class InnerGenericActionContext : public ActionContext {
+	public:
 	  InnerGenericActionContext(std::string device_name,void* user_data, Message msg, bool msg_received, std::shared_ptr<tima::AbstractTimaNature> nature);
 
 	  virtual void send_to(const std::string& dst, int port, const Message& msg);
 	  virtual void broadcast(int port, const Message& msg);
-    virtual void print_trace(const std::string& msg);
-    virtual ~InnerGenericActionContext();
+	  virtual void print_trace(const std::string& msg);
+	  virtual ~InnerGenericActionContext();
 	private:
 	  std::shared_ptr<tima::AbstractTimaNature> nature;
 	};
@@ -65,13 +66,16 @@ tima::Executor::Executor(std::shared_ptr<tima::AbstractTimaNature> nature, std::
   :nature(nature)
 {
 
-  this->automatas = nature->build_stl_version();
+  automatas = nature->build_stl_version();
 
-  for (auto it = this->automatas.begin(),
-            end=this->automatas.end(); it != end ; ++it) {
-    Mailbox::get_instance(nature->device_name)->add_automaton((*it)->name);
-    this->current_states.push_back((*it)->initial);
-    this->timeouts.push_back(deadline(*it, (*it)->initial));
+  auto myMailbox = Mailbox::get_instance(nature->device_name);
+
+  for (auto it : automatas) {
+      myMailbox->add_automaton(it->name);
+
+      current_states.push_back(it->initial);
+
+      timeouts.push_back(deadline(it, it->initial));
   }
 
   init_device_data(nature->device_name, options, &user_data);
@@ -107,16 +111,24 @@ tima::Executor::step(uint32_t milliseconds, bool only_urgents)
     bool found = false;
     while (i < state->nr_transitions && !found) {
       if (state->transitions[i].guard != tima::Mailbox::exists && state->transitions[i].guard != tima::Mailbox::exists_network_message) {
+        /* external and built-in action  */
         auto ctx = new TimaNativeContext(nature->device_name, user_data);
         found = state->transitions[i].guard(a->name, ctx);
         delete ctx;
       }
       else {
+        /* message pattern */
         msg_received = true;
-				/* TODO: fix this shit, the source */
-        auto ctx = new MailboxContext(state->transitions[i].msg_id, nature->device_name, user_data);
+
+        auto ctx = new MailboxContext(
+                    state->transitions[i].msg_id,
+                    nature->device_name,
+                    user_data);
+
         found = state->transitions[i].guard(a->name, ctx);
+
         _the_message = ctx->read_message;
+
         delete ctx;
       }
       if (!found) {
@@ -143,11 +155,40 @@ tima::Executor::step(uint32_t milliseconds, bool only_urgents)
       current_states[idx] = state->transitions[i].dst; // new state
     }
     if (must_execute_action) {
-      timeouts[idx] = deadline(a, current_states[idx]);
-      auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(state->transitions[i].msg_id), msg_received, nature);
-      ctx->msg = _the_message;
-      a->states[current_states[idx]].action(a->name, ctx);
-      delete ctx;
+      if (i < state->nr_transitions) {
+
+          /* a transition due to a guard being true */
+
+          timeouts[idx] = deadline(a, current_states[idx]);
+          auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(state->transitions[i].msg_id), msg_received, nature);
+          ctx->msg = _the_message;
+
+          /* execute action in transition */
+          state->transitions[i].action(a->name, ctx);
+
+          /* execute action in state */
+          a->states[current_states[idx]].action(a->name, ctx);
+
+          /* free context */
+          delete ctx;
+      }
+      else {
+
+        /* a time out transition */
+
+        timeouts[idx] = deadline(a, current_states[idx]);
+        auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(0), false, nature);
+        ctx->msg = _the_message;
+
+        /* execute action in transition */
+        state->timeout_action(a->name, ctx);
+
+        /* execute action in state */
+        a->states[current_states[idx]].action(a->name, ctx);
+
+        /* free context */
+        delete ctx;
+      }
     }
   }
 

@@ -45,11 +45,10 @@ class NativeGenerator extends NamedNodeGenerator {
 		def String symbol2Target(String symbol) {
 			val t = symbols.findFirst[ it.containsKey(symbol) ]
 			if (t != null) {
-				println("COJONEEEEEEEEEEEEEE " + t.get(symbol))
 				t.get(symbol)
 			}
 			else {
-				"EMPTYYYYYYYYYY"
+				'''GET_GLOBAL(ctx, "«symbol»")'''
 			}
 		}
 	}
@@ -66,57 +65,6 @@ class NativeGenerator extends NamedNodeGenerator {
 	}
 	
 	def native_version_header(String name) {
-		/*
-		 *  This code is commented because it is not portable. It implies that a developer
-		 *  has to learn specific details to implement a protocol for a specific target.
-		 */
-//		val classes = new LinkedHashMap<String,HashMap<String, Boolean>>
-//		for (automaton : automata.automata.values) {
-//			for (node : automaton.nodes) {
-//				// guard
-//				for (t : node.transtions.filter[it != node.timeoutTarget && it instanceof IRAutomata.ExternalGuard]) {
-//					val guard = (t.guard as IRAutomata.ExternalGuard)
-//					val members = guard.externalName.split("::") // FIXME: this absolutely non-portable 
-//					if (members.get(0) != "tima") {
-//						if (!classes.containsKey(members.get(0))) {
-//							classes.put(members.get(0), new HashMap<String, Boolean>)
-//						} 
-//						classes.get(members.get(0)).put(members.get(1), false)
-//					}
-//				}
-//				// action
-//				for (act : state.actions) {
-//					for (aaa : (act as TimaAction<String>).pre_actions) {
-//						val members = aaa.type.split("::")
-//						if (members.get(0) != "tima") {
-//							if (!classes.containsKey(members.get(0))) {
-//								classes.put(members.get(0), new HashMap<String, Boolean>)
-//							} 
-//							classes.get(members.get(0)).put(members.get(1), true)
-//						}	
-//					}
-//					for (aaa : (act as TimaAction<String>).post_actions) {
-//						val members = aaa.type.split("::")
-//						if (members.get(0) != "tima") {
-//							if (!classes.containsKey(members.get(0))) {
-//								classes.put(members.get(0), new HashMap<String, Boolean>)
-//							} 
-//							classes.get(members.get(0)).put(members.get(1), true)
-//						}	
-//					}
-//					for (aaa : (act as TimaAction<String>).each_actions) {
-//						val members = aaa.type.split("::")
-//						if (members.get(0) != "tima") {
-//							if (!classes.containsKey(members.get(0))) {
-//								classes.put(members.get(0), new HashMap<String, Boolean>)
-//							} 
-//							classes.get(members.get(0)).put(members.get(1), true)
-//						}	
-//					}
-//				}
-//			}
-//		
-//		}
 		'''
 		#ifndef __«name»__
 		#define __«name»__
@@ -158,19 +106,6 @@ class NativeGenerator extends NamedNodeGenerator {
 			«ENDFOR»
 		};		
 		«ENDFOR»
-		
-«««		«FOR clazz: classes.keySet SEPARATOR '\n'»
-«««			class «clazz» {
-«««			public:
-«««				«FOR method: classes.get(clazz).entrySet»
-«««				«IF !method.value»
-«««				static bool «method.key»(std::string& name, tima::TimaNativeContext* context);
-«««				«ELSE»
-«««				static void «method.key»(std::string& name, tima::TimaNativeContext* context);
-«««				«ENDIF»
-«««				«ENDFOR»
-«««			};
-«««		«ENDFOR»
 		
 		#endif
 		'''
@@ -266,7 +201,7 @@ class NativeGenerator extends NamedNodeGenerator {
 		{
 			name : "«names.get(automaton.name).get(node)»",
 			urgent : false,
-			timeout : «IF node.timeout ==-1»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // milliseconds
+			timeout : «IF node.timeoutTarget==null»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // milliseconds
 			timeout_destination : «IF node.timeoutTarget==null»tima::null_destination«ELSE»«Util.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
 			timeout_action : «IF node.timeoutTarget==null»nullptr«ELSE»«get_timeout_action_name(automaton, node)»«ENDIF»,
 			nr_transitions : «node.transtions.size», // without taking into account the default transition
@@ -391,18 +326,27 @@ class NativeGenerator extends NamedNodeGenerator {
 		
 	}
 	
-	dispatch def IR2Target(IRAutomata.MessageAction action) {
+	dispatch def String IR2Target(IRAutomata.MessageAction action) {
 		/* steps:
 		 * 1 - create message
 		 * 2 - build parameters
 		 * 3 - build target
 		 * 4 - Send message
 		 */
+		val v = newHashMap
+		val i = newHashMap
+		for (a : action.arguments.entrySet) {
+			v.put(a.key, a.value.IR2Target)
+			i.put(a.key, context.lastTmp)
+		}
 		val msg = context.nextTmp
 		'''
+		«FOR e : v.entrySet»
+		«e.value»
+		«ENDFOR»
 		«action.message.get_message_name» «msg»;
 		«FOR f : action.arguments.entrySet»
-		«msg».«f.key»("«f.value»");
+		«msg».«f.key»(«i.get(f.key)»);
 		«ENDFOR»
 		«IF action.message instanceof RemoteMessage»
 		((tima::ActionContext*)ctx)->broadcast(1000, «msg»);
@@ -412,22 +356,22 @@ class NativeGenerator extends NamedNodeGenerator {
 		'''
 	}
 	
-	dispatch def IR2Target(IRAutomata.Expression.Constant c) {
+	dispatch def String IR2Target(IRAutomata.Expression.Constant c) {
 		'''std::string «context.nextTmp» = "«c.value»";'''
 	}
 	
-	dispatch def IR2Target(IRAutomata.Expression.Identifier i) {
+	dispatch def String IR2Target(IRAutomata.Expression.Identifier i) {
 		'''std::string «context.nextTmp» = «context.symbol2Target(i.name)»;'''
 	}
 	
-	dispatch def IR2Target(IRAutomata.MessageGuard g) {
+	dispatch def String IR2Target(IRAutomata.MessageGuard g) {
 		'''message'''
 	}
 	
-	dispatch def IR2Target(IRAutomata.ExternalGuard g)
+	dispatch def String IR2Target(IRAutomata.ExternalGuard g)
 		'''«g.externalName.simple_name»'''
 	
-	dispatch def IR2Target(IRAutomata.BuiltinGuard g) {
+	dispatch def String IR2Target(IRAutomata.BuiltinGuard g) {
 		switch (g.builtinName) {
 			case "true": {
 				'true'

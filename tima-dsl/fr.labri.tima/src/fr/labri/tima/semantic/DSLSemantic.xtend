@@ -63,7 +63,9 @@ public class DSLSemantic {
 			if (msg.fields == null) // FIXME ugly
 				new IRAutomata.Message(msg.name, msg.declaredFields.map[it])
 			else
-				new IRAutomata.RemoteMessage(msg.name, msg.declaredFields.map[it], newHashMap(msg.fields.map[it.name -> it.value]))
+				new IRAutomata.RemoteMessage(msg.name, msg.declaredFields.map[it], newHashMap(msg.fields.filter[it.value instanceof StringExpression].map[
+					it.name -> (it.value as StringExpression).value
+				]))
 		}
 	}
 
@@ -161,11 +163,13 @@ public class DSLSemantic {
 				BuiltinAction: new IRAutomata.BuiltinAction(action.name, action.operands.map[
 						newExpression(it)
 					])
-				MessageAction: new IRAutomata.MessageAction(
-					newMessageTarget(action),
-					autoBuilder.automata.messages.get(action.type.name),
-					newHashMap(action.fields.map[it.name -> it.value])
-				)
+				MessageAction:
+						new IRAutomata.MessageAction(
+						newMessageTarget(action),
+						autoBuilder.automata.messages.get(action.type.name),
+						action.fields.toMap[it.name].mapValues[newExpression(it.value)]
+	
+					)
 			}
 		}
 

@@ -8,6 +8,7 @@
 
 
 #define GET_FIELD(ctx, field) (((tima::ActionContext*)ctx)->msg.get(field))
+#define GET_GLOBAL(ctx, id) (((tima::ActionContext*)ctx)->get_global(id))
 
 namespace tima {
 
@@ -31,6 +32,9 @@ class TimaNativeContext {
       TimaNativeContext(std::string device_name, void* user_data) : device_name(device_name), user_data(user_data) {}
       std::string get_device_name() { return device_name; }
       void* get_user_data() { return user_data; }
+      std::string get_global(const std::string i) {
+        return "1123";
+      };
   private:
       std::string device_name;
       void* user_data;

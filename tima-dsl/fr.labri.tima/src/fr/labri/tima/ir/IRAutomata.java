@@ -247,9 +247,9 @@ public class IRAutomata {
 	public static class MessageAction implements Action {
 		public MessageTarget target;
 		public Message message;
-		public Map<String, String> arguments;
+		public Map<String, Expression> arguments;
 		
-		public MessageAction(MessageTarget t, Message msg, Map<String, String> args) {
+		public MessageAction(MessageTarget t, Message msg, Map<String, Expression> args) {
 			target = t;
 			message = msg;
 			arguments = args;
