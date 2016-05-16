@@ -20,25 +20,26 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	
 	static class GenerationContext {
-		var last_tmp = 0
+		val last_tmp = newLinkedList(0)
 		val symbols = new LinkedList<Map<String, String>>
 		
 		def lastTmp() {
-			'''tmp«last_tmp»'''
+			'''tmp«last_tmp.get(0)»'''
 		}
 		
 		def nextTmp() {
-			last_tmp ++
-			'''tmp«last_tmp»'''
+			val n = last_tmp.get(0) + 1
+			last_tmp.set(0, n)
+			'''tmp«n»'''
 		}
 		
 		def enterScope(Map<String, String> symbols) {
-			last_tmp = 0;
+			this.last_tmp.addFirst(0)
 			this.symbols.addFirst(symbols)
 		}
 		
 		def leaveScope() {
-			last_tmp = 0;
+			last_tmp.removeFirst
 			symbols.removeFirst
 		}
 		
@@ -182,6 +183,7 @@ class NativeGenerator extends NamedNodeGenerator {
 			«FOR t: node.transtions SEPARATOR ','»
 			{
 				dst : «Util.indexOf(t.target, automaton.nodes)»,
+				is_msg_transition : «IF t.guard instanceof IRAutomata.MessageGuard»true«ELSE»false«ENDIF»,
 				guard : «get_transition_guard_name(automaton, node, counter)»,
 				action : «get_transition_action_name(automaton, node, counter++)»,
 				«IF t.guard instanceof MessageGuard»
@@ -276,7 +278,7 @@ class NativeGenerator extends NamedNodeGenerator {
 			/*transition from «names.get(automaton.name).get(node)» to «names.get(automaton.name).get(t.target)» */
 			«{context.enterScope(
 				switch t.guard {
-					IRAutomata.MessageGuard: getMessageSymbolTable((t.guard as IRAutomata.MessageGuard).messageType)
+					IRAutomata.MessageGuard: getMessageSymbolTableFromContext((t.guard as IRAutomata.MessageGuard).messageType)
 					default: new HashMap<String, String>
 				}
 			); null}»
@@ -291,8 +293,8 @@ class NativeGenerator extends NamedNodeGenerator {
 					const std::string& name,
 					tima::TimaNativeContext* ctx)
 		{
-«««			return «t.guard.IR2Target»;
-			return false;
+			«t.guard.IR2Target»
+			return «context.lastTmp»;
 		}
 		'''
 	}
@@ -349,27 +351,64 @@ class NativeGenerator extends NamedNodeGenerator {
 		«msg».«f.key»(«i.get(f.key)»);
 		«ENDFOR»
 		«IF action.message instanceof RemoteMessage»
-		((tima::ActionContext*)ctx)->broadcast(1000, «msg»);
+		((tima::ActionContext*)ctx)->broadcast(10000, «msg»);
 		«ELSE»
 		tima::Mailbox::send(«msg», «(action.target as MessageTarget.Unicast).target»)
 		«ENDIF»
 		'''
 	}
 	
+	
 	dispatch def String IR2Target(IRAutomata.Expression.Constant c) {
 		'''std::string «context.nextTmp» = "«c.value»";'''
 	}
+	
 	
 	dispatch def String IR2Target(IRAutomata.Expression.Identifier i) {
 		'''std::string «context.nextTmp» = «context.symbol2Target(i.name)»;'''
 	}
 	
+	
 	dispatch def String IR2Target(IRAutomata.MessageGuard g) {
-		'''message'''
+		'''
+		bool «context.nextTmp» = tima::Mailbox::exists2(ctx->get_device_name(), ctx, [&](tima::Message& m){
+			«{context.enterScope(getMessageSymbolTable(g.messageType)); null}»
+			bool b = m.msg_id == «g.messageType.get_message_id»;
+			«FOR p : g.patterns»
+			«p.IR2Target»
+			b &= «context.lastTmp»;
+			«ENDFOR»
+			return b;
+			«{context.leaveScope; null}»
+		});
+		'''
 	}
+	
+	dispatch def String IR2Target(IRAutomata.Pattern p) {
+		if (p.operator != "==") {
+			throw new UnsupportedOperationException("Really? Do we have some built-in action?");
+		}
+		val operands = new LinkedList<String>
+		val i = new LinkedList<CharSequence>
+		for (o : p.operands) {
+			operands.add(o.IR2Target)
+			i.add(context.lastTmp)
+		}
+		'''
+		«FOR e : operands»
+		«e»
+		«ENDFOR»
+		«IF p.operator == "="»
+		bool «context.nextTmp» = «i.get(0)» == «i.get(1)»;
+		«ELSE»
+		«ENDIF»
+		'''
+	}
+		
 	
 	dispatch def String IR2Target(IRAutomata.ExternalGuard g)
 		'''«g.externalName.simple_name»'''
+		
 	
 	dispatch def String IR2Target(IRAutomata.BuiltinGuard g) {
 		switch (g.builtinName) {
@@ -387,7 +426,16 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	/* A bunch of methods to keep consistent the definition of identifies  */
 	
+	
 	private def Map<String, String> getMessageSymbolTable(IRAutomata.Message m) {
+		val t = new HashMap<String, String>
+		m.fields.forEach[
+			t.put(it, '''m.get("«it»")''')
+		]
+		t
+	}
+	
+	private def Map<String, String> getMessageSymbolTableFromContext(IRAutomata.Message m) {
 		val t = new HashMap<String, String>
 		m.fields.forEach[
 			t.put(it, '''GET_FIELD(ctx, "«it»")''')

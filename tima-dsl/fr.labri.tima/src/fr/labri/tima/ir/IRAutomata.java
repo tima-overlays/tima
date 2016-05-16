@@ -185,6 +185,14 @@ public class IRAutomata {
 			operator = op;
 			operands = ops;
 		}
+		
+		public String getOperator() {
+			return operator;
+		}
+		
+		public List<Expression> getOperands() {
+			return operands;
+		}
 	}
 
 	
@@ -266,6 +274,10 @@ public class IRAutomata {
 		
 		public Message getMessageType() {
 			return message;
+		}
+		
+		public List<Pattern> getPatterns() {
+			return arguments;
 		}
 	}
 	
