@@ -59,6 +59,7 @@ class OmnetGenerator extends NativeGenerator {
 	#include "inet/transportlayer/contract/udp/UDPControlInfo.h"
 	
 	#include <algorithm>
+	#include <sstream>
 	
 	namespace inet {
 	
@@ -121,7 +122,10 @@ class OmnetGenerator extends NativeGenerator {
 	
 	            Tima* tima_msg = check_and_cast_nullable<Tima*>(dynamic_cast<Tima*>(pkt));
 	            if (tima_msg != nullptr) {
-	                executor->add_received_network_message(get_msg_id_from_name(tima_msg->getId()), (char*)tima_msg->getPayload());
+	                std::istringstream convert(tima_msg->getId());
+                    int id;
+                    convert >> id;
+                    executor->add_received_network_message(id, (char*)tima_msg->getPayload());
 	            }
 	
 	//            EV_DEBUG << "A network message: " << tima_msg->getId() << " " << tima_msg->getPayload() << '\n';

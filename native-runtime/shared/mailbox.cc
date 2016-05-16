@@ -7,11 +7,18 @@
 
 #include "tima.h"
 
-std::map<std::string, tima::Mailbox*> tima::Mailbox::_singleton;
+
+using std::find_if;
+using std::begin;
+using std::end;
+using std::string;
+
+
+std::map<string, tima::Mailbox*> tima::Mailbox::_singleton;
 
 bool
 tima::Mailbox::exists(
-        const std::string& name,
+        const string& name,
         tima::TimaNativeContext* context)
 {
   // std::cerr << "Executing this " << std::endl;
@@ -37,11 +44,43 @@ tima::Mailbox::exists(
     }
     return exists_network_message(name, context);
   }
-  throw std::runtime_error(std::string("No automaton with name ") + name);
+  throw std::runtime_error(string("No automaton with name ") + name);
 }
 
+
 bool
-tima::Mailbox::exists_network_message(const std::string& name, TimaNativeContext* context)
+tima::Mailbox::exists2(const string& name,
+        tima::TimaNativeContext* context,
+        std::function<bool(tima::Message&)> pred)
+{
+
+    auto ctx = static_cast <MailboxContext*>(context);
+//    if (ctx == nullptr) {
+//        throw std::runtime_error("Wrong context used in this call");
+//    }
+    auto inst = get_instance(context->get_device_name());
+
+    auto it = find_if(
+                inst->network_messages.begin(),
+                inst->network_messages.end(),
+                pred
+              );
+
+    bool b = (it != inst->network_messages.end());
+
+    if (b) {
+        ctx->read_message.msg_id = it->msg_id;
+        ctx->read_message.fields = it->fields;
+        inst->network_messages.erase(it);
+    }
+
+    return b;
+
+}
+
+
+bool
+tima::Mailbox::exists_network_message(const string& name, TimaNativeContext* context)
 {
   // check if the first message has the properties I want
   auto ctx = (MailboxContext*) context;
@@ -57,6 +96,7 @@ tima::Mailbox::exists_network_message(const std::string& name, TimaNativeContext
   return false;
 }
 
+
 void
 tima::Mailbox::add_received_network_message(int msg_id, const char* payload, TimaNativeContext* context)
 {
@@ -65,10 +105,10 @@ tima::Mailbox::add_received_network_message(int msg_id, const char* payload, Tim
   Mailbox::get_instance(context->get_device_name())->network_messages.push_back(ctx->nature->deserialize(msg_id, payload));
 }
 
+
 void
-tima::Mailbox::send(tima::Message& msg, std::string& target, TimaNativeContext* context)
+tima::Mailbox::send(tima::Message& msg, string& target, TimaNativeContext* context)
 {
-  auto ctx = (SendTimaContext*)context;
   auto inst = get_instance(context->get_device_name());
   auto it = inst->messages.find(target);
   if (it != inst->messages.end()) {
@@ -77,19 +117,19 @@ tima::Mailbox::send(tima::Message& msg, std::string& target, TimaNativeContext* 
     it->second.push_back(msg);
   }
   else {
-    throw std::runtime_error(std::string("No automaton with name ") + target);
+    throw std::runtime_error(string("No automaton with name ") + target);
   }
 }
 
 void
-tima::Mailbox::add_automaton(std::string& name)
+tima::Mailbox::add_automaton(string& name)
 {
   std::vector<Message> v;
   messages.emplace(name, v);
 }
 
 tima::Mailbox*
-tima::Mailbox::get_instance(std::string device_name)
+tima::Mailbox::get_instance(string device_name)
 {
   auto it = _singleton.find(device_name);
   if (it == _singleton.end()) {

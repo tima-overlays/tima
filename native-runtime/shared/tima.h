@@ -27,33 +27,61 @@ public:
   }
 };
 
+
+class GlobalStorage {
+
+    std::map<std::string, std::string> data;
+
+    void* user_data;
+
+public:
+
+    GlobalStorage(void* ud) : user_data(ud) {}
+
+    void setValue(const std::string& key, const std::string v) {
+        data[key] = v;
+    }
+
+    std::string getValue(const std::string& key) {
+        return data[key];
+    }
+
+    void* getUserData() {
+        return user_data;
+    }
+
+    void setUserData(void* v) {
+        user_data = v;
+    }
+
+};
+
+
 class TimaNativeContext {
   public:
-      TimaNativeContext(std::string device_name, void* user_data) : device_name(device_name), user_data(user_data) {}
+
+      TimaNativeContext(const std::string& device_name, std::shared_ptr<GlobalStorage> st) :
+              device_name(device_name), storage(st) {}
+
       std::string get_device_name() { return device_name; }
-      void* get_user_data() { return user_data; }
+
+      void* get_user_data() {
+          return storage->getUserData();
+      }
+
+      std::shared_ptr<GlobalStorage> getStorage() {
+           return storage;
+       }
+
       std::string get_global(const std::string i) {
-        return "1123";
+        return storage->getValue(i);
       };
+
   private:
       std::string device_name;
-      void* user_data;
+      std::shared_ptr<GlobalStorage> storage;
  };
 
-/**
- * context for actions ! msg : destination
- */
-class SendTimaContext : public TimaNativeContext {
-public:
-  SendTimaContext(int msg_id, int dst_id, const std::string& dst_name, const std::string& device_name, void* user_data):
-            TimaNativeContext(device_name,user_data),
-            msg_id(msg_id), dst_id(dst_id),
-            dst_name(dst_name) {}
-
-  int msg_id;
-  int dst_id;
-  std::string dst_name;
-};
 
 /**
  * context for guards (? msg : source) and (# msg)
@@ -62,8 +90,8 @@ class MailboxContext : public TimaNativeContext {
 public:
   int msg_id;
   Message read_message;
-  MailboxContext(int a, const std::string& device_name, void* user_data):
-          TimaNativeContext(device_name, user_data),
+  MailboxContext(int a, const std::string& device_name, std::shared_ptr<GlobalStorage> st):
+          TimaNativeContext(device_name, st),
           msg_id(a) {}
 };
 
@@ -75,9 +103,12 @@ public:
   bool msg_received = false;
   Message msg;
 
-  ActionContext(std::string device_name,void* user_data, Message msg, bool msg_received);
+  ActionContext(std::string device_name,std::shared_ptr<GlobalStorage> st, Message msg, bool msg_received);
+
   virtual void send_to(const std::string& dst, int port, const Message& msg) = 0;
+
   virtual void broadcast(int port, const Message& msg) = 0;
+
   virtual void print_trace(const std::string& msg) = 0;
 
   virtual ~ActionContext() = 0;

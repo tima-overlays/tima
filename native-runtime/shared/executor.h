@@ -19,7 +19,7 @@ private:
   std::vector<int> current_states;
   std::vector<int> timeouts;
 
-  void* user_data;
+  std::shared_ptr<tima::GlobalStorage> storage;
 
   uint32_t deadline(struct tima::Automaton* a, int state_idx);
 

@@ -3,11 +3,13 @@
 
 #include <sstream>
 
+using std::string;
+
 /** For accessing automata */
 struct tima::Automaton& get_automaton(uint32_t idx);
 uint32_t get_nr_automaton();
 
-std::string
+string
 tima::AbstractTimaNature::serialize(const tima::Message& msg)
 {
   std::stringstream ss;
@@ -21,15 +23,15 @@ tima::AbstractTimaNature::serialize(const tima::Message& msg)
 }
 
 tima::Message
-tima::AbstractTimaNature::deserialize(int msg_id, const std::string& payload)
+tima::AbstractTimaNature::deserialize(int msg_id, const string& payload)
 {
   tima::Message msg(msg_id);
-  std::string s(payload);
+  string s(payload);
   auto pos = s.find(';');
-  while (pos > 0 && pos != std::string::npos) {
-    std::string ss = s.substr(0, pos);
+  while (pos > 0 && pos != string::npos) {
+    string ss = s.substr(0, pos);
     auto p2 = ss.find('=');
-    msg.fields[ss.substr(0, p2)] = ss.substr(p2 + 1);
+    msg.fields[string(ss.substr(0, p2))] = string(ss.substr(p2 + 1));
     s=s.substr(pos+1);
     pos = s.find(';');
   }
