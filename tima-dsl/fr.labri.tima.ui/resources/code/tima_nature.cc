@@ -4,8 +4,8 @@
 #include <sstream>
 
 /** For accessing automata */
-struct tima::Automata& get_automata(uint32_t idx);
-uint32_t get_nr_automatas();
+struct tima::Automaton& get_automaton(uint32_t idx);
+uint32_t get_nr_automaton();
 
 std::string
 tima::AbstractTimaNature::serialize(const tima::Message& msg)
@@ -23,7 +23,7 @@ tima::AbstractTimaNature::serialize(const tima::Message& msg)
 tima::Message
 tima::AbstractTimaNature::deserialize(int msg_id, const std::string& payload)
 {
-  tima::Message msg(msg_id, 0);
+  tima::Message msg(msg_id);
   std::string s(payload);
   auto pos = s.find(';');
   while (pos > 0 && pos != std::string::npos) {
@@ -37,19 +37,19 @@ tima::AbstractTimaNature::deserialize(int msg_id, const std::string& payload)
 }
 
 void
-tima::AbstractTimaNature::print_automata(std::vector<tima::Automata*>& automata)
+tima::AbstractTimaNature::print_automata(std::vector<tima::Automaton*>& automata)
 {
   // THIS IS DEBUG
   for (auto it = automata.begin(), it_end = automata.end() ; it != it_end ; ++it) {
-    struct tima::Automata* x = *it;
+    struct tima::Automaton* x = *it;
     std::cout << x->name << std::endl;
-    for (int i = 0 ; i < x->nr_states; i++) {
+    for (uint32_t i = 0 ; i < x->nr_states; i++) {
       if (x->initial == i)
         std::cout << "\033[1;31m";
       std::cout << "\tState: " << x->states[i].name << std::endl;
       if (x->initial == i)
         std::cout << "\033[0m";
-      for (int j = 0 ; j < x->states[i].nr_transitions ; j++) {
+      for (uint32_t j = 0 ; j < x->states[i].nr_transitions ; j++) {
         std::cout << "\t\t=> " << x->states[x->states[i].transitions[j].dst].name << std::endl;
       }
       if (x->states[i].timeout_destination != tima::null_destination) {
@@ -61,14 +61,14 @@ tima::AbstractTimaNature::print_automata(std::vector<tima::Automata*>& automata)
   }
 }
 
-std::vector<tima::Automata*>
+std::vector<tima::Automaton*>
 tima::AbstractTimaNature::build_stl_version()
 {
-  std::vector<tima::Automata*> automatas;
-  uint32_t n = get_nr_automatas();
+  std::vector<tima::Automaton*> automatas;
+  uint32_t n = get_nr_automaton();
   for (size_t i = 0; i < n; i++) {
     /* code */
-    struct tima::Automata* x = &get_automata(i);
+    struct tima::Automaton* x = &get_automaton(i);
     automatas.push_back(x);
   }
   return automatas;

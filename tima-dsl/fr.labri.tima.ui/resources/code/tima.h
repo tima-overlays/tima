@@ -6,15 +6,24 @@
 #include <map>
 #include <memory>
 
+
+#define GET_FIELD(ctx, field) (((tima::ActionContext*)ctx)->msg.get(field))
+
 namespace tima {
 
-struct Message {
+class Message {
 public:
   int msg_id;
-  int automaton_id; // the source
   std::map< std::string, std::string > fields;
-  Message(int m_id, int a_id): msg_id(m_id), automaton_id(a_id) {}
-  Message(): msg_id(0), automaton_id(0) {}
+  Message(int m_id): msg_id(m_id) {}
+  Message(): msg_id(0) {}
+
+  std::string& get(const std::string& field) {
+    return fields[field];
+  }
+  void set(const std::string& field, const std::string& v) {
+    fields[field] = v;
+  }
 };
 
 class TimaNativeContext {
@@ -30,7 +39,8 @@ class TimaNativeContext {
 /**
  * context for actions ! msg : destination
  */
-struct SendTimaContext : public TimaNativeContext {
+class SendTimaContext : public TimaNativeContext {
+public:
   SendTimaContext(int msg_id, int dst_id, const std::string& dst_name, const std::string& device_name, void* user_data):
             TimaNativeContext(device_name,user_data),
             msg_id(msg_id), dst_id(dst_id),
@@ -44,20 +54,20 @@ struct SendTimaContext : public TimaNativeContext {
 /**
  * context for guards (? msg : source) and (# msg)
  */
-struct MailboxContext : public TimaNativeContext {
+class MailboxContext : public TimaNativeContext {
+public:
   int msg_id;
-  int src_id;
   Message read_message;
-  MailboxContext(int a, int b, const std::string& device_name, void* user_data):
+  MailboxContext(int a, const std::string& device_name, void* user_data):
           TimaNativeContext(device_name, user_data),
-          msg_id(a),
-          src_id(b) {}
+          msg_id(a) {}
 };
 
 /**
  * context for generic actions
  */
-struct ActionContext : public TimaNativeContext {
+class ActionContext : public TimaNativeContext {
+public:
   bool msg_received = false;
   Message msg;
 
