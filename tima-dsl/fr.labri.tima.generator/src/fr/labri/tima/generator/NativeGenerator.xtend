@@ -151,7 +151,7 @@ class NativeGenerator extends NamedNodeGenerator {
 		{
 			«{context.enterScope(new HashMap<String, String>); null}»
 			«FOR act : node.actions»
-			«act.IR2Target»;
+			«act.IR2Target»
 			«ENDFOR»
 			«{context.leaveScope; null}»
 		}
@@ -185,12 +185,7 @@ class NativeGenerator extends NamedNodeGenerator {
 				dst : «Util.indexOf(t.target, automaton.nodes)»,
 				is_msg_transition : «IF t.guard instanceof IRAutomata.MessageGuard»true«ELSE»false«ENDIF»,
 				guard : «get_transition_guard_name(automaton, node, counter)»,
-				action : «get_transition_action_name(automaton, node, counter++)»,
-				«IF t.guard instanceof MessageGuard»
-				msg_id : «(t.guard as MessageGuard).messageType.get_message_id»
-				«ELSE»
-				msg_id : ANY_MSG_ID
-				«ENDIF»
+				action : «get_transition_action_name(automaton, node, counter++)»
 			}
 			«ENDFOR»
 		};
@@ -351,9 +346,10 @@ class NativeGenerator extends NamedNodeGenerator {
 		«msg».«f.key»(«i.get(f.key)»);
 		«ENDFOR»
 		«IF action.message instanceof RemoteMessage»
+		«msg».set("sender",ctx->get_device_name());
 		((tima::ActionContext*)ctx)->broadcast(10000, «msg»);
 		«ELSE»
-		tima::Mailbox::send(«msg», «(action.target as MessageTarget.Unicast).target»)
+		tima::Mailbox::send(«msg», "«(action.target as MessageTarget.Internal).target.name»", ctx);
 		«ENDIF»
 		'''
 	}
@@ -371,7 +367,7 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	dispatch def String IR2Target(IRAutomata.MessageGuard g) {
 		'''
-		bool «context.nextTmp» = tima::Mailbox::exists2(ctx->get_device_name(), ctx, [&](tima::Message& m){
+		bool «context.nextTmp» = tima::Mailbox::exists2(name, ctx, [&](tima::Message& m){
 			«{context.enterScope(getMessageSymbolTable(g.messageType)); null}»
 			bool b = m.msg_id == «g.messageType.get_message_id»;
 			«FOR p : g.patterns»

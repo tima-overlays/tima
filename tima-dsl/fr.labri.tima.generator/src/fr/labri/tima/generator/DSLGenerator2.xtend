@@ -39,6 +39,7 @@ class DSLGenerator2 extends AbstractGenerator {
 				Generators.getGenerator(target, automata).generateFiles(name, fsa, context)
 			} catch(Exception e) {
 				System.err.println("Unable to call generator " + target)
+				System.err.println(e)
 			}
 	}
 }
