@@ -47,8 +47,9 @@ public class DSLSemantic {
 
 		def createAutomaton(Automaton a) {
 			val builder = new IRAutomatonBuilder(this, a)
-			builder.createAutomata(a)
-			automata.add(builder.automaton)
+			// the order here is important, remember, recursive definitions
+			automata.add(builder.automaton) // line 1
+			builder.createAutomata(a) // line 2
 		}
 
 		def IRAutomata.Message getMessage(MessageType msg) {
@@ -56,16 +57,24 @@ public class DSLSemantic {
 		}
 
 		def IRAutomata.Automaton getAutomaton(Automaton a) {
-			automata.automata.get(a.name)
+			if (automata.automata.containsKey(a.name)) {
+				automata.automata.get(a.name)
+			}
+			else {
+				createAutomaton(a)
+				getAutomaton(a)
+			}
 		}
 
 		def newMessage(MessageType msg) {
-			if (msg.fields == null) // FIXME ugly
+			val r = if (msg.fields == null || msg.fields.size  == 0) // FIXME ugly
 				new IRAutomata.Message(msg.name, msg.declaredFields.map[it])
 			else
 				new IRAutomata.RemoteMessage(msg.name, msg.declaredFields.map[it], newHashMap(msg.fields.filter[it.value instanceof StringExpression].map[
 					it.name -> (it.value as StringExpression).value
 				]))
+//			println(msg.name + " " + msg.fields + " " + r.class.simpleName)	
+			r
 		}
 	}
 
@@ -80,7 +89,7 @@ public class DSLSemantic {
 		}
 
 		def createAutomata(Automaton a) {
-			a.states.forEach[states.put(it, new IRAutomata.NamedNode(it.name))]
+			a.states.forEach[states.put(it, newNamedNode(it))]
 			states.forEach[x, y|
 				automaton.add(y)
 				buildTransitions(x)
@@ -120,6 +129,14 @@ public class DSLSemantic {
 					node.timeoutTarget = states.get(timeoutTarget)
 				}
 			}
+		}
+		
+		def IRAutomata.NamedNode newNamedNode(State state) {
+			val r = new IRAutomata.NamedNode(state.name)
+			if (state.actions != null) {
+				r.actions.addAll(state.actions.map[newAction(it)])
+			}
+			r
 		}
 
 		def IRAutomata.Transition newTransition(GuardedTransition t) {

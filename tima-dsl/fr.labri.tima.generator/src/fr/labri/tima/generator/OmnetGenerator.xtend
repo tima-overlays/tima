@@ -57,6 +57,7 @@ class OmnetGenerator extends NativeGenerator {
 	
 	#include "inet/networklayer/common/L3AddressResolver.h"
 	#include "inet/transportlayer/contract/udp/UDPControlInfo.h"
+	#include "inet/mobility/contract/IMobility.h"
 	
 	#include <algorithm>
 	#include <sstream>
@@ -68,26 +69,44 @@ class OmnetGenerator extends NativeGenerator {
 	
 	void «project_name»::initialize(int stage)
 	{
-	    ApplicationBase::initialize(stage);
+		ApplicationBase::initialize(stage);
+		
+		switch (stage) {
+	        case INITSTAGE_LOCAL: {
 	
-	    if (stage == INITSTAGE_LOCAL) {
+	              localPort = par("localPort");
+	              destinationPort = par("destinationPort");
 	
-	        localPort = par("localPort");
-	        destinationPort = par("destinationPort");
+	              const char *params = par("extra_options");
+	              cStringTokenizer tokenizer(params,":");
+	              const char *token;
 	
-	        const char *params = par("extra_options");
-	        cStringTokenizer tokenizer(params,":");
-	        const char *token;
-	
-	        while ((token = tokenizer.nextToken()) != nullptr) {
-	            cStringTokenizer tokenizer2(token, "=");
-	            const char* name = tokenizer2.nextToken();
-	            const char* value= tokenizer2.nextToken();
-	            options.emplace(name, value);
-	        }
+	              while ((token = tokenizer.nextToken()) != nullptr) {
+	                  cStringTokenizer tokenizer2(token, "=");
+	                  const char* name = tokenizer2.nextToken();
+	                  const char* value= tokenizer2.nextToken();
+	                  options.emplace(name, value);
+	              }
 	
 	
-	        msg_tick = new cMessage("msg_ctrl", ControlMessageTypes::IDLE);
+	              msg_tick = new cMessage("msg_ctrl", ControlMessageTypes::IDLE);
+	            }
+	            break;
+	        case INITSTAGE_PHYSICAL_ENVIRONMENT_2:
+	            {
+	                cModule* host = getContainingNode(this);
+	                IMobility* mobility = check_and_cast<IMobility*>(host->getSubmodule("mobility"));
+	
+	                this->position = mobility->getCurrentPosition();
+	
+	                EV_TRACE << "My position is " << this->position  << "\n";
+	            }
+	            break;
+	        case INITSTAGE_LAST:
+	
+	            break;
+	        default:
+	            break;
 	    }
 	}
 	
@@ -205,6 +224,9 @@ class OmnetGenerator extends NativeGenerator {
 	    nature = std::make_shared<OMNetTimaNature>(myself, socket, possibleNeighbors, this);
 	    nature->initialize();
 	    nature->configure_communication(localPort);
+	    
+	    options.emplace("posX", std::to_string(position.x));
+	    options.emplace("posY", std::to_string(position.y));
 	
 	
 	    EV_TRACE << "Creating protocol's executer\n";
@@ -229,6 +251,8 @@ class OmnetGenerator extends NativeGenerator {
 	#include <memory>
 	
 	#include "inet/common/INETDefs.h"
+	#include "inet/common/ModuleAccess.h"
+	#include "inet/common/geometry/common/Coord.h"
 	
 	#include "inet/applications/base/ApplicationBase.h"
 	#include "inet/transportlayer/contract/udp/UDPSocket.h"
@@ -261,6 +285,9 @@ class OmnetGenerator extends NativeGenerator {
 	    // myself as a module
 	    std::string myself;
 	    L3Address myAddress;
+	    
+	   	// my position
+	   	Coord position;
 	
 	    int msec;
 	

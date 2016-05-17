@@ -146,7 +146,6 @@ Executor::step(uint32_t milliseconds, bool only_urgents)
             /* message pattern */
 
             ctx = new MailboxContext(
-                        state->transitions[i].msg_id,
                         nature->device_name,
                         storage);
 

@@ -88,11 +88,9 @@ class TimaNativeContext {
  */
 class MailboxContext : public TimaNativeContext {
 public:
-  int msg_id;
   Message read_message;
-  MailboxContext(int a, const std::string& device_name, std::shared_ptr<GlobalStorage> st):
-          TimaNativeContext(device_name, st),
-          msg_id(a) {}
+  MailboxContext(const std::string& device_name, std::shared_ptr<GlobalStorage> st):
+          TimaNativeContext(device_name, st) {}
 };
 
 /**
