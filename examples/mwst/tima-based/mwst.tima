@@ -1,0 +1,90 @@
+module mwst
+summary "This is an implementation of a distributed algorithm to build a minimum weighted spanning tree"
+
+
+msg_wakeup : sender
+
+/* this one is a trick to find your neighbors  */
+hello(proto:"UDP", port:"1000"): sender, x, y 
+
+/* used to state that a fragment wants to connect with another */
+connect(proto:"UDP", port:"1000") : sender
+
+/* used to spread a new fragment name, also to start looking for the next shortest edge */
+initiate(proto:"UDP", port:"1000"): sender, fragment
+
+/* to test if a edge is connect to a different fragment */
+test(proto:"UDP", port:"1000"): sender, fragment
+
+/* response given when a node receives test from a different fragment */
+accept(proto:"UDP", port:"1000"): sender
+
+/* response given when a node receives test from the same fragment */
+reject(proto:"UDP", port:"1000") : sender
+
+/* to report the shortest edge to the tree's root */
+report(proto:"UDP", port:"1000"): sender, weight 
+
+/* send to change the root */
+changeRoot(proto:"UDP", port:"1000"): sender
+   
+automaton phase0
+	initial state greeting0
+		when ? hello within 200 msec => greeting0
+			do 
+				`store` (sender, x, y)
+				`println` (sender, x, y) 
+		when timeout => greeting1 
+			do
+				! hello (x:posX, y:posY) @ *
+	
+	state greeting1
+		when ? hello within 200 msec => greeting1
+			do 
+				`store` (sender, x, y) 
+				`println` (sender, x, y)
+		when timeout => s0
+			do
+				! hello (x:posX, y:posY) @ * 
+			
+	state s0
+		when ? hello  within 300 msec => s0
+			do 
+				`store` (sender, x, y)
+				`println` (sender, x, y) 
+		when timeout => initialized
+		
+	state initialized
+		do 
+			! msg_wakeup @ MainPhase
+
+
+automaton MainPhase
+	initial state Sleeping
+		when ? msg_wakeup => identifying // spontaneous awake
+			do
+				`identify`
+				
+		when ? test => check_if_report // someone is testing me, I am not member of any fragment
+			do
+				`println` (sender, fragment, "EMPTY")
+//				`identify`
+	// initiate ? 		
+				
+		
+	state identifying
+		when ? accept within 200 msec => check_if_report
+			do `accept` (sender)
+		when ? reject within 200 msec => check_if_report
+			do `reject` (sender)
+		when ? report within 200 msec => check_if_report 
+			do `report` (sender, weight)
+			
+		when ? test within 2000 msec  => check_if_report // someone is testing me, I am not member of any fragment
+			do
+				`println` (sender, fragment, "EMPTY") 
+			
+		when timeout => check_if_report
+		
+	state check_if_report
+		when `must_report` => check_if_report
