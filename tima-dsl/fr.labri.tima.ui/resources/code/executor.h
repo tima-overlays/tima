@@ -15,13 +15,13 @@ namespace tima {
 class Executor {
 private:
   std::shared_ptr< tima::AbstractTimaNature > nature;
-  std::vector<struct tima::Automata*> automatas;
+  std::vector<struct tima::Automaton*> automatas;
   std::vector<int> current_states;
   std::vector<int> timeouts;
 
   void* user_data;
 
-  uint32_t deadline(struct tima::Automata* a, int state_idx);
+  uint32_t deadline(struct tima::Automaton* a, int state_idx);
 
   bool step(uint32_t milliseconds, bool only_urgents);
 

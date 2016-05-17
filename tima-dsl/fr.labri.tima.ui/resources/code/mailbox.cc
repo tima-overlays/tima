@@ -10,7 +10,9 @@
 std::map<std::string, tima::Mailbox*> tima::Mailbox::_singleton;
 
 bool
-tima::Mailbox::exists(std::string& name, tima::TimaNativeContext* context)
+tima::Mailbox::exists(
+        const std::string& name,
+        tima::TimaNativeContext* context)
 {
   // std::cerr << "Executing this " << std::endl;
   auto ctx = (MailboxContext*) context;
@@ -39,7 +41,7 @@ tima::Mailbox::exists(std::string& name, tima::TimaNativeContext* context)
 }
 
 bool
-tima::Mailbox::exists_network_message(std::string& name, TimaNativeContext* context)
+tima::Mailbox::exists_network_message(const std::string& name, TimaNativeContext* context)
 {
   // check if the first message has the properties I want
   auto ctx = (MailboxContext*) context;
@@ -64,19 +66,18 @@ tima::Mailbox::add_received_network_message(int msg_id, const char* payload, Tim
 }
 
 void
-tima::Mailbox::send(std::string& name, TimaNativeContext* context)
+tima::Mailbox::send(tima::Message& msg, std::string& target, TimaNativeContext* context)
 {
   auto ctx = (SendTimaContext*)context;
-  auto dst = ctx->dst_name;
   auto inst = get_instance(context->get_device_name());
-  auto it = inst->messages.find(dst);
+  auto it = inst->messages.find(target);
   if (it != inst->messages.end()) {
     // found
 //    std::cout << "Adding to the queue " << ctx->msg_id << ctx->dst_id << std::endl;
-    it->second.push_back(Message(ctx->msg_id, ctx->dst_id));
+    it->second.push_back(msg);
   }
   else {
-    throw std::runtime_error(std::string("No automaton with name ") + name);
+    throw std::runtime_error(std::string("No automaton with name ") + target);
   }
 }
 

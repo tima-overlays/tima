@@ -2,6 +2,7 @@
 #define __TIMA_AUTOMATA__
 
 #include <string>
+#include <vector>
 #include <stdint.h>
 
 #include "tima.h"
@@ -13,27 +14,32 @@ const int32_t never_timeout = -1;
 
 struct Transition;
 
+typedef void (*StateAction_t)(const std::string&, TimaNativeContext*);
+typedef bool (*TransitionGuard_t)(const std::string&, tima::TimaNativeContext*);
+typedef void (*TransitionAction_t)(const std::string&, tima::TimaNativeContext*);
+
 struct State {
   std::string name;
   bool urgent;
   int32_t timeout;
   int32_t timeout_destination; // default transition
+  TransitionAction_t timeout_action;
   uint32_t nr_transitions;
   struct Transition* transitions;
 
-  void (*pre_action)(std::string&, TimaNativeContext*);
-  void (*post_action)(std::string&, TimaNativeContext*);
-  void (*each_action)(std::string&, TimaNativeContext*);
+  StateAction_t action;
 };
+
+
 
 struct Transition {
   uint32_t dst; // destination state
-  bool (*guard)(std::string&, TimaNativeContext*);
+  TransitionGuard_t guard;
+  TransitionAction_t action;
   int msg_id;
-  int src_id;
 };
 
-struct Automata {
+struct Automaton {
   std::string name;
 
   uint32_t initial;
