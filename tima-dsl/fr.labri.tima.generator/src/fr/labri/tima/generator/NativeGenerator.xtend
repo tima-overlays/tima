@@ -139,7 +139,6 @@ class NativeGenerator extends NamedNodeGenerator {
 	/** Automaton «automaton.name» */
 	
 	«FOR node: automaton.nodes SEPARATOR '\n'»
-		«{counter = 0; null}»
 		
 «««		/* forward declarations */
 		«node.actions.get_forward_declarations»
@@ -156,8 +155,9 @@ class NativeGenerator extends NamedNodeGenerator {
 			«{context.leaveScope; null}»
 		}
 		
+		«{counter = 0; null}»
 		«FOR t: node.transtions SEPARATOR '\n'»
-		«t.IR2Target(automaton, node)»
+		«t.IR2Target(automaton, node, counter++)»
 		«ENDFOR»
 		
 		«IF node.timeoutTarget != null»
@@ -245,7 +245,7 @@ class NativeGenerator extends NamedNodeGenerator {
 		«FOR act : actions.filter(ExternalAction)»
 		void «(act as fr.labri.tima.ir.IRAutomata.ExternalAction).externalName.simple_name»(
 					const std::string& name,
-					tima::TimaNativeContext* ctx,
+					tima::TimaNativeContext* ctx «IF act.arguments.size > 0»,«ENDIF»
 					«FOR p : act.arguments SEPARATOR ','»
 						std::string
 					«ENDFOR»
@@ -255,12 +255,26 @@ class NativeGenerator extends NamedNodeGenerator {
 		
 	}
 	
+	private def get_forward_declarations(IRAutomata.Guard g) {
+		if (g instanceof IRAutomata.ExternalGuard) {
+			val eg = g as IRAutomata.ExternalGuard
+			'''
+			bool «eg.externalName.simple_name»(
+								   const std::string& name, tima::TimaNativeContext* ctx «IF eg.arguments.size > 0»,«ENDIF»
+								   «FOR p : eg.arguments SEPARATOR ','»
+								   std::string
+				   				   «ENDFOR»
+								  );
+			'''
+		}
+		else ""
+	}
+	
 	private def String get_timeout_action_name(Automaton automaton, Node node)
 		'''«automaton.name»_«names.get(automaton.name).get(node)»_timeout_do'''
 	
 	
-	def String IR2Target(IRAutomata.Transition t, IRAutomata.Automaton automaton, IRAutomata.Node node) {
-		var counter = 0;
+	def String IR2Target(IRAutomata.Transition t, IRAutomata.Automaton automaton, IRAutomata.Node node, int counter) {
 		'''
 «««		/* forward declarations */
 		«t.actions.get_forward_declarations»
@@ -283,13 +297,17 @@ class NativeGenerator extends NamedNodeGenerator {
 			«{context.leaveScope; null}»
 		}
 		
+		«t.guard.get_forward_declarations»
+			
 		static bool
-		«get_transition_guard_name(automaton, node, counter++)»(
+		«get_transition_guard_name(automaton, node, counter)»(
 					const std::string& name,
 					tima::TimaNativeContext* ctx)
 		{
+			«{context.enterScope(new HashMap<String, String>); null}»
 			«t.guard.IR2Target»
 			return «context.lastTmp»;
+			«{context.leaveScope; null}»
 		}
 		'''
 	}
@@ -313,8 +331,8 @@ class NativeGenerator extends NamedNodeGenerator {
 		«FOR e : v»
 		«e»
 		«ENDFOR»
-		«action.externalName.substring(1, action.externalName.length-1)»(
-			name, ctx,
+		«action.externalName.simple_name»(
+			name, ctx«IF i.size > 0»,«ENDIF»
 			«FOR tmp : i SEPARATOR ','»
 				«tmp»
 			«ENDFOR»
@@ -354,16 +372,13 @@ class NativeGenerator extends NamedNodeGenerator {
 		'''
 	}
 	
-	
 	dispatch def String IR2Target(IRAutomata.Expression.Constant c) {
 		'''std::string «context.nextTmp» = "«c.value»";'''
 	}
 	
-	
 	dispatch def String IR2Target(IRAutomata.Expression.Identifier i) {
 		'''std::string «context.nextTmp» = «context.symbol2Target(i.name)»;'''
 	}
-	
 	
 	dispatch def String IR2Target(IRAutomata.MessageGuard g) {
 		'''
@@ -402,8 +417,30 @@ class NativeGenerator extends NamedNodeGenerator {
 	}
 		
 	
-	dispatch def String IR2Target(IRAutomata.ExternalGuard g)
-		'''«g.externalName.simple_name»'''
+	dispatch def String IR2Target(IRAutomata.ExternalGuard g) {
+		/* steps:
+		 *  - build parameters
+		 *  - call operation
+		 */
+		val v = newLinkedList()
+		val i = newLinkedList()
+		for (a : g.arguments) {
+			v.add(a.IR2Target)
+			i.add(context.lastTmp)
+		}
+		'''
+		«FOR e : v»
+		«e»
+		«ENDFOR»
+		bool «context.nextTmp» = «g.externalName.simple_name»(
+			name, ctx«IF i.size > 0»,«ENDIF»
+			«FOR tmp : i SEPARATOR ','»
+				«tmp»
+			«ENDFOR»
+		);
+		'''
+	}
+		
 		
 	
 	dispatch def String IR2Target(IRAutomata.BuiltinGuard g) {
