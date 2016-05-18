@@ -19,8 +19,8 @@ public class IRAutomata {
 		}
 		
 		public static class Unicast implements MessageTarget {
-			public String target;
-			public Unicast(String t) {
+			public Expression target;
+			public Unicast(Expression t) {
 				target = t;
 			}
 		}

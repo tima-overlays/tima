@@ -13,7 +13,11 @@
 
 using namespace std;
 
-class Info {
+using namespace tima;
+
+static const string nil = "";
+
+class Info: public UserData {
 public:
     enum EdgeStatus {
         Basic, Branch, Rejected
@@ -23,15 +27,69 @@ public:
     string fragment;
     map<string, int> neighbors;
     map<string, EdgeStatus> status;
+    set<string> requesting;
     set<string> finding;
     set<string> testing;
     string best_neighbor;
     int bw;
+    string connecting_with;
+    string parent;
+
+    string myself;
 
     Info(const string& f) {
         bw = 0;
         best_neighbor = "";
         fragment = f;
+        myself = f;
+    }
+
+    bool isRequesting(const string& i) {
+        return find(begin(requesting), end(requesting), i) != end(requesting);
+    }
+
+    void removeRequest(const string& i) {
+        requesting.erase(i);
+    }
+
+    virtual std::string computeValue(const std::string& id) override {
+        if (id == "closest") {
+            auto m = min_element(begin(neighbors), end(neighbors), [&](pair<const string, int>& e1, pair<const string, int>& e2) {
+                return e1.second <= e2.second;
+            });
+
+            return (m != end(neighbors)) ? m->first: nil;
+        }
+        else if (id == "connecting_to") {
+            return connecting_with;
+        }
+        else if (id == "myself") {
+            return myself;
+        }
+        else if (id == "fragmentName") {
+            return fragment;
+        }
+        else if (id == "wait_for_finding") {
+            return to_string(finding.size());
+        }
+        else if (id == "test_edge") {
+            int min_w = numeric_limits<int>::max();
+            string test_edge = nil;
+            for (auto i : neighbors) {
+                auto name = i.first;
+                auto w = i.second;
+                if (status[name] == Basic
+                        && w < min_w) {
+                    min_w = w;
+                    test_edge = name;
+                }
+            }
+            return test_edge;
+        }
+        else if (id == "wait_for_test"){
+            return to_string(testing.size());
+        }
+        return nil;
     }
 };
 
@@ -52,7 +110,7 @@ init_device_data(
 
 void
 store(const string& name,
-	  tima::TimaNativeContext* ctx,
+	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)
 {
@@ -67,64 +125,217 @@ store(const string& name,
     ud->neighbors.emplace(sender, d);
 }
 
+void
+store_requester(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string j
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->requesting.insert(j);
+}
+
+
+void
+make_root(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string a1,
+            std::string a2
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->parent = nil;
+    if (a1 <= a2) {
+        ud->fragment = a1 + " <-> " + a2;
+    }
+    else {
+        ud->fragment = a2 + " <-> " + a1;
+    }
+}
+
+void
+make_parent(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string p
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->parent = p;
+    ud->status[p] = Info::Branch;
+}
+
+
+void
+check_edge(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string j,
+            std::string result
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->testing.erase(j);
+    if (result == "reject") {
+        ud->status[j] = Info::Rejected;
+    }
+    else if (ud->bw > ud->neighbors[j]) {
+        ud->bw = ud->neighbors[j];
+        ud->best_neighbor = j;
+    }
+}
+
+void
+check_weight(const string& name,
+             TimaNativeContext* ctx ,
+             string j, string weight
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->finding.erase(j);
+    int w = std::stoi(weight);
+    if (w < ud->bw) {
+        ud->bw = w;
+        ud->best_neighbor = j;
+    }
+}
+
+
+void
+do_report(const std::string& name,
+          tima::TimaNativeContext* ctx
+         )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    if (ud->parent == nil) {
+        cout << ctx->get_device_name() << ": the best is " << ud->bw << " taking path " << ud->best_neighbor << endl;
+    }
+    else {
+        MessageReport m;
+        m.sender(ctx->get_device_name());
+        m.weight(to_string(ud->bw));
+        ((ActionContext*)ctx)->send_to(ud->parent, 10000, m);
+    }
+}
+
 
 void
 println(const string& name,
-	  tima::TimaNativeContext* ctx,
+	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)
 {
 	cout << ctx->get_device_name() << " knows that " << sender << " is located at (" << x << ", " << y << ")" << endl;
 }
 
+void
+println(const string& name,
+      TimaNativeContext* ctx,
+      string sender,
+      string msg)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    cout << ctx->get_device_name() << ": " << sender << msg << ". In addition: you are connecting to " << ud->connecting_with << endl;
+}
+
 
 void
-identify(const std::string& name,
-         tima::TimaNativeContext* ctx
+initiate(const string& name,
+         TimaNativeContext* ctx,
+         string fragment_name
         )
 {
     auto ud = (Info*)ctx->get_user_data();
 
     // initialization
+    ud->connecting_with = nil;
+    ud->fragment = fragment_name;
     ud->best_neighbor = "";
+    ud->testing.clear();
+    ud->finding.clear();
     ud->bw = numeric_limits<int>::max();
 
     /* send 'initiate' to neighbors in the MST */
-    MessageInitiate m;
-    m.set("sender", ctx->get_device_name());
-    m.fragment(ud->fragment);
+    for (auto i : ud->neighbors) {
+        auto name = i.first;
+        if (ud->parent != name &&
+                ud->status[name] == Info::Branch) {
 
-    for_each(begin(ud->neighbors), end(ud->neighbors), [&](pair<const string, int>& p) {
+            MessageInitiate m;
+            m.sender(ctx->get_device_name());
+            m.fragment(fragment_name);
 
-        if (ud->status[p.first] == Info::Branch) {
-            ((tima::ActionContext*)ctx)->send_to(p.first, 10000, m);
-            ud->finding.emplace(p.first);
-            cout << " sending initiate to " << p.first << endl;
+            ((tima::ActionContext*)ctx)->send_to(name, 10000, m);
+
+            ud->finding.emplace(name);
+        }
+    }
+
+    for (auto i : ud->neighbors) {
+            auto name = i.first;
+            if (ud->status[name] == Info::Basic) {
+                ud->testing.emplace(name);
+            }
         }
 
-    });
+}
 
-    /* send 'test' to neighbors in the MST */
-    MessageTest m2;
-    m2.set("sender", ctx->get_device_name());
-    m2.fragment(ud->fragment);
 
-    for_each(begin(ud->neighbors), end(ud->neighbors), [&](pair<const string, int>& p) {
+void
+send_connect(TimaNativeContext* ctx, const std::string& j)
+{
 
-        if (ud->status[p.first] == Info::Basic) {
-            ud->testing.emplace(p.first);
-        }
+    auto ud = (Info*)ctx->get_user_data();
 
-    });
-
-    if (ud->testing.size() > 0) {
-        auto dst = *ud->testing.begin();
-        cout << ctx->get_device_name() << " is sending 'test' to " << dst << endl;
-        ((tima::ActionContext*)ctx)->send_to(dst, 10000, m2);
-        ud->testing.erase(ud->testing.begin());
+    if (ud->isRequesting(j)) {
+        /*connecting with someone who already sent me connect request */
+        ud->status[j] = Info::Branch; // no sure
+        /* I'm the root */
+        ud->parent = nil;
+//      TODO:  initiate(create_unique_name(j, ctx->get_device_name()));
+        ud->removeRequest(j);
+    }
+    else {
+//       TODO: SN = States::Connecting;
+        ud->connecting_with = j;
+        MessageConnect m;
+        m.sender(ctx->get_device_name());
+        ((ActionContext*)ctx)->send_to(j, 10000, m);
     }
 
 }
+
+
+void
+mark_closest(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string neighbor
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->connecting_with = neighbor;
+    ud->status[neighbor] = Info::Branch;
+}
+
+
+void
+wakeup(const string& name,
+       TimaNativeContext* ctx)
+{
+
+    auto ud = (Info*)ctx->get_user_data();
+
+    auto closest = ctx->get_global("closest");
+
+    ud->status[closest] = Info::Branch;
+
+    send_connect(ctx, closest);
+
+}
+
 
 
 void

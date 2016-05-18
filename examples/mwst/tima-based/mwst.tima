@@ -1,11 +1,18 @@
 module mwst
 summary "This is an implementation of a distributed algorithm to build a minimum weighted spanning tree"
 
+/* =========================================== */
+/* control messages */
+/* =========================================== */
 
 msg_wakeup : sender
 
+/* =========================================== */
+/* network messages */
+/* =========================================== */
+
 /* this one is a trick to find your neighbors  */
-hello(proto:"UDP", port:"1000"): sender, x, y 
+hello(proto:"UDP", port:"1000"): sender, x, y
 
 /* used to state that a fragment wants to connect with another */
 connect(proto:"UDP", port:"1000") : sender
@@ -23,68 +30,132 @@ accept(proto:"UDP", port:"1000"): sender
 reject(proto:"UDP", port:"1000") : sender
 
 /* to report the shortest edge to the tree's root */
-report(proto:"UDP", port:"1000"): sender, weight 
+report(proto:"UDP", port:"1000"): sender, weight
 
 /* send to change the root */
 changeRoot(proto:"UDP", port:"1000"): sender
-   
-automaton phase0
-	initial state greeting0
-		when ? hello within 200 msec => greeting0
-			do 
-				`store` (sender, x, y)
-				`println` (sender, x, y) 
-		when timeout => greeting1 
-			do
-				! hello (x:posX, y:posY) @ *
-	
-	state greeting1
-		when ? hello within 200 msec => greeting1
-			do 
-				`store` (sender, x, y) 
-				`println` (sender, x, y)
-		when timeout => s0
-			do
-				! hello (x:posX, y:posY) @ * 
-			
-	state s0
-		when ? hello  within 300 msec => s0
-			do 
-				`store` (sender, x, y)
-				`println` (sender, x, y) 
-		when timeout => initialized
-		
-	state initialized
-		do 
-			! msg_wakeup @ MainPhase
 
 
 automaton MainPhase
+
+  /* the node is not building its local MWST */
 	initial state Sleeping
-		when ? msg_wakeup => identifying // spontaneous awake
+		when ? msg_wakeup => connecting // spontaneous awake
 			do
-				`identify`
-				
-		when ? test => check_if_report // someone is testing me, I am not member of any fragment
+		        ! connect @ addr=closest
+		        `mark_closest` (closest)
+
+
+    when ? connect (sender = closest) => found // FIXME: NEXT STATE someone is trying to connect with me
+    	do `println` (sender, " sent you a connect while you were sleeping. It is the right guy")
+    when ? connect (sender <> closest) => found
+    	do `println` (sender, " sent you a connect while you were sleeping. It isn't the right guy")
+
+
+		when ? test => connecting // someone is testing me, but I am not member of any fragment because I was sleeping
 			do
-				`println` (sender, fragment, "EMPTY")
-//				`identify`
-	// initiate ? 		
-				
-		
-	state identifying
-		when ? accept within 200 msec => check_if_report
-			do `accept` (sender)
-		when ? reject within 200 msec => check_if_report
-			do `reject` (sender)
-		when ? report within 200 msec => check_if_report 
-			do `report` (sender, weight)
-			
-		when ? test within 2000 msec  => check_if_report // someone is testing me, I am not member of any fragment
+		        ! connect @ addr=closest
+		        `mark_closest` (closest)
+		        ! accept @ addr=sender
+
+
+  /* the node found the next edge it should add to the fragment, it is just waiting for a connect or initiatate */
+  state found
+
+  state finding
+  	do `println` ("", "I am finding")
+  	
+  	when ? test (fragment = fragmentName) => finding
+    	do ! reject @ addr=sender
+   	when ? test (fragment <> fragmentName) => finding
+    	do ! accept @ addr=sender
+    	
+    	
+   	when ? accept (wait_for_test = "1", wait_for_finding = "0") => found
+   		do `check_edge` (sender, "accept")
+   		   // report
+   		   `do_report`
+   	when ? accept (wait_for_test = "1", wait_for_finding <> "0") => finding
+   		do `check_edge` (sender, "accept")
+   	when ? accept (wait_for_test <> "1") => finding
+   		do `check_edge` (sender, "accept")
+   		   ! test (fragment:fragmentName) @ addr=test_edge
+   			
+   			
+   	when ? reject (wait_for_test = "1", wait_for_finding = "0") => found
+   		do `check_edge` (sender, "reject")
+   		   // report
+   		   `do_report`
+   	when ? reject (wait_for_test = "1", wait_for_finding <> "0") => finding
+   		do `check_edge` (sender, "reject")
+   	when ? reject (wait_for_test <> "1") => finding
+   		do `check_edge` (sender, "reject")
+   		   ! test (fragment:fragmentName) @ addr=test_edge
+   			
+   			
+   	when ? report (wait_for_test = "0", wait_for_finding = "1") => found
+   		do `check_weight` (sender, weight)
+   		   // report
+   		   `do_report`
+   	
+   	when ? report  => finding
+   		do `check_weight` (sender, weight) 
+   		   ! test (fragment:fragmentName) @ addr=test_edge
+   	
+
+  state connecting
+
+  	when ? connect (sender <> connecting_to) => connecting // FIXME: NEXT STATE someone is trying to connect with me
+    	do
+        `println` (sender, " sent you a connect while you were connecting (It isn't the right guy)")
+        `store_requester` (sender)
+
+    when ? connect (sender = connecting_to, myself < sender) => finding // FIXME: NEXT STATE someone is trying to connect with me
+    	do
+        `println` (sender, " sent you a connect while you were connecting (It is the right guy, and I am the alfa)")
+        // I become the root
+        `make_root` (myself, sender)
+        `initiate` (fragmentName)
+        ! test (fragment:fragmentName) @ addr=test_edge
+
+    when ? connect (sender = connecting_to, myself >= sender) => connecting // FIXME: NEXT STATE someone is trying to connect with me
+    	do
+        `println` (sender, " sent you a connect while you were connecting (It is the right guy, but I ain't the alfa)")
+        // nothing to do, just wait
+
+  	when ? initiate => finding
+  		do
+  		`println` (sender, " sent me an 'initiate'")
+  		`make_parent` (sender)
+  		`initiate` (fragment)
+      	! test (fragment:fragmentName) @ addr=test_edge
+      	
+    when ? test (fragment <> fragmentName) => connecting
+    	do ! accept @ addr=sender
+    	
+   	when ? test (fragment = fragmentName) => connecting
+    	do ! reject @ addr=sender
+
+
+/* automaton used to build set of find set of neighbors */
+automaton phase0
+	initial state greeting0
+		when ? hello within 200 msec => greeting0
+			do `store` (sender, x, y)
+		when timeout => greeting1
 			do
-				`println` (sender, fragment, "EMPTY") 
-			
-		when timeout => check_if_report
-		
-	state check_if_report
-		when `must_report` => check_if_report
+				! hello (x:posX, y:posY) @ *
+
+	state greeting1
+		when ? hello within 200 msec => greeting1
+			do 	`store` (sender, x, y)
+		when timeout => s0
+			do ! hello (x:posX, y:posY) @ *
+
+	state s0
+		when ? hello  within 300 msec => s0
+			do `store` (sender, x, y)
+		when timeout => initialized
+
+	state initialized
+		do ! msg_wakeup @ MainPhase

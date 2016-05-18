@@ -141,10 +141,9 @@ class OmnetGenerator extends NativeGenerator {
 	
 	            Tima* tima_msg = check_and_cast_nullable<Tima*>(dynamic_cast<Tima*>(pkt));
 	            if (tima_msg != nullptr) {
-	                std::istringstream convert(tima_msg->getId());
-                    int id;
-                    convert >> id;
-                    executor->add_received_network_message(id, (char*)tima_msg->getPayload());
+	                EV_TRACE << " a message " << tima_msg->getName() << "\n";
+	                int id = std::stoi(tima_msg->getId());
+	                executor->add_received_network_message(id, (char*)tima_msg->getPayload());
 	            }
 	
 	//            EV_DEBUG << "A network message: " << tima_msg->getId() << " " << tima_msg->getPayload() << '\n';

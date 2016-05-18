@@ -121,7 +121,7 @@ class DotGenerator extends NamedNodeGenerator {
 	}
 	
 	dispatch def String toDot(IRAutomata.MessageTarget.Unicast t) {
-		t.target;
+		t.target.toString;
 	}
 	
 	dispatch def String toDot(IRAutomata.MessageTarget.Internal t) {

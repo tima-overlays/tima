@@ -75,7 +75,7 @@ MessageAction returns Action:
 
 MessageTarget:
 	{BroadcastTarget} '*' |
-	{UnicastTarget} address=STRING |
+	{UnicastTarget} 'addr' '=' address=Expression |
 	{InternalTarget} automata=[Automaton]
 ;
 
@@ -109,7 +109,12 @@ BuiltinGuard returns Guard:
 
 MessagePattern:
 	type=[MessageType]
-	('(' patterns+=PatternExpression ')')?
+	('(' Patterns ')')?
+;
+
+fragment
+Patterns:
+	patterns+=PatternExpression (',' patterns+=PatternExpression)*
 ;
 
 PatternExpression:

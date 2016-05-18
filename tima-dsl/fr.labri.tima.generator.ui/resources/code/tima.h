@@ -28,29 +28,37 @@ public:
 };
 
 
+class UserData {
+public:
+    virtual std::string computeValue(const std::string& id) = 0;
+};
+
 class GlobalStorage {
 
     std::map<std::string, std::string> data;
 
-    void* user_data;
+    UserData* user_data;
 
 public:
 
-    GlobalStorage(void* ud) : user_data(ud) {}
+    GlobalStorage(UserData* ud) : user_data(ud) {}
 
     void setValue(const std::string& key, const std::string v) {
         data[key] = v;
     }
 
     std::string getValue(const std::string& key) {
+        if (data.find(key) == data.end()) {
+            return user_data->computeValue(key);
+        }
         return data[key];
     }
 
-    void* getUserData() {
+    UserData* getUserData() {
         return user_data;
     }
 
-    void setUserData(void* v) {
+    void setUserData(UserData* v) {
         user_data = v;
     }
 

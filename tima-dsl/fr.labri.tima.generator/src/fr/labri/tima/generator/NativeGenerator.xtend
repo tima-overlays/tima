@@ -365,7 +365,12 @@ class NativeGenerator extends NamedNodeGenerator {
 		«ENDFOR»
 		«IF action.message instanceof RemoteMessage»
 		«msg».set("sender",ctx->get_device_name());
+		«IF action.target instanceof MessageTarget.Broadcast»
 		((tima::ActionContext*)ctx)->broadcast(10000, «msg»);
+		«ELSE»
+		«(action.target as MessageTarget.Unicast).target.IR2Target»
+		((tima::ActionContext*)ctx)->send_to(«context.lastTmp», 10000, «msg»);
+		«ENDIF»
 		«ELSE»
 		tima::Mailbox::send(«msg», "«(action.target as MessageTarget.Internal).target.name»", ctx);
 		«ENDIF»
@@ -396,9 +401,6 @@ class NativeGenerator extends NamedNodeGenerator {
 	}
 	
 	dispatch def String IR2Target(IRAutomata.Pattern p) {
-		if (p.operator != "==") {
-			throw new UnsupportedOperationException("Really? Do we have some built-in action?");
-		}
 		val operands = new LinkedList<String>
 		val i = new LinkedList<CharSequence>
 		for (o : p.operands) {
@@ -412,6 +414,11 @@ class NativeGenerator extends NamedNodeGenerator {
 		«IF p.operator == "="»
 		bool «context.nextTmp» = «i.get(0)» == «i.get(1)»;
 		«ELSE»
+		«IF p.operator == "<>"»
+		bool «context.nextTmp» = «i.get(0)» != «i.get(1)»;
+		«ELSE»
+		bool «context.nextTmp» = «i.get(0)» «p.operator» «i.get(1)»;
+		«ENDIF»
 		«ENDIF»
 		'''
 	}
@@ -452,7 +459,7 @@ class NativeGenerator extends NamedNodeGenerator {
 				'false'
 			}
 			default: {
-				throw new UnsupportedOperationException("Really? Do we have some builtin action?");
+				throw new UnsupportedOperationException("Really? Do we have some builtin guards?");
 			}
 		}
 	}
