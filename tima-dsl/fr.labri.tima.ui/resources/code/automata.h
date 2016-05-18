@@ -34,6 +34,7 @@ struct State {
 
 struct Transition {
   uint32_t dst; // destination state
+  bool is_msg_transition; // indicate if this transition is a message pattern
   TransitionGuard_t guard;
   TransitionAction_t action;
   int msg_id;
