@@ -15,6 +15,8 @@ using namespace std;
 
 using namespace tima;
 
+#define HEAD {cout << ctx->get_device_name() << "(FN:" << ud->fragment << ", parent: " << ud->parent  << "): ";}
+
 static const string nil = "";
 
 class Info: public UserData {
@@ -147,6 +149,18 @@ store_requester(
 
 
 void
+remove_requester(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string j
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->requesting.erase(j);
+}
+
+
+void
 make_root(
             const std::string& name,
             tima::TimaNativeContext* ctx ,
@@ -187,6 +201,8 @@ check_edge(
 {
     auto ud = (Info*)ctx->get_user_data();
     ud->testing.erase(j);
+    HEAD;
+    cout << " checking edge " << j << " with " << result << endl;
     if (result == "reject") {
         ud->status[j] = Info::Rejected;
     }
@@ -205,6 +221,8 @@ check_weight(const string& name,
     auto ud = (Info*)ctx->get_user_data();
     ud->finding.erase(j);
     int w = std::stoi(weight);
+    HEAD;
+    cout << "checking weight from " << j << " with weight " << weight << " (" << ud->finding.size() << " left)" << endl;
     if (w < ud->bw) {
         ud->bw = w;
         ud->best_neighbor = j;
@@ -228,7 +246,8 @@ println(const string& name,
       string msg)
 {
     auto ud = (Info*)ctx->get_user_data();
-    cout << ctx->get_device_name() << ": " << sender << msg << ". In addition: you are connecting to " << ud->connecting_with << endl;
+    HEAD;
+    cout << sender << msg << ". In addition: you are connecting to " << ud->connecting_with << endl;
 }
 
 
@@ -264,6 +283,8 @@ initiate(const string& name,
         }
     }
 
+
+
     for (auto i : ud->neighbors) {
         auto name = i.first;
         if (ud->status[name] == Info::Basic) {
@@ -271,31 +292,33 @@ initiate(const string& name,
         }
     }
 
+    HEAD;
+    cout << "in initiate we are finding in " << ud->finding.size() << " neighbors and testing in " << ud->testing.size() << endl;
+
 }
 
 
 void
-send_connect(TimaNativeContext* ctx, const std::string& j)
+do_printing(const string& name,
+         TimaNativeContext* ctx
+        )
 {
-
     auto ud = (Info*)ctx->get_user_data();
 
-    if (ud->isRequesting(j)) {
-        /*connecting with someone who already sent me connect request */
-        ud->status[j] = Info::Branch; // no sure
-        /* I'm the root */
-        ud->parent = nil;
-//      TODO:  initiate(create_unique_name(j, ctx->get_device_name()));
-        ud->removeRequest(j);
-    }
-    else {
-//       TODO: SN = States::Connecting;
-        ud->connecting_with = j;
-        MessageConnect m;
-        m.sender(ctx->get_device_name());
-        ((ActionContext*)ctx)->send_to(j, 10000, m);
-    }
+    /* send 'printing' to neighbors in the MST */
+    for (auto i : ud->neighbors) {
+        auto n = i.first;
+        if (ud->parent != n &&
+                ud->status[n] == Info::Branch) {
 
+            MessagePrinting m;
+            m.sender(ctx->get_device_name());
+            ((tima::ActionContext*)ctx)->send_to(n, 10000, m);
+
+            HEAD;
+            cout << n << " is in mst" << endl;
+        }
+    }
 }
 
 
@@ -323,7 +346,14 @@ bool
 is_root(const std::string& name, tima::TimaNativeContext* ctx)
 {
     auto ud = (Info*)ctx->get_user_data();
-    return ud->parent == nil;
+    return ud->parent == nil && ud->bw < std::numeric_limits<int>::max();
+}
+
+bool
+is_root_and_halt(const std::string& name, tima::TimaNativeContext* ctx)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    return ud->parent == nil  && ud->bw == std::numeric_limits<int>::max();
 }
 
 
@@ -350,5 +380,12 @@ is_branch(const std::string& name, tima::TimaNativeContext* ctx, string j)
     return ud->status[j] == Info::Branch;
 }
 
+
+bool
+no_need_to_wait(const std::string& name, tima::TimaNativeContext* ctx)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    return ud->finding.size() == 0 && ud->testing.size() == 0;
+}
 
 
