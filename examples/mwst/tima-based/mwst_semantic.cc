@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <limits>
 
+#include <omnetpp.h>
+#include "inet/common/INETDefs.h"
+
 #include "tima.h"
 
 #include "mwst.h"
@@ -15,7 +18,7 @@ using namespace std;
 
 using namespace tima;
 
-#define HEAD {cout << ctx->get_device_name() << "(FN:" << ud->fragment << ", parent: " << ud->parent  << "): ";}
+#define HEAD {EV_TRACE << ctx->get_device_name() << "(FN:" << ud->fragment << ", parent: " << ud->parent  << "): ";}
 
 static const string nil = "";
 
@@ -60,6 +63,11 @@ public:
                 return e1.second <= e2.second;
             });
 
+            EV_TRACE << myself << ": the closest is " << ((m != end(neighbors)) ? m->first: nil) <<  '\n';
+            for (auto p : neighbors) {
+                EV_TRACE << "\t" << p.first << ": " << p.second << '\n';
+            }
+
             return (m != end(neighbors)) ? m->first: nil;
         }
         else if (id == "connecting_to") {
@@ -93,11 +101,12 @@ public:
                 auto name = i.first;
                 auto w = i.second;
                 if (status[name] == Basic
-                        && w < min_w) {
+                        && w < min_w && testing.find(name) != testing.end()) {
                     min_w = w;
                     test_edge = name;
                 }
             }
+            EV_TRACE <<  "\t" <<myself <<" test_edge : " << test_edge << '\n';
             return test_edge;
         }
         return nil;
@@ -202,7 +211,7 @@ check_edge(
     auto ud = (Info*)ctx->get_user_data();
     ud->testing.erase(j);
     HEAD;
-    cout << " checking edge " << j << " with " << result << endl;
+    EV_TRACE << " checking edge " << j << " with " << result << '\n';
     if (result == "reject") {
         ud->status[j] = Info::Rejected;
     }
@@ -222,7 +231,7 @@ check_weight(const string& name,
     ud->finding.erase(j);
     int w = std::stoi(weight);
     HEAD;
-    cout << "checking weight from " << j << " with weight " << weight << " (" << ud->finding.size() << " left)" << endl;
+    EV_TRACE << "checking weight from " << j << " with weight " << weight << " (" << ud->finding.size() << " left)" << '\n';
     if (w < ud->bw) {
         ud->bw = w;
         ud->best_neighbor = j;
@@ -236,7 +245,7 @@ println(const string& name,
 	  string sender,
 	  string x, string y)
 {
-	cout << ctx->get_device_name() << " knows that " << sender << " is located at (" << x << ", " << y << ")" << endl;
+	EV_TRACE << ctx->get_device_name() << " knows that " << sender << " is located at (" << x << ", " << y << ")" << '\n';
 }
 
 void
@@ -247,7 +256,7 @@ println(const string& name,
 {
     auto ud = (Info*)ctx->get_user_data();
     HEAD;
-    cout << sender << msg << ". In addition: you are connecting to " << ud->connecting_with << endl;
+    EV_TRACE << sender << msg << ". In addition: you are connecting to " << ud->connecting_with << '\n';
 }
 
 
@@ -293,7 +302,7 @@ initiate(const string& name,
     }
 
     HEAD;
-    cout << "in initiate we are finding in " << ud->finding.size() << " neighbors and testing in " << ud->testing.size() << endl;
+    EV_TRACE << "in initiate we are finding in " << ud->finding.size() << " neighbors and testing in " << ud->testing.size() << '\n';
 
 }
 
@@ -308,15 +317,14 @@ do_printing(const string& name,
     /* send 'printing' to neighbors in the MST */
     for (auto i : ud->neighbors) {
         auto n = i.first;
-        if (ud->parent != n &&
-                ud->status[n] == Info::Branch) {
+        if (ud->status[n] == Info::Branch) {
 
             MessagePrinting m;
             m.sender(ctx->get_device_name());
             ((tima::ActionContext*)ctx)->send_to(n, 10000, m);
 
             HEAD;
-            cout << n << " is in mst" << endl;
+            EV_TRACE << n << " is in mst" << '\n';
         }
     }
 }

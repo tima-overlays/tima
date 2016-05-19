@@ -45,13 +45,19 @@ automaton MainPhase
 	initial state Sleeping
 		when ? msg_wakeup => connecting // spontaneous awake
 			do
+				`println` ("spontaneous awake and connecting to ", closest)
 		        ! connect @ addr=closest
 		        `mark_as_branch` (closest)
 
-	    when ? connect (sender = closest) => found // FIXME: NEXT STATE someone is trying to connect with me
+	    when ? connect (sender = closest) => finding
 	    	do 	`println` (sender, " sent you a connect while you were sleeping. It is the right guy")
-	    		! connect @ addr=sender
-	    		`mark_as_branch` (sender) 
+	    		// I become the root
+	    		`mark_as_branch` (sender)
+		        `make_root` (myself, sender)
+		        `initiate` (fragmentName)
+		        ! test (fragment:fragmentName) @ addr=test_edge
+		
+		        
 	    when ? connect (sender <> closest) => connecting
 	    	do  `println` (sender, " sent you a connect while you were sleeping. It isn't the right guy")
 	    		`store_requester` (sender)
@@ -69,7 +75,9 @@ automaton MainPhase
   /* the node found the next edge it should add to the fragment, it is just waiting for a connect or initiatate */
   state found
   
-   	when ? connect => connecting do `store_requester` (sender)
+   	when ? connect => found 
+   		do `println` (sender, " sent you a connect while you were busy in found.")
+   			`store_requester` (sender)
   
   	when ? initiate => finding
   		do
@@ -82,8 +90,10 @@ automaton MainPhase
     
     when ? printing => s_printing
     
-  state s_printing
-  	do `do_printing`
+    when ? test (fragment = fragmentName) => finding do ! reject @ addr=sender
+   	when ? test (fragment <> fragmentName) => finding do ! accept @ addr=sender
+    
+  state s_printing do `do_printing`
   
   /* this state FIXME: documentation */
   urgent state reporting
@@ -119,7 +129,9 @@ automaton MainPhase
   	
   	when ? test (fragment = fragmentName) => finding do ! reject @ addr=sender
    	when ? test (fragment <> fragmentName) => finding do ! accept @ addr=sender
-   	when ? connect => connecting do `store_requester` (sender)
+   	when ? connect => finding do 
+   		`println` (sender, " sent you a connect while you were busy finding.")
+   		`store_requester` (sender)
    	
    	when `no_need_to_wait` => reporting
     	
@@ -152,6 +164,7 @@ automaton MainPhase
    	
 
   state connecting
+   do `println` ("I am connecting to ", connecting_to)
 
 	when ? test (fragment <> fragmentName) => connecting do ! accept @ addr=sender
    	when ? test (fragment = fragmentName) => connecting do ! reject @ addr=sender
@@ -161,7 +174,7 @@ automaton MainPhase
         `println` (sender, " sent you a connect while you were connecting (It isn't the right guy)")
         `store_requester` (sender)
 
-    when ? connect (sender = connecting_to, myself < sender) => finding
+    when ? connect (sender = connecting_to) => finding // , myself < sender
     	do
         `println` (sender, " sent you a connect while you were connecting (It is the right guy, and I am the alfa)")
         // I become the root
@@ -169,10 +182,10 @@ automaton MainPhase
         `initiate` (fragmentName)
         ! test (fragment:fragmentName) @ addr=test_edge
 
-    when ? connect (sender = connecting_to, myself >= sender) => connecting
-    	do
-        `println` (sender, " sent you a connect while you were connecting (It is the right guy, but I ain't the alfa)")
-        // nothing to do, just wait
+//    when ? connect (sender = connecting_to, myself >= sender) => connecting
+//    	do
+//        `println` (sender, " sent you a connect while you were connecting (It is the right guy, but I ain't the alfa)")
+//        // nothing to do, just wait
 
   	when ? initiate => finding
   		do
@@ -194,7 +207,11 @@ automaton phase0
 
 	state s0
 		when ? hello  within 300 msec => s0 do `store` (sender, x, y)
+		when false within 1500 msec => s0
 		when timeout => initialized
 
-	state initialized
+	urgent state initialized
 		do ! msg_wakeup @ MainPhase
+		when true => done
+	
+	state done

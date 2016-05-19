@@ -43,8 +43,7 @@ OMNetTimaNature::process_message(cMessage* m)
     auto msg = all->msg;
     auto dst = all->dst;
     auto port = all->port;
-    inet::L3Address addr;
-    inet::L3AddressResolver().tryResolve(dst.c_str(), addr);
+    inet::L3Address addr = possibleNeighbors[dst];
     if (addr.isUnspecified())
         EV_ERROR << "cannot resolve destination address: " << dst << endl;
     else  {
@@ -69,12 +68,15 @@ OMNetTimaNature::send_network_message(const std::string& dst, int port, const st
 void
 OMNetTimaNature::broadcast(int port, const std::string& msg)
 {
-    for ( auto addr : possibleNeighbors ) {
-        inet::Tima* pkt = new inet::Tima("Hello");
-        auto pos = msg.find(';');
-        pkt->setId(msg.substr(0, pos).c_str());
-        pkt->setPayload(msg.substr(pos+1).c_str());
-        socket.sendTo(pkt, addr, port);
+    for ( auto dst : possibleNeighbors ) {
+        cMessage* m = new cMessage("future message(Hello)", FUTURE_MESSAGE);
+        m->setContextPointer(new ScheduledMsg(msg, dst.first, port));
+        app_base->scheduleAt(simTime() + (rand() % 100) / 1000.0, m);
+//        inet::Tima* pkt = new inet::Tima("Hello");
+//        auto pos = msg.find(';');
+//        pkt->setId(msg.substr(0, pos).c_str());
+//        pkt->setPayload(msg.substr(pos+1).c_str());
+//        socket.sendTo(pkt, dst.second, port);
     }
 }
 

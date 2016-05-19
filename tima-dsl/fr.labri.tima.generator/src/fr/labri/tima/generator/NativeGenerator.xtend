@@ -390,10 +390,14 @@ class NativeGenerator extends NamedNodeGenerator {
 		bool «context.nextTmp» = tima::Mailbox::exists2(name, ctx, [&](tima::Message& m){
 			«{context.enterScope(getMessageSymbolTable(g.messageType)); null}»
 			bool b = m.msg_id == «g.messageType.get_message_id»;
-			«FOR p : g.patterns»
-			«p.IR2Target»
-			b &= «context.lastTmp»;
-			«ENDFOR»
+			if (b) {
+				«FOR p : g.patterns»
+				if (b) {
+					«p.IR2Target»
+					b = «context.lastTmp»;
+				}
+				«ENDFOR»
+			}
 			return b;
 			«{context.leaveScope; null}»
 		});
@@ -453,10 +457,10 @@ class NativeGenerator extends NamedNodeGenerator {
 	dispatch def String IR2Target(IRAutomata.BuiltinGuard g) {
 		switch (g.builtinName) {
 			case "true": {
-				'true'
+				'''bool «context.nextTmp» = true;'''
 			}
 			case "false": {
-				'false'
+				'''bool «context.nextTmp» = false;'''
 			}
 			default: {
 				throw new UnsupportedOperationException("Really? Do we have some builtin guards?");

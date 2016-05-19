@@ -204,37 +204,37 @@ class OmnetGenerator extends NativeGenerator {
 	
 	void «project_name»::processStart()
 	{
-	    myself = this->getParentModule()->getFullName();
-	    L3AddressResolver().tryResolve(myself.c_str(), myAddress);
-	    EV_TRACE << "Starting the process in module " << myself << " (" << myAddress.str() << ")" << "\n";
-	
-	
-	
-	    const char *destAddrs = par("addresses");
-	    cStringTokenizer tokenizer(destAddrs);
-	    const char *token;
-	    std::vector<L3Address> possibleNeighbors;
-	
-	    while ((token = tokenizer.nextToken()) != nullptr) {
-	        L3Address result;
-	        L3AddressResolver().tryResolve(token, result);
-	        if (result.isUnspecified())
-	            EV_ERROR << "cannot resolve destination address: " << ((token)?token:"NULL") << endl;
-	        else if (myself != token)
-	            possibleNeighbors.push_back(result);
-	    }
-	
-	    nature = std::make_shared<OMNetTimaNature>(myself, socket, possibleNeighbors, this);
-	    nature->initialize();
-	    nature->configure_communication(localPort);
-	    
-	    options.emplace("posX", std::to_string(position.x));
-	    options.emplace("posY", std::to_string(position.y));
-	
-	
-	    EV_TRACE << "Creating protocol's executer\n";
-	    executor = std::unique_ptr<tima::Executor>(new tima::Executor(nature, options));
-	    configure_next_timer();
+		myself = this->getParentModule()->getFullName();
+		L3AddressResolver().tryResolve(myself.c_str(), myAddress);
+		EV_TRACE << "Starting the process in module " << myself << " (" << myAddress.str() << ")" << "\n";
+		
+		
+		
+		const char *destAddrs = par("addresses");
+		cStringTokenizer tokenizer(destAddrs);
+		const char *token;
+		std::map<std::string, inet::L3Address> possibleNeighbors;
+		
+		while ((token = tokenizer.nextToken()) != nullptr) {
+		    L3Address result;
+		    L3AddressResolver().tryResolve(token, result);
+		    if (result.isUnspecified())
+		        EV_ERROR << "cannot resolve destination address: " << ((token)?token:"NULL") << endl;
+		    else if (myself != token)
+		        possibleNeighbors.emplace(token, result);
+		}
+		
+		nature = std::make_shared<OMNetTimaNature>(myself, socket, possibleNeighbors, this);
+		nature->initialize();
+		nature->configure_communication(localPort);
+		
+		options.emplace("posX", std::to_string(position.x));
+		options.emplace("posY", std::to_string(position.y));
+		
+		
+		EV_TRACE << "Creating protocol's executer\n";
+		executor = std::unique_ptr<tima::Executor>(new tima::Executor(nature, options));
+		configure_next_timer();
 	}
 	
 	} //namespace

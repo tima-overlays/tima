@@ -19,7 +19,7 @@ enum ControlMessageTypes {
 
 class OMNetTimaNature : public tima::AbstractTimaNature  {
 public:
-  OMNetTimaNature(std::string device_name, inet::UDPSocket& socket,std::vector<inet::L3Address> possibleNeighbors, inet::ApplicationBase* app_base):
+  OMNetTimaNature(std::string device_name, inet::UDPSocket& socket,std::map<std::string, inet::L3Address> possibleNeighbors, inet::ApplicationBase* app_base):
       AbstractTimaNature(device_name), socket(socket), app_base(app_base), possibleNeighbors(possibleNeighbors) {}
   virtual void initialize();
   virtual void configure_communication(int port);
@@ -47,7 +47,7 @@ private:
 
   inet::UDPSocket& socket;
   inet::ApplicationBase* app_base;
-  std::vector<inet::L3Address> possibleNeighbors;
+  std::map<std::string, inet::L3Address> possibleNeighbors;
 };
 
 #endif
