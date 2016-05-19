@@ -197,7 +197,7 @@ class NativeGenerator extends NamedNodeGenerator {
 		«FOR node: automaton.nodes SEPARATOR ','»
 		{
 			name : "«names.get(automaton.name).get(node)»",
-			urgent : false,
+			urgent : «node.urgent»,
 			timeout : «IF node.timeoutTarget==null»tima::never_timeout«ELSE»«node.timeout»«ENDIF», // milliseconds
 			timeout_destination : «IF node.timeoutTarget==null»tima::null_destination«ELSE»«Util.indexOf(node.timeoutTarget, automaton.nodes) »«ENDIF»,
 			timeout_action : «IF node.timeoutTarget==null»nullptr«ELSE»«get_timeout_action_name(automaton, node)»«ENDIF»,

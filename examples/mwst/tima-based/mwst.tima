@@ -35,6 +35,9 @@ report(proto:"UDP", port:"1000"): sender, weight
 /* send to change the root */
 changeRoot(proto:"UDP", port:"1000"): sender
 
+/* printing the MWST */
+printing(proto:"UDP", port:"1000"): sender
+
 
 automaton MainPhase
 
@@ -43,38 +46,85 @@ automaton MainPhase
 		when ? msg_wakeup => connecting // spontaneous awake
 			do
 		        ! connect @ addr=closest
-		        `mark_closest` (closest)
+		        `mark_as_branch` (closest)
 
-
-    when ? connect (sender = closest) => found // FIXME: NEXT STATE someone is trying to connect with me
-    	do `println` (sender, " sent you a connect while you were sleeping. It is the right guy")
-    when ? connect (sender <> closest) => found
-    	do `println` (sender, " sent you a connect while you were sleeping. It isn't the right guy")
+	    when ? connect (sender = closest) => found // FIXME: NEXT STATE someone is trying to connect with me
+	    	do 	`println` (sender, " sent you a connect while you were sleeping. It is the right guy")
+	    		! connect @ addr=sender
+	    		`mark_as_branch` (sender) 
+	    when ? connect (sender <> closest) => connecting
+	    	do  `println` (sender, " sent you a connect while you were sleeping. It isn't the right guy")
+	    		`store_requester` (sender)
+	    		! connect @ addr=closest
+	    		`mark_as_branch` (closest)
 
 
 		when ? test => connecting // someone is testing me, but I am not member of any fragment because I was sleeping
 			do
 		        ! connect @ addr=closest
-		        `mark_closest` (closest)
+		        `mark_as_branch` (closest)
 		        ! accept @ addr=sender
 
 
   /* the node found the next edge it should add to the fragment, it is just waiting for a connect or initiatate */
   state found
+  
+   	when ? connect => connecting do `store_requester` (sender)
+  
+  	when ? initiate => finding
+  		do
+  		`println` (sender, " sent me an 'initiate'")
+  		`make_parent` (sender)
+  		`initiate` (fragment)
+      	! test (fragment:fragmentName) @ addr=test_edge
+      	    	
+    when ? changeRoot => changing_root
+    
+    when ? printing => s_printing
+    
+  state s_printing
+  	do `do_printing`
+  
+  /* this state FIXME: documentation */
+  urgent state reporting
+  	when `is_not_root` => found
+  		do ! report (weight: best_weight) @ addr=parent
+  			`println` (best_weight, parent)
+  	when `is_root` => changing_root
+  		do `println` (best_weight, " is the best weight and continue")
+  	when `is_root_and_halt` => s_printing
+  		do `println` (best_weight, " is the best weight and halt.")
+  		
+  		
+  urgent state changing_root
+  	when `is_branch` (best_edge) => found 
+  		do `println` (best_edge, " is the best edge. I am sending it a change_root")
+  			! changeRoot @ addr=best_edge
+  	when `is_basic_and_requesting` (best_edge) => finding
+  		do
+  			// I become the root
+  			`remove_requester` (best_edge)
+	        `make_root` (myself, best_edge)
+	        `mark_as_branch` (best_edge)
+	        `initiate` (fragmentName)
+	        ! test (fragment:fragmentName) @ addr=test_edge
+  	when `is_basic_but_not_requesting` (best_edge) => connecting 
+  		do 
+  			! connect @ addr=best_edge
+  			`mark_as_branch` (best_edge)
+  	
 
   state finding
   	do `println` ("", "I am finding")
   	
-  	when ? test (fragment = fragmentName) => finding
-    	do ! reject @ addr=sender
-   	when ? test (fragment <> fragmentName) => finding
-    	do ! accept @ addr=sender
+  	when ? test (fragment = fragmentName) => finding do ! reject @ addr=sender
+   	when ? test (fragment <> fragmentName) => finding do ! accept @ addr=sender
+   	when ? connect => connecting do `store_requester` (sender)
+   	
+   	when `no_need_to_wait` => reporting
     	
-    	
-   	when ? accept (wait_for_test = "1", wait_for_finding = "0") => found
+   	when ? accept (wait_for_test = "1", wait_for_finding = "0") => reporting
    		do `check_edge` (sender, "accept")
-   		   // report
-   		   `do_report`
    	when ? accept (wait_for_test = "1", wait_for_finding <> "0") => finding
    		do `check_edge` (sender, "accept")
    	when ? accept (wait_for_test <> "1") => finding
@@ -82,10 +132,8 @@ automaton MainPhase
    		   ! test (fragment:fragmentName) @ addr=test_edge
    			
    			
-   	when ? reject (wait_for_test = "1", wait_for_finding = "0") => found
+   	when ? reject (wait_for_test = "1", wait_for_finding = "0") => reporting
    		do `check_edge` (sender, "reject")
-   		   // report
-   		   `do_report`
    	when ? reject (wait_for_test = "1", wait_for_finding <> "0") => finding
    		do `check_edge` (sender, "reject")
    	when ? reject (wait_for_test <> "1") => finding
@@ -93,24 +141,27 @@ automaton MainPhase
    		   ! test (fragment:fragmentName) @ addr=test_edge
    			
    			
-   	when ? report (wait_for_test = "0", wait_for_finding = "1") => found
+   	when ? report (wait_for_test = "0", wait_for_finding = "1") => reporting
    		do `check_weight` (sender, weight)
-   		   // report
-   		   `do_report`
-   	
-   	when ? report  => finding
+    when ? report (wait_for_test = "0", wait_for_finding > "1") => finding
+   		do `check_weight` (sender, weight)
+   	when ? report (wait_for_test > "0") => finding
    		do `check_weight` (sender, weight) 
    		   ! test (fragment:fragmentName) @ addr=test_edge
+  
    	
 
   state connecting
 
-  	when ? connect (sender <> connecting_to) => connecting // FIXME: NEXT STATE someone is trying to connect with me
+	when ? test (fragment <> fragmentName) => connecting do ! accept @ addr=sender
+   	when ? test (fragment = fragmentName) => connecting do ! reject @ addr=sender
+
+  	when ? connect (sender <> connecting_to) => connecting
     	do
         `println` (sender, " sent you a connect while you were connecting (It isn't the right guy)")
         `store_requester` (sender)
 
-    when ? connect (sender = connecting_to, myself < sender) => finding // FIXME: NEXT STATE someone is trying to connect with me
+    when ? connect (sender = connecting_to, myself < sender) => finding
     	do
         `println` (sender, " sent you a connect while you were connecting (It is the right guy, and I am the alfa)")
         // I become the root
@@ -118,7 +169,7 @@ automaton MainPhase
         `initiate` (fragmentName)
         ! test (fragment:fragmentName) @ addr=test_edge
 
-    when ? connect (sender = connecting_to, myself >= sender) => connecting // FIXME: NEXT STATE someone is trying to connect with me
+    when ? connect (sender = connecting_to, myself >= sender) => connecting
     	do
         `println` (sender, " sent you a connect while you were connecting (It is the right guy, but I ain't the alfa)")
         // nothing to do, just wait
@@ -129,32 +180,20 @@ automaton MainPhase
   		`make_parent` (sender)
   		`initiate` (fragment)
       	! test (fragment:fragmentName) @ addr=test_edge
-      	
-    when ? test (fragment <> fragmentName) => connecting
-    	do ! accept @ addr=sender
-    	
-   	when ? test (fragment = fragmentName) => connecting
-    	do ! reject @ addr=sender
 
 
 /* automaton used to build set of find set of neighbors */
 automaton phase0
 	initial state greeting0
-		when ? hello within 200 msec => greeting0
-			do `store` (sender, x, y)
-		when timeout => greeting1
-			do
-				! hello (x:posX, y:posY) @ *
+		when ? hello within 200 msec => greeting0 do `store` (sender, x, y)
+		when timeout => greeting1 do ! hello (x:posX, y:posY) @ *
 
 	state greeting1
-		when ? hello within 200 msec => greeting1
-			do 	`store` (sender, x, y)
-		when timeout => s0
-			do ! hello (x:posX, y:posY) @ *
+		when ? hello within 200 msec => greeting1 do 	`store` (sender, x, y)
+		when timeout => s0 do ! hello (x:posX, y:posY) @ *
 
 	state s0
-		when ? hello  within 300 msec => s0
-			do `store` (sender, x, y)
+		when ? hello  within 300 msec => s0 do `store` (sender, x, y)
 		when timeout => initialized
 
 	state initialized

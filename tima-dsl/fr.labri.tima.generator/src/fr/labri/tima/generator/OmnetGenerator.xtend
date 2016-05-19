@@ -123,6 +123,10 @@ class OmnetGenerator extends NativeGenerator {
 	            case ControlMessageTypes::TICK_MESSAGE:
 	                eventType = tima::AbstractTimaNature::EventType::TICK;
 	                break;
+	            case ControlMessageTypes::FUTURE_MESSAGE:
+	                std::dynamic_pointer_cast<OMNetTimaNature>(nature)->process_message(msg);
+	                cancelAndDelete(msg);
+	                break;
 	        }
 	    }
 	    else if (msg->getKind() == UDP_I_DATA) {

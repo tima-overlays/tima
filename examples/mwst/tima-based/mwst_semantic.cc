@@ -72,6 +72,18 @@ public:
         else if (id == "wait_for_finding") {
             return to_string(finding.size());
         }
+        else if (id == "wait_for_test"){
+            return to_string(testing.size());
+        }
+        else if (id == "parent") {
+            return parent;
+        }
+        else if (id == "best_weight") {
+            return to_string(bw);
+        }
+        else if (id == "best_edge") {
+            return best_neighbor;
+        }
         else if (id == "test_edge") {
             int min_w = numeric_limits<int>::max();
             string test_edge = nil;
@@ -85,9 +97,6 @@ public:
                 }
             }
             return test_edge;
-        }
-        else if (id == "wait_for_test"){
-            return to_string(testing.size());
         }
         return nil;
     }
@@ -204,24 +213,6 @@ check_weight(const string& name,
 
 
 void
-do_report(const std::string& name,
-          tima::TimaNativeContext* ctx
-         )
-{
-    auto ud = (Info*)ctx->get_user_data();
-    if (ud->parent == nil) {
-        cout << ctx->get_device_name() << ": the best is " << ud->bw << " taking path " << ud->best_neighbor << endl;
-    }
-    else {
-        MessageReport m;
-        m.sender(ctx->get_device_name());
-        m.weight(to_string(ud->bw));
-        ((ActionContext*)ctx)->send_to(ud->parent, 10000, m);
-    }
-}
-
-
-void
 println(const string& name,
 	  TimaNativeContext* ctx,
 	  string sender,
@@ -274,11 +265,11 @@ initiate(const string& name,
     }
 
     for (auto i : ud->neighbors) {
-            auto name = i.first;
-            if (ud->status[name] == Info::Basic) {
-                ud->testing.emplace(name);
-            }
+        auto name = i.first;
+        if (ud->status[name] == Info::Basic) {
+            ud->testing.emplace(name);
         }
+    }
 
 }
 
@@ -309,70 +300,55 @@ send_connect(TimaNativeContext* ctx, const std::string& j)
 
 
 void
-mark_closest(
+mark_as_branch(
             const std::string& name,
             tima::TimaNativeContext* ctx ,
-            std::string neighbor
+            std::string j
             )
 {
     auto ud = (Info*)ctx->get_user_data();
-    ud->connecting_with = neighbor;
-    ud->status[neighbor] = Info::Branch;
-}
-
-
-void
-wakeup(const string& name,
-       TimaNativeContext* ctx)
-{
-
-    auto ud = (Info*)ctx->get_user_data();
-
-    auto closest = ctx->get_global("closest");
-
-    ud->status[closest] = Info::Branch;
-
-    send_connect(ctx, closest);
-
-}
-
-
-
-void
-accept(const std::string& name,
-       tima::TimaNativeContext* ctx,
-       std::string j
-      )
-{
-
-}
-
-
-void
-reject(const std::string& name,
-       tima::TimaNativeContext* ctx,
-       std::string j
-      )
-{
-
-}
-
-
-void
-report(const std::string& name,
-       tima::TimaNativeContext* ctx,
-       std::string,
-       std::string
-      )
-{
-
+    ud->connecting_with = j;
+    ud->status[j] = Info::Branch;
 }
 
 
 bool
-must_report(const std::string& name, tima::TimaNativeContext* ctx)
+is_not_root(const std::string& name, tima::TimaNativeContext* ctx)
 {
-    return false;
+    auto ud = (Info*)ctx->get_user_data();
+    return ud->parent != nil;
 }
+
+bool
+is_root(const std::string& name, tima::TimaNativeContext* ctx)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    return ud->parent == nil;
+}
+
+
+bool
+is_basic_and_requesting(const std::string& name, tima::TimaNativeContext* ctx, string j)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    return ud->status[j] == Info::Basic && ud->requesting.find(j) != ud->requesting.end();
+}
+
+
+bool
+is_basic_but_not_requesting(const std::string& name, tima::TimaNativeContext* ctx, string j)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    return ud->status[j] == Info::Basic && ud->requesting.find(j) == ud->requesting.end();
+}
+
+
+bool
+is_branch(const std::string& name, tima::TimaNativeContext* ctx, string j)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    return ud->status[j] == Info::Branch;
+}
+
 
 

@@ -35,20 +35,35 @@ void OMNetTimaNature::print_trace(const std::string& msg)
    EV_TRACE << msg << '\n';
 }
 
+
+void
+OMNetTimaNature::process_message(cMessage* m)
+{
+    auto all = (ScheduledMsg*)m->getContextPointer();
+    auto msg = all->msg;
+    auto dst = all->dst;
+    auto port = all->port;
+    inet::L3Address addr;
+    inet::L3AddressResolver().tryResolve(dst.c_str(), addr);
+    if (addr.isUnspecified())
+        EV_ERROR << "cannot resolve destination address: " << dst << endl;
+    else  {
+        auto pos = msg.find(';');
+        inet::Tima* pkt = new inet::Tima(("rumor " + msg.substr(0, pos)).c_str());
+        pkt->setId(msg.substr(0, pos).c_str());
+        pkt->setPayload(msg.substr(pos+1).c_str());
+        socket.sendTo(pkt, addr, port);
+        EV_TRACE << "Sending " << msg.substr(0, pos) << " to " << dst << "(" << addr<< ")" << "\n";
+    }
+    delete all;
+}
+
 void
 OMNetTimaNature::send_network_message(const std::string& dst, int port, const std::string& msg)
 {
-  inet::L3Address result;
-  inet::L3AddressResolver().tryResolve(dst.c_str(), result);
-  if (result.isUnspecified())
-     EV_ERROR << "cannot resolve destination address: " << dst << endl;
-  else  {
-    inet::Tima* pkt = new inet::Tima("rumor");
-    auto pos = msg.find(';');
-    pkt->setId(msg.substr(0, pos).c_str());
-    pkt->setPayload(msg.substr(pos+1).c_str());
-    socket.sendTo(pkt, result, port);
-  }
+    cMessage* m = new cMessage("future message", FUTURE_MESSAGE);
+    m->setContextPointer(new ScheduledMsg(msg, dst, port));
+    app_base->scheduleAt(simTime() + (rand() % 100) / 1000.0, m);
 }
 
 void

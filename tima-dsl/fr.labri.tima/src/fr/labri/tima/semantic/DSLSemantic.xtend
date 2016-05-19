@@ -132,7 +132,7 @@ public class DSLSemantic {
 		}
 		
 		def IRAutomata.NamedNode newNamedNode(State state) {
-			val r = new IRAutomata.NamedNode(state.name)
+			val r = new IRAutomata.NamedNode(state.name, state.urgent)
 			if (state.actions != null) {
 				r.actions.addAll(state.actions.map[newAction(it)])
 			}

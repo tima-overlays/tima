@@ -13,7 +13,8 @@
 enum ControlMessageTypes {
     IDLE,
     START,
-    TICK_MESSAGE
+    TICK_MESSAGE,
+    FUTURE_MESSAGE
 };
 
 class OMNetTimaNature : public tima::AbstractTimaNature  {
@@ -30,7 +31,20 @@ public:
   virtual void broadcast(int port, const std::string& msg);
   virtual void print_trace(const std::string& msg);
 
+
+  void process_message(cMessage* m);
+
 private:
+
+
+  struct ScheduledMsg {
+      int port;
+      std::string dst;
+      std::string msg;
+
+      ScheduledMsg(const std::string& m, const std::string& d, int p) : msg(m), dst(d), port(p) {}
+  };
+
   inet::UDPSocket& socket;
   inet::ApplicationBase* app_base;
   std::vector<inet::L3Address> possibleNeighbors;

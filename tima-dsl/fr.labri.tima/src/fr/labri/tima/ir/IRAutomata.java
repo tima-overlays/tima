@@ -80,6 +80,7 @@ public class IRAutomata {
 	}
 	
 	public static abstract class Node {
+		
 		public int timeout;
 		public Node timeoutTarget;
 		public List<Action> timeoutActions = new ArrayList<>();
@@ -101,17 +102,26 @@ public class IRAutomata {
 		public List<Action> getTimeoutActions() {
 			return timeoutActions;
 		}
+		
+		public abstract boolean isUrgent();
 	}
 	
 	public static class NamedNode extends Node {
+		private boolean urg;
 		public String name;
-		public NamedNode(String name) {
+		public NamedNode(String name, boolean u) {
 			this.name = name;
+			this.urg = u;
 		}
 
 		@Override
 		public NamedNode getReferenceNode() {
 			return this;
+		}
+
+		@Override
+		public boolean isUrgent() {
+			return urg;
 		}
 	}
 	
@@ -125,6 +135,11 @@ public class IRAutomata {
 		@Override
 		public NamedNode getReferenceNode() {
 			return reference;
+		}
+		
+		@Override
+		public boolean isUrgent() {
+			return true;
 		}
 	}
 	
