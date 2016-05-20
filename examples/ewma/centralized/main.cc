@@ -183,7 +183,7 @@ best_gain(Graph& mst, string r, map<string, int>& energy, int * d)
         s = n.name;
         *d = x;
       }
-      // cout << " gain(" << r << ", " << n.name << ") = " << g << endl;
+      cout << " gain(" << r << ", " << n.name << ") = " << g << endl;
     }
   }
   return make_pair(s, bb);
@@ -288,7 +288,7 @@ main(int argc, char const *argv[]) {
     cout << "\t" << e.first << ": " << e.second << endl;
   }
 
-  cout << "we can reduce the consumption to " << ewma(graph, "10", energy) << endl;
+  cout << "e(ewma) = " << ewma(graph, "10", energy) << endl;
 
   return 0;
 }
