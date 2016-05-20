@@ -170,12 +170,12 @@ gain(Graph& mst, string r, string i, map<string, int>& energy, int* d)
 
 
 static pair<string, int>
-best_gain(Graph& mst, string r, map<string, int>& energy, int * d)
+best_gain(Graph& mst, string r, map<string, int>& energy, set<string>& F, int * d)
 {
   int bb = numeric_limits<int>::min();
   string s;
   for (auto n: mst.nodes) {
-    if (r !=  n.name && energy[n.name] != 0) {
+    if (r !=  n.name && energy[n.name] != 0 && F.find(n.name) == F.end()) {
       int x;
       int g = gain(mst, r, n.name, energy, &x);
       if (g > bb) {
@@ -212,7 +212,7 @@ ewma(Graph& mst, string r, map<string, int>& energy)
     int ddd = 0;
     for (auto n : x) {
       int distance;
-      auto p = best_gain(mst, n, energy, &distance);
+      auto p = best_gain(mst, n, energy, F, &distance);
       cout << p.first << " " << p.second << endl;
       if (p.second > max_gain) {
         max= p.first;
@@ -251,7 +251,7 @@ ewma(Graph& mst, string r, map<string, int>& energy)
       energy[n] = 0;
     }
 
-    // energy[q] = ddd;
+    energy[q] = ddd;
 
     cout << "F:";
     for (auto s: F) {
