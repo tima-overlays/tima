@@ -123,7 +123,7 @@ energy_required(Graph& g, string r, map<string, int>& e)
 }
 
 static void
-compute_nodes_to_exclude(Graph& mst, string r, map<string, int>& energy, int max_dist, set<string>& excluded)
+compute_nodes_to_exclude(Graph& mst, string r, map<string, int>& energy, set<string>& F, int max_dist, set<string>& excluded)
 {
   auto node_r = mst.find_node(r);
 
@@ -132,7 +132,7 @@ compute_nodes_to_exclude(Graph& mst, string r, map<string, int>& energy, int max
       // it is not a transmining node that can be covered by the new transmition range
       // the first and unique edge is its transmition node
       string t = n.edges[0].dst;
-      if (excluded.find(t) == excluded.end()){
+      if (excluded.find(t) == excluded.end() && F.find(t) == F.end()){
         excluded.emplace(t);
       }
     }
@@ -141,7 +141,7 @@ compute_nodes_to_exclude(Graph& mst, string r, map<string, int>& energy, int max
 }
 
 static int
-gain(Graph& mst, string r, string i, map<string, int>& energy, int* d)
+gain(Graph& mst, string r, string i, map<string, int>& energy, set<string>& F, int* d)
 {
   /* compute delta */
   auto node_r = mst.find_node(r);
@@ -160,7 +160,7 @@ gain(Graph& mst, string r, string i, map<string, int>& energy, int* d)
   /* compute gain */
   int g = -delta;
   set<string> excluded;
-  compute_nodes_to_exclude(mst, r, energy, max_dist, excluded);
+  compute_nodes_to_exclude(mst, r, energy, F, max_dist, excluded);
   for (auto t: excluded) {
     g+=energy[t];
   }
@@ -177,13 +177,13 @@ best_gain(Graph& mst, string r, map<string, int>& energy, set<string>& F, int * 
   for (auto n: mst.nodes) {
     if (r !=  n.name && energy[n.name] != 0 && F.find(n.name) == F.end()) {
       int x;
-      int g = gain(mst, r, n.name, energy, &x);
+      int g = gain(mst, r, n.name, energy, F, &x);
       if (g > bb) {
         bb = g;
         s = n.name;
         *d = x;
       }
-      cout << " gain(" << r << ", " << n.name << ") = " << g << endl;
+      // cout << " gain(" << r << ", " << n.name << ") = " << g << endl;
     }
   }
   return make_pair(s, bb);
@@ -213,7 +213,7 @@ ewma(Graph& mst, string r, map<string, int>& energy)
     for (auto n : x) {
       int distance;
       auto p = best_gain(mst, n, energy, F, &distance);
-      cout << p.first << " " << p.second << endl;
+      // cout << p.first << " " << p.second << endl;
       if (p.second > max_gain) {
         max= p.first;
         max_gain = p.second;
@@ -223,7 +223,7 @@ ewma(Graph& mst, string r, map<string, int>& energy)
     }
     // cout << " HERE : " << max_gain << " q: " << q << " max: " << max_gain << " distance: " << ddd << endl;
     if (max_gain <= 0) {
-      cout << "uffffffffff" << endl;
+      // cout << "uffffffffff" << endl;
       max_gain = numeric_limits<int>::max();
       for (auto n : x) {
         if (energy[n] > 0 && energy[n] < max_gain) {
@@ -244,7 +244,7 @@ ewma(Graph& mst, string r, map<string, int>& energy)
       }
     }
     set<string> excluded;
-    compute_nodes_to_exclude(mst, r, energy, ddd, excluded);
+    compute_nodes_to_exclude(mst, r, energy, F, ddd, excluded);
     for (auto n: excluded) {
       E.emplace(n);
       energy2[n] = 0;
