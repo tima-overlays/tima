@@ -13,21 +13,22 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-namespace inet::ewma;
+namespace inet;
 
-cplusplus {{
-#include "EWMASender.h"
-}}
-class noncobject inet::EWMASender;
+//cplusplus {{
+//#include "EWMASender.h"
+//}}
+//class EWMASender;
 
-packet Hello {
+packet ewma_Hello {
     string sender;
 	int x;
 	int y;
 }
 
-packet BroadcastMsg {
+packet ewma_Broadcast {
     string payload;
-	inet::EWMASender chain[];
+//	EWMASender chain[];
+	string covered[];
 }
 

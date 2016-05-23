@@ -77,12 +77,22 @@ class INET_API EWMA2 : public ApplicationBase
     std::queue<cMessage*> old_msgs;
 
 
+    std::string payload;
+
+    std::set<std::string> covered;
+
     States SN;
 
 
+
     void configure_neighbors();
-    void on_hello_received(const inet::ewma::Hello* msg);
+    void on_hello_received(const ewma_Hello* msg);
     bool isForwardingNode();
+
+    void on_payload_received(const ewma_Broadcast* m);
+
+    void send_message(const std::vector<std::string>& dst);
+    void send_to_uncovred();
 
   protected:
 

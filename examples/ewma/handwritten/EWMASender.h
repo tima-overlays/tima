@@ -8,12 +8,13 @@
 #ifndef EWMASENDER_H_
 #define EWMASENDER_H_
 
+#include <omnetpp.h>
+
 #include <string>
 #include <set>
 
-namespace inet {
 
-class EWMASender {
+class EWMASender : public cObject {
 public:
     EWMASender();
     virtual ~EWMASender();
@@ -28,6 +29,10 @@ private:
     std::set<std::string> v_p;
 };
 
-} /* namespace inet */
+
+void doPacking(cCommBuffer *, EWMASender& t);
+
+void doUnpacking(cCommBuffer *, EWMASender& t);
+
 
 #endif /* EWMASENDER_H_ */

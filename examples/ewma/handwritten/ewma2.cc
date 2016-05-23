@@ -25,6 +25,8 @@
 
 #include <climits>
 
+using namespace std;
+
 namespace inet {
 
 Define_Module(EWMA2);
@@ -35,12 +37,7 @@ enum ControlMessageTypes {
     SAY_HELLO,
     WAKEUP,
     DISPLAY_TIME,
-    TEST_DELAY,
-    CONNECT_DELAY,
-    INITIATE_DEALY,
-    I_REPORT,
-    I_TEST,
-    I_CONNECT
+    BROADCAST_DELAY
 };
 
 #define oo INT_MAX
@@ -106,7 +103,7 @@ EWMA2::handleMessageWhenUp(cMessage *msg)
                 break;
             case SAY_HELLO:
                 for ( auto addr : possible_neighbors ) {
-                    inet::ewma::Hello* pkt = new inet::ewma::Hello("Hello");
+                    ewma_Hello* pkt = new ewma_Hello("Hello");
                     pkt->setX(position.x);
                     pkt->setY(position.y);
                     pkt->setSender(myself.c_str());
@@ -120,9 +117,14 @@ EWMA2::handleMessageWhenUp(cMessage *msg)
                 }
                 break;
             case WAKEUP:
-//                if (SN == States::Sleeping ) {
-//                    wakeup();
-//                }
+                configure_neighbors();
+                covered.insert(myself);
+                payload = "this is the payload";
+                send_message(local_mst);
+                cancelAndDelete(msg);
+                break;
+            case BROADCAST_DELAY:
+                send_to_uncovred();
                 cancelAndDelete(msg);
                 break;
             case DISPLAY_TIME:
@@ -143,9 +145,10 @@ EWMA2::handleMessageWhenUp(cMessage *msg)
 
         cPacket* pkt = PK(msg);
 
-        bool done = processMessage<inet::ewma::Hello>(pkt, &inet::EWMA2::on_hello_received);
+        bool done = processMessage<ewma_Hello>(pkt, &EWMA2::on_hello_received);
         if (!done) {
-
+            configure_neighbors();
+            done = processMessage<ewma_Broadcast>(pkt, &EWMA2::on_payload_received);
         }
         delete pkt;
 
@@ -212,8 +215,9 @@ EWMA2::processStart()
 
     /* process the local mst */
     cStringTokenizer tokenizer2(par("mst"));
-    while ((token = tokenizer.nextToken()) != nullptr) {
+    while ((token = tokenizer2.nextToken()) != nullptr) {
         local_mst.push_back(token);
+        EV_TRACE << "\t in mst " << token <<"\n";
     }
 
     socket.setOutputGate(gate("udpOut"));
@@ -227,31 +231,48 @@ EWMA2::processStart()
 
 
 void
-EWMA2::addNewAddress(std::string id)
+EWMA2::addNewAddress(string id)
 {
     if (myself != id) {
         L3Address result;
         L3AddressResolver().tryResolve(id.c_str(), result);
         auto it = addresses.find(id);
         if (it == addresses.end()) {
-            addresses.insert(std::pair<std::string, L3Address>(id, result));
+            addresses.insert(pair<string, L3Address>(id, result));
         }
     }
 }
 
 
 void
-EWMA2::on_hello_received(const inet::ewma::Hello* msg)
+EWMA2::on_hello_received(const ewma_Hello* msg)
 {
 
     // add coordinates
     auto it = coordinates.find(msg->getSender());
     if (it == coordinates.end()) {
-//        EV_TRACE << " A hello from " << msg->getSender() <<  " at (" << msg->getX() << ", " << msg->getY() << ")\n";
+        EV_TRACE << " A hello from " << msg->getSender() <<  " at (" << msg->getX() << ", " << msg->getY() << ")\n";
         addNewAddress(msg->getSender());
-        coordinates.insert(std::pair<std::string,  std::pair<int, int> >(msg->getSender(), std::pair<int, int>(msg->getX(), msg->getY())));
+        coordinates.insert(pair<string,  pair<int, int> >(msg->getSender(), pair<int, int>(msg->getX(), msg->getY())));
     }
 
+}
+
+void
+EWMA2::on_payload_received(const ewma_Broadcast* m) {
+    if (!payload.empty()) {
+        return;
+    }
+    payload = m->getPayload();
+    if (isForwardingNode()) {
+        for (uint32_t k = 0 ; k < m->getCoveredArraySize() ; ++k) {
+            covered.insert(string(m->getCovered(k)));
+        }
+        cMessage* mm = new cMessage("broadcast delay");
+        mm->setKind(BROADCAST_DELAY);
+        scheduleAt(simTime() + par("delay_test").doubleValue(), mm);
+    }
+    EV_DEBUG << "Message received at " << simTime() << "\n";
 }
 
 
@@ -274,7 +295,7 @@ EWMA2::configure_neighbors()
 {
     // traverse set of received addresses
     for (auto it : addresses) {
-        std::string name = it.first;
+        string name = it.first;
         int x_t = coordinates[name].first;
         int y_t = coordinates[name].second;
         int d = (x_t - position.x)*(x_t - position.x) + (y_t - position.y)*(y_t - position.y);
@@ -287,6 +308,13 @@ EWMA2::configure_neighbors()
     for (auto& i : edges) {
         EV_DEBUG << "\t" << i  << " with cost " << w[i] << "\n";
     }
+
+    EV_DEBUG << "Printing EDGES - LOCAL_MST =>\n";
+    for (auto& i : edges) {
+        if (find(begin(local_mst), end(local_mst), i) == local_mst.end()) {
+            EV_DEBUG << "\t" << i << " is not a  forwarding child " << " because it has a cost of " << w[i] << "\n";
+        }
+    }
 }
 
 
@@ -294,6 +322,55 @@ bool
 EWMA2::isForwardingNode()
 {
     return is_source || (local_mst.size() > 0);
+}
+
+
+void
+EWMA2::send_message(const vector<string>& dst)
+{
+    set<string> previous;
+    for (auto& d: covered) previous.insert(d);
+    for (auto& d : edges) {
+        covered.insert(d);
+    }
+
+    if (dst.size() > 0) {
+        EV_DEBUG << "====================== Sending in " << myself << "\n";
+        for (auto& c : covered) {
+            EV_DEBUG << "\t The following is covered: " << c << "\n";
+        }
+        /*only send if some children in the mst are not covered, but send to all uncovered*/
+        for (auto& d : edges) {
+            if (previous.find(d) != previous.end()) {
+                continue;
+            }
+            L3Address addr = addresses[d];
+            ewma_Broadcast* m = new ewma_Broadcast("payload");
+            m->setPayload(payload.c_str());
+            m->setCoveredArraySize(covered.size());
+            vector<string> v;
+            for (auto& c : covered) v.push_back(c);
+            for (uint32_t i = 0 ; i < v.size() ; i++) {
+                m->setCovered(i, v[i].c_str());
+            }
+
+            socket.sendTo(m, addr, remote_port);
+        }
+    }
+}
+
+
+void
+EWMA2::send_to_uncovred()
+{
+    /* send to members of (local_mst - covered) */
+    vector<string> v;
+    for (auto& d: local_mst) {
+        if (covered.find(d) == covered.end()) {
+            v.push_back(d);
+        }
+    }
+    send_message(v);
 }
 
 

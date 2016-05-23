@@ -7,8 +7,6 @@
 
 #include "EWMASender.h"
 
-namespace inet {
-
 EWMASender::EWMASender() {
 }
 
@@ -44,4 +42,12 @@ EWMASender::isMember(const std::string& e)
     return v_p.find(e) != v_p.end();
 }
 
-} /* namespace inet */
+
+void doPacking(cCommBuffer *, EWMASender& t) {
+    throw cRuntimeError("Parsim error: no doPacking() function for type %s or its base class (check .msg and _m.cc/h files!)",opp_typename(typeid(t)));
+}
+
+void doUnpacking(cCommBuffer *, EWMASender& t) {
+    throw cRuntimeError("Parsim error: no doUnpacking() function for type %s or its base class (check .msg and _m.cc/h files!)",opp_typename(typeid(t)));
+}
+
