@@ -31,7 +31,7 @@ public:
 
     string myself;
 
-    Info(const string& f, int nr_hellos): myself(f), remaining_hellos(int nr_hellos) {
+    Info(const string& f, int nr_hellos): myself(f), remaining_hellos(nr_hellos) {
     }
 
     virtual std::string computeValue(const std::string& id) override {
@@ -44,7 +44,7 @@ public:
 
 
 void
-init_device_data(
+init_device_data_ewma(
 	string& device_name,
 	map<string, string>& options,
 	shared_ptr<tima::GlobalStorage> st)
@@ -59,7 +59,7 @@ init_device_data(
 
 
 void
-store(const string& name,
+store_p(const string& name,
 	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)
@@ -76,14 +76,14 @@ store(const string& name,
 }
 
 void
-println(const string& name,
+print(const string& name,
       TimaNativeContext* ctx,
       string sender,
       string msg)
 {
     auto ud = (Info*)ctx->get_user_data();
     HEAD;
-    cerr << sender << msg << ". In addition: you are connecting to " << ud->connecting_with << '\n';
+    cerr << sender << msg << '\n';
 }
 
 void

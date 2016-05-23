@@ -9,10 +9,8 @@
 #include "tima.h"
 
 
-using std::string;
-using std::shared_ptr;
+using namespace std;
 
-void init_device_data(string& device_name,std::map<string, string>& options, shared_ptr<tima::GlobalStorage> st);
 
 namespace tima {
 
@@ -74,7 +72,9 @@ InnerGenericActionContext::print_trace(const string& msg)
 }
 
 
-Executor::Executor(std::vector<tima::Automaton*> a, shared_ptr<tima::AbstractTimaNature> nature, std::map<string, string>& options)
+Executor::Executor(vector<tima::Automaton*> a,
+        shared_ptr<tima::AbstractTimaNature> nature,
+        map<string, string>& options, device_initialization_t callback)
   :nature(nature)
 {
 
@@ -92,7 +92,7 @@ Executor::Executor(std::vector<tima::Automaton*> a, shared_ptr<tima::AbstractTim
 
   storage = std::make_shared<tima::GlobalStorage>(nullptr);
 
-  init_device_data(nature->device_name, options, storage);
+  callback(nature->device_name, options, storage);
 
 }
 

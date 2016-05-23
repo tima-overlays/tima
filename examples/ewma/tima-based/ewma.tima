@@ -23,7 +23,7 @@ automaton MainPhase
 	initial state Sleeping
 		when ? msg_wakeup => Sleeping // spontaneous awake
 			do
-				`println` ("spontaneous awake and connecting to ", " I don't know")
+				`print` ("spontaneous awake and connecting to ", " I don't know")
 
 
 
@@ -31,7 +31,7 @@ automaton MainPhase
 /* automaton used to build set of find set of neighbors */
 automaton phase0
 	initial state greeting
-		when ? hello within 200 msec => greeting do `store` (sender, x, y)
+		when ? hello within 200 msec => greeting do `store_p` (sender, x, y)
 		when timeout => s_check do 
 			`decrease_hellos`
 			! hello (x:posX, y:posY) @ *
@@ -41,7 +41,7 @@ automaton phase0
 		when true => greeting
 
 	state s0
-		when ? hello  within 300 msec => s0 do `store` (sender, x, y)
+		when ? hello  within 300 msec => s0 do `store_p` (sender, x, y)
 		when false within 1500 msec => s0
 		when timeout => initialized
 

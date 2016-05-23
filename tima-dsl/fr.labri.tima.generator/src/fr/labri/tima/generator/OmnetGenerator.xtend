@@ -65,6 +65,12 @@ class OmnetGenerator extends NativeGenerator {
 	uint32_t get_nr_automaton_in_«protocol_name»();	
 	struct tima::Automaton& get_automaton_«protocol_name»(uint32_t idx);
 	
+	void
+	init_device_data_«protocol_name»(
+		std::string& device_name,
+		std::map<std::string, std::string>& options,
+		std::shared_ptr<tima::GlobalStorage> st);
+	
 	namespace inet {
 	
 	Define_Module(«project_name»);
@@ -236,7 +242,7 @@ class OmnetGenerator extends NativeGenerator {
 		
 		
 		EV_TRACE << "Creating protocol's executer\n";
-		executor = std::unique_ptr<tima::Executor>(new tima::Executor(build_stl_version(), nature, options));
+		executor = std::unique_ptr<tima::Executor>(new tima::Executor(build_stl_version(), nature, options, &init_device_data_«protocol_name»));
 		configure_next_timer();
 	}
 	
