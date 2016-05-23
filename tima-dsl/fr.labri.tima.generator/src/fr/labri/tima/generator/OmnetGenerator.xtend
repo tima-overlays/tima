@@ -16,7 +16,7 @@ class OmnetGenerator extends NativeGenerator {
 		fsa.generateFile('''«name»/«name»_inet.ned''', omnet_inet_app_descriptor(name, name + "_inet"))
 		fsa.generateFile('''«name»/«name»_inet.h''', omnet_inet_app_header(name + "_inet"))
 		fsa.generateFile('''«name»/«name»_inet.cc''', 
-			omnet_inet_app_code(name + "_inet")
+			omnet_inet_app_code(name + "_inet", name)
 		)
 	}
 	
@@ -50,10 +50,10 @@ class OmnetGenerator extends NativeGenerator {
 	'''
 	}
 	
-	def String omnet_inet_app_code(String project_name) {
+	def String omnet_inet_app_code(String project_name, String protocol_name) {
 	'''
 	#include "«project_name».h"
-	#include "Tima_m.h"
+	#include "inet/applications/tima/Tima_m.h"
 	
 	#include "inet/networklayer/common/L3AddressResolver.h"
 	#include "inet/transportlayer/contract/udp/UDPControlInfo.h"
@@ -61,6 +61,9 @@ class OmnetGenerator extends NativeGenerator {
 	
 	#include <algorithm>
 	#include <sstream>
+	
+	uint32_t get_nr_automaton_in_«protocol_name»();	
+	struct tima::Automaton& get_automaton_«protocol_name»(uint32_t idx);
 	
 	namespace inet {
 	
@@ -233,8 +236,23 @@ class OmnetGenerator extends NativeGenerator {
 		
 		
 		EV_TRACE << "Creating protocol's executer\n";
-		executor = std::unique_ptr<tima::Executor>(new tima::Executor(nature, options));
+		executor = std::unique_ptr<tima::Executor>(new tima::Executor(build_stl_version(), nature, options));
 		configure_next_timer();
+	}
+	
+	
+	
+	std::vector<tima::Automaton*>
+	«project_name»::build_stl_version()
+	{
+	  std::vector<tima::Automaton*> automatas;
+	  uint32_t n = get_nr_automaton_in_«protocol_name»();
+	  for (size_t i = 0; i < n; i++) {
+	    /* code */
+	    struct tima::Automaton* x = &get_automaton_«protocol_name»(i);
+	    automatas.push_back(x);
+	  }
+	  return automatas;
 	}
 	
 	} //namespace
@@ -260,14 +278,14 @@ class OmnetGenerator extends NativeGenerator {
 	#include "inet/applications/base/ApplicationBase.h"
 	#include "inet/transportlayer/contract/udp/UDPSocket.h"
 	
-	#include "Tima_m.h"
+	#include "inet/applications/tima/Tima_m.h"
 	
-	#include "executor.h"
-	#include "automata.h"
-	#include "mailbox.h"
-	#include "tima.h"
+	#include "inet/applications/tima/executor.h"
+	#include "inet/applications/tima/automata.h"
+	#include "inet/applications/tima/mailbox.h"
+	#include "inet/applications/tima/tima.h"
 	
-	#include "omnetpp_tima_nature.h"
+	#include "inet/applications/tima/omnetpp_tima_nature.h"
 	
 	namespace inet {
 	
@@ -314,6 +332,7 @@ class OmnetGenerator extends NativeGenerator {
 	
 	private:
 	    void configure_next_timer();
+		std::vector<tima::Automaton*> build_stl_version();
 	};
 	
 	} //namespace

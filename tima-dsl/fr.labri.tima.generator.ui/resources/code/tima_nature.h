@@ -30,7 +30,6 @@ public:
 
 
  void print_automata(std::vector<tima::Automaton*>& automata);
- std::vector<tima::Automaton*> build_stl_version();
 
  AbstractTimaNature(std::string device_name) : device_name(device_name) {}
 

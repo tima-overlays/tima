@@ -64,16 +64,3 @@ tima::AbstractTimaNature::print_automata(std::vector<tima::Automaton*>& automata
     }
   }
 }
-
-std::vector<tima::Automaton*>
-tima::AbstractTimaNature::build_stl_version()
-{
-  std::vector<tima::Automaton*> automatas;
-  uint32_t n = get_nr_automaton();
-  for (size_t i = 0; i < n; i++) {
-    /* code */
-    struct tima::Automaton* x = &get_automaton(i);
-    automatas.push_back(x);
-  }
-  return automatas;
-}

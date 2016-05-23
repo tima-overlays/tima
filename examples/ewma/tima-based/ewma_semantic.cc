@@ -10,7 +10,7 @@
 #include <omnetpp.h>
 #include "inet/common/INETDefs.h"
 
-#include "tima.h"
+#include "inet/applications/tima/tima.h"
 
 #include "ewma.h"
 
@@ -26,23 +26,13 @@ class Info: public UserData {
 public:
     int posX;
     int posY;
-	int remaining_hellos;
+	  int remaining_hellos;
     map<string, int> neighbors;
 
     string myself;
 
     Info(const string& f, int nr_hellos): myself(f), remaining_hellos(int nr_hellos) {
     }
-
-    bool isRequesting(const string& i) {
-        return find(begin(requesting), end(requesting), i) != end(requesting);
-    }
-
-    void removeRequest(const string& i) {
-        requesting.erase(i);
-    }
-
-	
 
     virtual std::string computeValue(const std::string& id) override {
         if (id == "myself") {

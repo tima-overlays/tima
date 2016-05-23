@@ -48,14 +48,10 @@ InnerGenericActionContext::InnerGenericActionContext(string device_name,shared_p
 {}
 
 
-ActionContext::~ActionContext()
-{
-}
+ActionContext::~ActionContext(){}
 
 
-InnerGenericActionContext::~InnerGenericActionContext()
-{
-}
+InnerGenericActionContext::~InnerGenericActionContext() {}
 
 
 void
@@ -78,11 +74,11 @@ InnerGenericActionContext::print_trace(const string& msg)
 }
 
 
-Executor::Executor(shared_ptr<tima::AbstractTimaNature> nature, std::map<string, string>& options)
+Executor::Executor(std::vector<tima::Automaton*> a, shared_ptr<tima::AbstractTimaNature> nature, std::map<string, string>& options)
   :nature(nature)
 {
 
-  automatas = nature->build_stl_version();
+  automatas = a;
 
   auto myMailbox = Mailbox::get_instance(nature->device_name);
 

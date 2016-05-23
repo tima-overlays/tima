@@ -26,7 +26,7 @@ private:
   bool step(uint32_t milliseconds, bool only_urgents);
 
 public:
-  Executor(std::shared_ptr<tima::AbstractTimaNature> nature, std::map<std::string, std::string>& options);
+  Executor(std::vector<tima::Automaton*> a, std::shared_ptr<tima::AbstractTimaNature> nature, std::map<std::string, std::string>& options);
 
   // return tima::never_timeout if all the states can only wait forever
   int tick(uint32_t milliseconds);

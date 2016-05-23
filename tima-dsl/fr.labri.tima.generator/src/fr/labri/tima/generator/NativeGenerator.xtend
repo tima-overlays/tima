@@ -70,11 +70,11 @@ class NativeGenerator extends NamedNodeGenerator {
 		#ifndef __«name»__
 		#define __«name»__
 		
-		#include "automata.h"
-		#include "tima.h"
+		#include "inet/applications/tima/automata.h"
+		#include "inet/applications/tima/tima.h"
 		#include <string>
 		
-		int	get_msg_id_from_name(const char* name);
+		//int	get_msg_id_from_name(const char* name);
 		
 		/** ID for each automaton */
 		enum AUTOMATA_ID {
@@ -119,21 +119,21 @@ class NativeGenerator extends NamedNodeGenerator {
 		names = newHashMap(automata.automata.values.map[it.name -> it.names])
 		var counter = 0;
 	'''
-	#include "automata.h"
-	#include "tima.h"
-	#include "mailbox.h"
+	#include "inet/applications/tima/automata.h"
+	#include "inet/applications/tima/tima.h"
+	#include "inet/applications/tima/mailbox.h"
 	#include "«project_name».h"
 	#include <cstring>
 	
-	int
-	get_msg_id_from_name(const char* name)
-	{
+	//int
+	//get_msg_id_from_name(const char* name)
+	//{
 		«FOR m : automata.messages.values»
-			if (!strcmp(name, "«m.name»"))
-				return MESSAGES_ID::«get_message_id(m)»;
+		//	if (!strcmp(name, "«m.name»"))
+		//		return MESSAGES_ID::«get_message_id(m)»;
 		«ENDFOR»
-		return -1;
-	}
+	//	return -1;
+	//}
 	
 	«FOR automaton: automata.automata.values SEPARATOR '\n'»
 	/** Automaton «automaton.name» */
@@ -226,13 +226,13 @@ class NativeGenerator extends NamedNodeGenerator {
 	};
 	
 	uint32_t
-	get_nr_automaton()
+	get_nr_automaton_in_«project_name»()
 	{
 		return nr_automaton;
 	}
 	
 	struct tima::Automaton&
-	get_automaton(uint32_t idx)
+	get_automaton_«project_name»(uint32_t idx)
 	{
 		return *automatons[idx];
 	}
@@ -260,11 +260,11 @@ class NativeGenerator extends NamedNodeGenerator {
 			val eg = g as IRAutomata.ExternalGuard
 			'''
 			bool «eg.externalName.simple_name»(
-								   const std::string& name, tima::TimaNativeContext* ctx «IF eg.arguments.size > 0»,«ENDIF»
-								   «FOR p : eg.arguments SEPARATOR ','»
-								   std::string
-				   				   «ENDFOR»
-								  );
+					   const std::string& name, tima::TimaNativeContext* ctx «IF eg.arguments.size > 0»,«ENDIF»
+					   «FOR p : eg.arguments SEPARATOR ','»
+					   std::string
+	   				   «ENDFOR»
+					  );
 			'''
 		}
 		else ""

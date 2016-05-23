@@ -22,6 +22,7 @@ import fr.labri.tima.Util;
 
 public class TimaBuilder extends IncrementalProjectBuilder {
 	
+	private static final String TIMA_BASE_APP_NAME = "tima";
 	public static final String BUILDER_ID = "fr.labri.tima.generator.ui.timabuilder";
 	private static final String WRONG_OMNETPP_PATH = "Wrong Path to OMNETPP/INET";
 
@@ -35,8 +36,22 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 			return null;
 		}
 		
-		// FIXME check the properties to do things related for a backend
 		String destination = getProject().getPersistentProperty(TimaNature.KEY_PATH_OMNET);
+		
+		// copy the TIMA runtime runtime to a specific folder below omnet/inet/application
+		File tima_base_app = new File(destination, TIMA_BASE_APP_NAME);
+		tima_base_app.mkdir();
+		Bundle bundle = FrameworkUtil.getBundle(getClass());
+		String pathToResources = "resources/code";
+		Enumeration<URL> l = bundle.findEntries(pathToResources,"*", true);
+		while (l!=null && l.hasMoreElements()) {
+			URL e = l.nextElement();
+			Util.copy(e, new File(tima_base_app.getAbsolutePath(),  
+					e.getFile().replace(pathToResources, "")), true);
+		}
+		
+		// FIXME check the properties to do things related for a backend
+		
 		if (!new File(destination).exists()) {
 			IMarker marker = getProject().createMarker(WRONG_OMNETPP_PATH);
 			marker.setAttribute(IMarker.MESSAGE, WRONG_OMNETPP_PATH);
@@ -62,7 +77,7 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 			app.mkdir();
 			
 			// copy semantic
-			Util.copy(semantic_file, new File(app.getAbsoluteFile(), semantic_file.getName()), false);
+			Util.copy(semantic_file, new File(app.getAbsoluteFile(), semantic_file.getName()), true);
 			
 			// copy all files under src-gen/${app}
 			f.accept(new IResourceVisitor() {
@@ -76,15 +91,7 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 				}
 			}, 1, false);
 			
-			// copy Tima runtime
-			Bundle bundle = FrameworkUtil.getBundle(getClass());
-			String pathToResources = "resources/code";
-			Enumeration<URL> l = bundle.findEntries(pathToResources,"*", true);
-			while (l!=null && l.hasMoreElements()) {
-				URL e = l.nextElement();
-				Util.copy(e, new File(app.getAbsolutePath(),  
-						e.getFile().replace(pathToResources, "")), true);
-			}
+			
 		}
 		return null;
 	}
