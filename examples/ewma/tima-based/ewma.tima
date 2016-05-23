@@ -1,0 +1,52 @@
+module ewma
+summary "This is an implementation of a distributed algorithm to build a minimum weighted spanning tree"
+
+/* =========================================== */
+/* control messages */
+/* =========================================== */
+
+msg_wakeup : sender
+
+/* =========================================== */
+/* network messages */
+/* =========================================== */
+
+/* this one is a trick to find your neighbors  */
+hello(proto:"UDP", port:"1000"): sender, x, y
+
+/* the message to disseminate */
+broadcast(proto:"UDP", port:"1000"): sender, payload, covered
+
+automaton MainPhase
+
+  /* the node is not building its local MWST */
+	initial state Sleeping
+		when ? msg_wakeup => Sleeping // spontaneous awake
+			do
+				`println` ("spontaneous awake and connecting to ", " I don't know")
+
+
+
+
+/* automaton used to build set of find set of neighbors */
+automaton phase0
+	initial state greeting
+		when ? hello within 200 msec => greeting do `store` (sender, x, y)
+		when timeout => s_check do 
+			`decrease_hellos`
+			! hello (x:posX, y:posY) @ *
+
+	urgent state s_check
+		when `zero_nr_hellos` => s0
+		when true => greeting
+
+	state s0
+		when ? hello  within 300 msec => s0 do `store` (sender, x, y)
+		when false within 1500 msec => s0
+		when timeout => initialized
+
+	urgent state initialized
+		do ! msg_wakeup @ MainPhase
+		when true => done
+	
+	state done
