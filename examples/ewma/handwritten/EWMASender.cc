@@ -10,12 +10,38 @@
 namespace inet {
 
 EWMASender::EWMASender() {
-    // TODO Auto-generated constructor stub
-
 }
 
 EWMASender::~EWMASender() {
-    // TODO Auto-generated destructor stub
+}
+
+
+
+void
+EWMASender::setSender(const std::string& s)
+{
+    sender = s;
+}
+
+
+std::string
+EWMASender::getSender()
+{
+    return sender;
+}
+
+
+void
+EWMASender::add(const std::string& e)
+{
+    v_p.insert(e);
+}
+
+
+bool
+EWMASender::isMember(const std::string& e)
+{
+    return v_p.find(e) != v_p.end();
 }
 
 } /* namespace inet */

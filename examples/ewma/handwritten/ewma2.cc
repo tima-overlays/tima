@@ -58,8 +58,8 @@ EWMA2::initialize(int stage)
             nr_hello_msg = par("nr_hello_messages").longValue();
             is_source = par("is_source").boolValue();
 
-            remotePort = par("remotePort").longValue();
-            localPort = par("localPort").longValue();
+            remote_port = par("remotePort").longValue();
+            local_port = par("localPort").longValue();
 
             ctrlMsg0 = new cMessage("controlMSG", IDLE);
 
@@ -105,12 +105,12 @@ EWMA2::handleMessageWhenUp(cMessage *msg)
 //                sm_proptocol->reportMessage(MSG_INITIALIZE);
                 break;
             case SAY_HELLO:
-                for ( auto addr : possibleNeighbors ) {
+                for ( auto addr : possible_neighbors ) {
                     inet::ewma::Hello* pkt = new inet::ewma::Hello("Hello");
                     pkt->setX(position.x);
                     pkt->setY(position.y);
                     pkt->setSender(myself.c_str());
-                    socket.sendTo(pkt, addr, remotePort);
+                    socket.sendTo(pkt, addr, remote_port);
 
                 }
                 this->nr_hello_msg--;
@@ -196,6 +196,7 @@ EWMA2::processStart()
     L3AddressResolver().tryResolve(myself.c_str(), myAddress);
     EV_TRACE << "Starting the process in module " << myself << " (" << myAddress.str() << ")" << "\n";
 
+    /* process the possible neighbors */
     const char *destAddrs = par("addresses");
     cStringTokenizer tokenizer(destAddrs);
     const char *token;
@@ -206,11 +207,17 @@ EWMA2::processStart()
         if (result.isUnspecified())
             EV_ERROR << "cannot resolve destination address: " << ((token)?token:"NULL") << endl;
         else if (myself != token)
-            possibleNeighbors.push_back(result);
+            possible_neighbors.push_back(result);
+    }
+
+    /* process the local mst */
+    cStringTokenizer tokenizer2(par("mst"));
+    while ((token = tokenizer.nextToken()) != nullptr) {
+        local_mst.push_back(token);
     }
 
     socket.setOutputGate(gate("udpOut"));
-    socket.bind(localPort);
+    socket.bind(local_port);
     socket.setBroadcast(true);
 
 
@@ -271,15 +278,22 @@ EWMA2::configure_neighbors()
         int x_t = coordinates[name].first;
         int y_t = coordinates[name].second;
         int d = (x_t - position.x)*(x_t - position.x) + (y_t - position.y)*(y_t - position.y);
-        mst_edges.push_back(name);
-        mst_w[name] = d;
+        edges.push_back(name);
+        w[name] = d;
     }
 
     // print (debug)
     EV_DEBUG << "EDGES " << myself << " =>  \n";
-    for (auto& i : mst_edges) {
-        EV_DEBUG << "\t" << i  << " with cost " << mst_w[i] << "\n";
+    for (auto& i : edges) {
+        EV_DEBUG << "\t" << i  << " with cost " << w[i] << "\n";
     }
+}
+
+
+bool
+EWMA2::isForwardingNode()
+{
+    return is_source || (local_mst.size() > 0);
 }
 
 

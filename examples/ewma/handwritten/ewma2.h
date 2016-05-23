@@ -36,8 +36,8 @@ class INET_API EWMA2 : public ApplicationBase
         Connecting
     };
 
-    int remotePort = 10000;
-    int localPort = 10000;
+    int remote_port = 10000;
+    int local_port = 10000;
 
     // communication
     UDPSocket socket;
@@ -58,20 +58,22 @@ class INET_API EWMA2 : public ApplicationBase
     // is the source of a broadcast
     bool is_source;
 
-
-
     // my direct edges (neighbors)
-    std::vector<std::string> mst_edges;
-    std::map<std::string, int> mst_w;
+    std::vector<std::string> edges;
+    std::map<std::string, int> w;
     // network members (my neighbors)
     std::map<std::string, L3Address> addresses;
     // coordinates of my neighbors
     std::map<std::string, std::pair<int, int> > coordinates;
 
     // ugly variable to simulate broadcasts
-    std::vector<L3Address> possibleNeighbors;
+    std::vector<L3Address> possible_neighbors;
 
 
+    // mst of this node for this broadcast FIXME: use the implementation of MWST
+    std::vector<std::string> local_mst;
+
+    /* a hack to avoid the problem of two messages being lost when they are send at the same time to the same device */
     std::queue<cMessage*> old_msgs;
 
 
@@ -80,6 +82,7 @@ class INET_API EWMA2 : public ApplicationBase
 
     void configure_neighbors();
     void on_hello_received(const inet::ewma::Hello* msg);
+    bool isForwardingNode();
 
   protected:
 
