@@ -62,7 +62,7 @@ OMNetTimaNature::send_network_message(const std::string& dst, int port, const st
 {
     cMessage* m = new cMessage("future message", FUTURE_MESSAGE);
     m->setContextPointer(new ScheduledMsg(msg, dst, port));
-    app_base->scheduleAt(simTime() + (rand() % 100) / 1000.0, m);
+    app_base->scheduleAt(simTime() + (rand() % 100) / 10000.0, m);
 }
 
 void
@@ -71,7 +71,7 @@ OMNetTimaNature::broadcast(int port, const std::string& msg)
     for ( auto dst : possibleNeighbors ) {
         cMessage* m = new cMessage("future message(Hello)", FUTURE_MESSAGE);
         m->setContextPointer(new ScheduledMsg(msg, dst.first, port));
-        app_base->scheduleAt(simTime() + (rand() % 100) / 1000.0, m);
+        app_base->scheduleAt(simTime() + (rand() % 100) / 10000.0, m);
 //        inet::Tima* pkt = new inet::Tima("Hello");
 //        auto pos = msg.find(';');
 //        pkt->setId(msg.substr(0, pos).c_str());

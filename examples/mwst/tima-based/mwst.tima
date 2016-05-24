@@ -9,7 +9,7 @@ msg_wakeup : sender
 
 /* =========================================== */
 /* network messages */
-/* =========================================== */
+/* =========================================== */ 
 
 /* this one is a trick to find your neighbors  */
 hello(proto:"UDP", port:"1000"): sender, x, y

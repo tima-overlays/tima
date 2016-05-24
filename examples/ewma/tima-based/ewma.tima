@@ -7,46 +7,55 @@ summary "This is an implementation of a distributed algorithm to build a minimum
 
 msg_wakeup : sender
 
-/* =========================================== */
+/* =========================================== */ 
 /* network messages */
 /* =========================================== */
 
 /* this one is a trick to find your neighbors  */
-hello(proto:"UDP", port:"1000"): sender, x, y
+hello(port:"1000"): sender, x, y
 
 /* the message to disseminate */
-broadcast(proto:"UDP", port:"1000"): sender, payload, covered
+broadcast(port:"1000"): sender, payload, covered 
 
-automaton MainPhase
+automaton MainPhase 
 
   /* the node is not building its local MWST */
 	initial state Sleeping
-		when ? msg_wakeup => Sleeping // spontaneous awake
+		when ? msg_wakeup (is_source = "true") => stop // spontaneous awake
 			do
 				`print` ("spontaneous awake and connecting to ", " I don't know")
-
-
+				`initial_dissemination` ("This is the message")
+		when ? msg_wakeup (is_source = "false") => Sleeping
+			do `print` ("spontaneous awake and connecting to ", " I don't know")
+			
+		when ? broadcast => received do `schedule_dissemination` (sender, payload, covered)
+		
+	state received
+		when ? broadcast within 1 sec => received do `reschedule_dissemination` (sender, payload, covered)
+		when timeout => stop do `disseminate` 
+		
+	state stop
 
 
 /* automaton used to build set of find set of neighbors */
 automaton phase0
 	initial state greeting
-		when ? hello within 200 msec => greeting do `store_p` (sender, x, y)
+		when ? hello within 100 msec => greeting do `store_p` (sender, x, y)
 		when timeout => s_check do 
 			`decrease_hellos`
 			! hello (x:posX, y:posY) @ *
 
 	urgent state s_check
-		when `zero_nr_hellos` => s0
-		when true => greeting
+		when `zero_nr_hellos` => s0 
+		when `no_zero_nr_hellos` => greeting
 
 	state s0
-		when ? hello  within 300 msec => s0 do `store_p` (sender, x, y)
-		when false within 1500 msec => s0
+		when ? hello  within 100 msec => s0 do `store_p` (sender, x, y) 
+		when false within 7 sec => s0
 		when timeout => initialized
 
 	urgent state initialized
-		do ! msg_wakeup @ MainPhase
-		when true => done
+		do ! msg_wakeup @ MainPhase 
+		when true => done 
 	
 	state done

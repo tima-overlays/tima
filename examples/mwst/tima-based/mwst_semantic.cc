@@ -10,7 +10,7 @@
 #include <omnetpp.h>
 #include "inet/common/INETDefs.h"
 
-#include "tima.h"
+#include "inet/applications/tima/tima.h"
 
 #include "mwst.h"
 
@@ -114,7 +114,7 @@ public:
 };
 
 void
-init_device_data(
+init_device_data_mwst(
 	string& device_name,
 	map<string, string>& options,
 	shared_ptr<tima::GlobalStorage> st)

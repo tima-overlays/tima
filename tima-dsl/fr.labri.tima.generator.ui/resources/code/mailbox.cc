@@ -74,7 +74,9 @@ tima::Mailbox::add_received_network_message(int msg_id, const char* payload, Tim
 {
 //  std::cout << msg_id << " Payload " << payload << std::endl;
   TemporaryActionContext* ctx = (TemporaryActionContext*) context;
-  Mailbox::get_instance(context->get_device_name())->network_messages.push_back(ctx->nature->deserialize(msg_id, payload));
+  tima::Message m = ctx->nature->deserialize(msg_id, payload);
+//  std::cout << "\t message received in " << ctx->get_device_name() << " from " << m.get("sender") << std::endl;
+  Mailbox::get_instance(context->get_device_name())->network_messages.push_back(m);
 }
 
 
