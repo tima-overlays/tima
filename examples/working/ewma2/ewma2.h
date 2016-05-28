@@ -36,18 +36,18 @@ class INET_API EWMA2 : public BroadcastingAppBase
     // mst of this node for this broadcast FIXME: use the implementation of MWST
     std::vector<std::string> local_mst;
 
-    std::string payload;
+    std::map< std::string, std::string >  payloads;
 
-    std::set<std::string> covered;
+    std::map< std::string, std::set<std::string> > covered;
 
 
     bool isForwardingNode();
 
     virtual void on_payload_received(const broadcasting::Broadcast* m) override;
-    virtual void time_to_broadcast_payload() override;
+    virtual void time_to_broadcast_payload(void* user_data) override;
 
-    void send_message(const std::vector<std::string>& dst);
-    void send_to_uncovred();
+    void send_message(const std::vector<std::string>& dst, std::string& key);
+    void send_to_uncovered(std::string& key);
 
   protected:
 

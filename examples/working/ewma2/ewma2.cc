@@ -49,21 +49,24 @@ EWMA2::processStart()
 
 void
 EWMA2::on_payload_received(const Broadcast* m) {
-    if (!payload.empty()) {
+
+    string key = string(m->getId());
+
+    if (!payloads[key].empty()) {
         return;
     }
 
     emitReceived();
 
-    payload = m->getPayload();
+    payloads.emplace(key, string(m->getPayload()));
+
     if (isForwardingNode()) {
         ewma::EWMABroadcast* mmm = (ewma::EWMABroadcast*)m;
         for (uint32_t k = 0 ; k < mmm->getCoveredArraySize() ; ++k) {
-            covered.insert(string(mmm->getCovered(k)));
+            covered[key].insert(string(mmm->getCovered(k)));
         }
-        cMessage* mm = new cMessage("broadcast delay");
-        mm->setKind(BROADCAST_DELAY);
-        scheduleAt(simTime() + par("delay_test").doubleValue(), mm);
+        delay_broadcast(strdup(key.c_str()));
+
     }
 }
 
@@ -76,18 +79,18 @@ EWMA2::isForwardingNode()
 
 
 void
-EWMA2::send_message(const vector<string>& dst)
+EWMA2::send_message(const vector<string>& dst, string& key)
 {
     set<string> previous;
-    for (auto& d: covered) previous.insert(d);
+    for (auto& d: covered[key]) previous.insert(d);
     for (auto& d : neighbors) {
-        covered.insert(d.first);
+        covered[key].insert(d.first);
     }
 
     if (dst.size() > 0) {
         EV_DEBUG << "====================== Sending in " << myself << "\n";
         cerr << "====================== Sending in " << myself << "\n";
-        for (auto& c : covered) {
+        for (auto& c : covered[key]) {
             EV_DEBUG << "\t The following is covered: " << c << "\n";
             cerr << "\t The following is covered: " << c << "\n";
         }
@@ -99,10 +102,11 @@ EWMA2::send_message(const vector<string>& dst)
             }
             ewma::EWMABroadcast* m = new ewma::EWMABroadcast("payload");
             m->setSender(myself.c_str());
-            m->setPayload(payload.c_str());
-            m->setCoveredArraySize(covered.size());
+            m->setId(key.c_str());
+            m->setPayload(payloads[key].c_str());
+            m->setCoveredArraySize(covered[key].size());
             vector<string> v;
-            for (auto& c : covered) v.push_back(c);
+            for (auto& c : covered[key]) v.push_back(c);
             for (uint32_t i = 0 ; i < v.size() ; i++) {
                 m->setCovered(i, v[i].c_str());
             }
@@ -114,30 +118,38 @@ EWMA2::send_message(const vector<string>& dst)
 
 
 void
-EWMA2::send_to_uncovred()
+EWMA2::send_to_uncovered(string& key)
 {
     /* send to members of (local_mst - covered) */
     vector<string> v;
     for (auto& d: local_mst) {
-        if (covered.find(d) == covered.end()) {
+        if (covered[key].find(d) == covered[key].end()) {
             v.push_back(d);
         }
     }
-    send_message(v);
+    send_message(v, key);
 }
 
 void
-EWMA2::time_to_broadcast_payload()
+EWMA2::time_to_broadcast_payload(void* user_data)
 {
-    BroadcastingAppBase::time_to_broadcast_payload();
-    cout << "Broadcasting in " << myself << endl;
+    BroadcastingAppBase::time_to_broadcast_payload(user_data);
+
+
     if (is_source) {
-        payload = " this is the payload, initially sent from " + myself;
-        covered.insert(myself);
-        send_message(local_mst);
+        string key = myself + "-" + to_string(get_next_id_for_msg());
+        cerr << "Broadcasting " <<  key << " in " << myself << " at " << simTime() << endl;
+        payloads[key] = " this is the payload, initially sent from " + myself;
+        covered[key].insert(myself);
+        send_message(local_mst, key);
     }
     else {
-        send_to_uncovred();
+        char* s = (char*)user_data;
+        string key = string(s);
+        cerr << "Broadcasting key: " << s  << " in " << myself << " at " << simTime() << endl;
+        delete s;
+
+        send_to_uncovered(key);
     }
 }
 

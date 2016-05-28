@@ -37,14 +37,17 @@ Dist2Mean::Dist2Mean()
 void
 Dist2Mean::on_payload_received(const Broadcast* m) {
 
+    string key = string(m->getId());
     BroadcastingAppBase::on_payload_received(m);
 
-    bool first_time = !is_source && received_from.empty(); // is the first time I received this message ?
+    bool first_time = !is_source && received_from[key].empty(); // is the first time I received this message ?
 
-    received_from.insert(m->getSender());
+    received_from[key].insert(m->getSender());
     if (first_time) {
-        payload = m->getPayload();
+        emitReceived();
+        payloads[key] = m->getPayload();
         cMessage* mm = new cMessage("broadcast delay");
+        mm->setContextPointer(strdup(key.c_str()));
         mm->setKind(BROADCAST_DELAY);
         double delay = (1.0 / neighbors[m->getSender()].w)*1000.0*2; // this is in s/(m^2)
         cout << "\t\t\tThe waiting time in " << myself << " is " << delay << endl;
@@ -54,21 +57,21 @@ Dist2Mean::on_payload_received(const Broadcast* m) {
 
 
 void
-Dist2Mean::send_message()
+Dist2Mean::send_message(string& key)
 {
 
-    bool must_send = received_from.empty();
+    bool must_send = received_from[key].empty();
     double mx = 0;
     double my = 0;
     if (!must_send) {
 
-        for (auto& s : received_from) {
+        for (auto& s : received_from[key]) {
             auto p = neighbors[s].pos;
             mx += p.x;
             my += p.y;
         }
-        mx /= received_from.size();
-        my /= received_from.size();
+        mx /= received_from[key].size();
+        my /= received_from[key].size();
     }
 
     double dist = (mx - position.x)*(mx - position.x) + (my - position.y)*(my - position.y);
@@ -79,10 +82,11 @@ Dist2Mean::send_message()
 
         EV_DEBUG << "====================== Sending in " << myself << " because the distance to mean  is " << dist << " > " << par("threshold").doubleValue() << "\n";
         cout << "====================== Sending in " << myself << " because the distance to mean  is " << dist << " > " << par("threshold").doubleValue() << "\n";
-
+        emitSent();
         for (auto& d : neighbors) {
             Broadcast* m = new Broadcast("payload");
-            m->setPayload(payload.c_str());
+            m->setPayload(payloads[key].c_str());
+            m->setId(key.c_str());
             m->setSender(myself.c_str());
             socket.sendTo(m, d.second.addr, remote_port);
         }
@@ -92,14 +96,21 @@ Dist2Mean::send_message()
 
 
 void
-Dist2Mean::time_to_broadcast_payload()
+Dist2Mean::time_to_broadcast_payload(void* user_data)
 {
-    BroadcastingAppBase::time_to_broadcast_payload();
+    BroadcastingAppBase::time_to_broadcast_payload(user_data);
+    string key;
     if (is_source) {
-        payload = " this is the payload, initially sent from " + myself;
+        key = myself + "-" + to_string(get_next_id_for_msg());
+        payloads[key] = " this is the payload, initially sent from " + myself;
+    }
+    else {
+        char* s = (char*)user_data;
+        key = string(s);
+        delete s;
     }
     cout << "Broadcasting in " << myself << endl;
-    send_message();
+    send_message(key);
 }
 
 

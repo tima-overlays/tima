@@ -47,11 +47,21 @@ BroadcastingAppBase::initialize(int stage)
 
             nr_hello_msg = par("nr_hello_messages").longValue();
             is_source = par("is_source").boolValue();
+            nr_broadcast_msg = par("nr_broadcast_msg").longValue();
 
             remote_port = par("remotePort").longValue();
             local_port = par("localPort").longValue();
 
             ctrlMsg0 = new cMessage("controlMSG", IDLE);
+
+            signal_received_id = this->registerSignal("msg_received");
+            signal_sent_id = this->registerSignal("msg_sent");
+            signal_power_level = this->registerSignal("power_level");
+            {
+                cModule *hostModule = getParentModule();
+                cerr << "host name : " << hostModule->getName() << endl;
+                hostModule->subscribe(inet::power::IEnergyStorage::residualCapacityChangedSignal, this);
+            }
 
             break;
         case INITSTAGE_PHYSICAL_ENVIRONMENT_2:
@@ -66,24 +76,18 @@ BroadcastingAppBase::initialize(int stage)
             break;
         case INITSTAGE_LAST:
 
-            if (is_source) {
+            if (is_source && nr_broadcast_msg > 0) {
                 cMessage* ctrlWakeup = new cMessage("controlMSG", WAKEUP);
                 ctrlWakeup->setKind( WAKEUP);
                 scheduleAt(par("wakeUpTime").doubleValue() + simTime(), ctrlWakeup);
             }
-
-            signal_received_id = this->registerSignal("msg_received");
-            signal_sent_id = this->registerSignal("msg_sent");
-            signal_power_level = this->registerSignal("power_level");
-            cerr << "cojone 2" << endl;
-
-//            this->subscribe(inet::power::IEnergyStorage::residualCapacityChangedSignal, this);
 
             break;
         default:
             break;
     }
 }
+
 
 void
 BroadcastingAppBase::handleMessageWhenUp(cMessage *msg)
@@ -92,9 +96,9 @@ BroadcastingAppBase::handleMessageWhenUp(cMessage *msg)
     if (msg->isSelfMessage()) {
 
         switch (msg->getKind()) {
-            case START:
-                processStart();
-//                sm_proptocol->reportMessage(MSG_INITIALIZE);
+            case START: {
+                this->processStart();
+                }
                 break;
             case SAY_HELLO:
                 for ( auto addr : possible_neighbors ) {
@@ -115,12 +119,21 @@ BroadcastingAppBase::handleMessageWhenUp(cMessage *msg)
                 configure_neighbors();
                 this->emitReceived();
                 cout << typeid(this).name() << " : is the type " << endl;
-                this->time_to_broadcast_payload();
+                this->time_to_broadcast_payload(nullptr);
                 cancelAndDelete(msg);
+                nr_broadcast_msg--;
+                if (is_source && nr_broadcast_msg > 0) {
+                    cMessage* ctrlWakeup = new cMessage("controlMSG", WAKEUP);
+                    ctrlWakeup->setKind( WAKEUP);
+                    scheduleAt(par("wakeUpTime").doubleValue() + simTime(), ctrlWakeup);
+                }
                 break;
             case BROADCAST_DELAY:
-                this->time_to_broadcast_payload();
-                cancelAndDelete(msg);
+                {
+                    void* data = msg->getContextPointer();
+                    this->time_to_broadcast_payload(data);
+                    cancelAndDelete(msg);
+                }
                 break;
             case DISPLAY_TIME:
                 {
@@ -143,16 +156,16 @@ BroadcastingAppBase::handleMessageWhenUp(cMessage *msg)
 
 }
 
-//
-//void
-//BroadcastingAppBase::receiveSignal(cComponent *source, simsignal_t signalID, long value)
-//{
+
+void
+BroadcastingAppBase::receiveSignal(cComponent *source, simsignal_t signalID, double value)
+{
 //    cerr << " una recibida " << signalID << endl;
-//    if (signalID == inet::power::IEnergyStorage::residualCapacityChangedSignal) {
-//        emitPowerLevel(value);
-//    }
-//
-//}
+    if (signalID == inet::power::IEnergyStorage::residualCapacityChangedSignal) {
+        emitPowerLevel(value);
+    }
+
+}
 
 
 bool
@@ -310,7 +323,7 @@ BroadcastingAppBase::on_payload_received(const Broadcast* m) {
 }
 
 void
-BroadcastingAppBase::time_to_broadcast_payload()
+BroadcastingAppBase::time_to_broadcast_payload(void* user_data)
 {
     cout << "Time to broadcast called in " << myself << endl;
 }
@@ -334,6 +347,29 @@ void
 BroadcastingAppBase::emitPowerLevel(double value)
 {
     emit(signal_power_level, value);
+}
+
+
+void
+BroadcastingAppBase::delay_broadcast(void* user_data) {
+    cMessage* mm = new cMessage("broadcast delay");
+    mm->setKind(BROADCAST_DELAY);
+    mm->setContextPointer(user_data);
+    scheduleAt(simTime() + par("delay_test").doubleValue(), mm);
+}
+
+
+int
+BroadcastingAppBase::get_next_id_for_msg()
+{
+    return ++last_id;
+}
+
+
+int
+BroadcastingAppBase::get_last_id_for_msg()
+{
+    return last_id;
 }
 
 

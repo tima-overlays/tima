@@ -334,6 +334,7 @@ Register_Class(Broadcast);
 
 Broadcast::Broadcast(const char *name, int kind) : ::cPacket(name,kind)
 {
+    this->id_var = 0;
     this->sender_var = 0;
     this->payload_var = 0;
 }
@@ -357,6 +358,7 @@ Broadcast& Broadcast::operator=(const Broadcast& other)
 
 void Broadcast::copy(const Broadcast& other)
 {
+    this->id_var = other.id_var;
     this->sender_var = other.sender_var;
     this->payload_var = other.payload_var;
 }
@@ -364,6 +366,7 @@ void Broadcast::copy(const Broadcast& other)
 void Broadcast::parsimPack(cCommBuffer *b)
 {
     ::cPacket::parsimPack(b);
+    doPacking(b,this->id_var);
     doPacking(b,this->sender_var);
     doPacking(b,this->payload_var);
 }
@@ -371,8 +374,19 @@ void Broadcast::parsimPack(cCommBuffer *b)
 void Broadcast::parsimUnpack(cCommBuffer *b)
 {
     ::cPacket::parsimUnpack(b);
+    doUnpacking(b,this->id_var);
     doUnpacking(b,this->sender_var);
     doUnpacking(b,this->payload_var);
+}
+
+const char * Broadcast::getId() const
+{
+    return id_var.c_str();
+}
+
+void Broadcast::setId(const char * id)
+{
+    this->id_var = id;
 }
 
 const char * Broadcast::getSender() const
@@ -442,7 +456,7 @@ const char *BroadcastDescriptor::getProperty(const char *propertyname) const
 int BroadcastDescriptor::getFieldCount(void *object) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 2+basedesc->getFieldCount(object) : 2;
+    return basedesc ? 3+basedesc->getFieldCount(object) : 3;
 }
 
 unsigned int BroadcastDescriptor::getFieldTypeFlags(void *object, int field) const
@@ -456,8 +470,9 @@ unsigned int BroadcastDescriptor::getFieldTypeFlags(void *object, int field) con
     static unsigned int fieldTypeFlags[] = {
         FD_ISEDITABLE,
         FD_ISEDITABLE,
+        FD_ISEDITABLE,
     };
-    return (field>=0 && field<2) ? fieldTypeFlags[field] : 0;
+    return (field>=0 && field<3) ? fieldTypeFlags[field] : 0;
 }
 
 const char *BroadcastDescriptor::getFieldName(void *object, int field) const
@@ -469,18 +484,20 @@ const char *BroadcastDescriptor::getFieldName(void *object, int field) const
         field -= basedesc->getFieldCount(object);
     }
     static const char *fieldNames[] = {
+        "id",
         "sender",
         "payload",
     };
-    return (field>=0 && field<2) ? fieldNames[field] : NULL;
+    return (field>=0 && field<3) ? fieldNames[field] : NULL;
 }
 
 int BroadcastDescriptor::findField(void *object, const char *fieldName) const
 {
     cClassDescriptor *basedesc = getBaseClassDescriptor();
     int base = basedesc ? basedesc->getFieldCount(object) : 0;
-    if (fieldName[0]=='s' && strcmp(fieldName, "sender")==0) return base+0;
-    if (fieldName[0]=='p' && strcmp(fieldName, "payload")==0) return base+1;
+    if (fieldName[0]=='i' && strcmp(fieldName, "id")==0) return base+0;
+    if (fieldName[0]=='s' && strcmp(fieldName, "sender")==0) return base+1;
+    if (fieldName[0]=='p' && strcmp(fieldName, "payload")==0) return base+2;
     return basedesc ? basedesc->findField(object, fieldName) : -1;
 }
 
@@ -495,8 +512,9 @@ const char *BroadcastDescriptor::getFieldTypeString(void *object, int field) con
     static const char *fieldTypeStrings[] = {
         "string",
         "string",
+        "string",
     };
-    return (field>=0 && field<2) ? fieldTypeStrings[field] : NULL;
+    return (field>=0 && field<3) ? fieldTypeStrings[field] : NULL;
 }
 
 const char *BroadcastDescriptor::getFieldProperty(void *object, int field, const char *propertyname) const
@@ -536,8 +554,9 @@ std::string BroadcastDescriptor::getFieldAsString(void *object, int field, int i
     }
     Broadcast *pp = (Broadcast *)object; (void)pp;
     switch (field) {
-        case 0: return oppstring2string(pp->getSender());
-        case 1: return oppstring2string(pp->getPayload());
+        case 0: return oppstring2string(pp->getId());
+        case 1: return oppstring2string(pp->getSender());
+        case 2: return oppstring2string(pp->getPayload());
         default: return "";
     }
 }
@@ -552,8 +571,9 @@ bool BroadcastDescriptor::setFieldAsString(void *object, int field, int i, const
     }
     Broadcast *pp = (Broadcast *)object; (void)pp;
     switch (field) {
-        case 0: pp->setSender((value)); return true;
-        case 1: pp->setPayload((value)); return true;
+        case 0: pp->setId((value)); return true;
+        case 1: pp->setSender((value)); return true;
+        case 2: pp->setPayload((value)); return true;
         default: return false;
     }
 }

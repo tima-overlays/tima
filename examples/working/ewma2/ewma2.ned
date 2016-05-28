@@ -17,50 +17,26 @@ package inet.applications.ewma2;
 
 import inet.applications.contract.IUDPApp;
 
+import inet.applications.broadcasting.BroadcastingBase;
+
 //
 // This module is an application that implement the Gossip protocol
 // to disemminate messages.
 //
 // Some nodes distribute messages in the network using unicast UDP.
 //
-simple EWMA2 like IUDPApp
+simple EWMA2 extends BroadcastingBase like IUDPApp
 {
     parameters:
-        // you know, we are talking about networking here
-        int remotePort = default(10000);
-        int localPort = default(10000);
-        
-        string addresses = default(""); // network members (all the devices in the network)
-        
-        
-        // section defining parameters used to identify my neighbors
-        double maximumDelay @unit(s) = default(0.5s);
-        volatile double helloTime @unit(s) = default(uniform(0s,maximumDelay)); // delay between hello messages
-        int nr_hello_messages = default(3); // how many delay messages
-        
+       
         // parameters describing a round 
         int T_max @unit(s) = default(0.6s);
         int T_prob @unit(s) = default(T_max/3);
         int T_corr @unit(s) = default(T_max/3);
         int T_act @unit(s) = default(T_max/3);
         
-        // say if this node is the source of a broadcast
-        bool is_source = default(false);
-        volatile double wakeUpTime @unit(s) = is_source? uniform(maximumDelay*nr_hello_messages, maximumDelay*(nr_hello_messages + 1)) : 1000000s;
-        
         // horrible hack to specify (by hand) the neighbors in the MST
         string mst = default("");
         
-        // maybe there is some information to show
-        double display_time @unit(s) = default(5s); // at this point we must show the built MWST
-        
-        volatile double delay_test @unit(s) = default(uniform(0s,0.5s));
-        
-        @statistic[msg_received](title="A node receive a message";record=sum; source=msg_received);
-        @statistic[msg_sent](title="The node sends the message";record=sum;source=msg_sent);
-//        @statistic[power_level](title="The power level"; record=sum; source=power_level);
-          
-	gates:
-        input udpIn @labels(UDPControlInfo/up);
-        output udpOut @labels(UDPControlInfo/down);
+        @class(EWMA2);
 }

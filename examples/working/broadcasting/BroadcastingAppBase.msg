@@ -23,6 +23,7 @@ packet Hello {
 }
 
 packet Broadcast {
+    string id;
     string sender;
     string payload;
 }

@@ -26,14 +26,14 @@ class INET_API Dist2Mean : public inet::BroadcastingAppBase
 {
   private:
     /* payload of the message to broadcast */
-    std::string payload;
+    std::map< std::string, std::string >  payloads;
     /* indicates the set of nodes from whom I received this message */
-    std::set<std::string> received_from;
+    std::map< std::string, std::set<std::string>> received_from;
 
     virtual void on_payload_received(const broadcasting::Broadcast* m) override;
-    virtual void time_to_broadcast_payload() override;
+    virtual void time_to_broadcast_payload(void* user_data) override;
 
-    void send_message();
+    void send_message(std::string& key);
   public:
     Dist2Mean();
 };

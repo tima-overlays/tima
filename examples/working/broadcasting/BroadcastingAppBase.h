@@ -23,7 +23,7 @@
 namespace inet {
 
 
-class INET_API BroadcastingAppBase : public ApplicationBase //, public cListener
+class INET_API BroadcastingAppBase : public ApplicationBase , public cListener
 {
   protected:
     class Neighbor {
@@ -45,6 +45,9 @@ class INET_API BroadcastingAppBase : public ApplicationBase //, public cListener
     // is the source of a broadcast
     bool is_source;
 
+    // number of broadcast message to send
+    int nr_broadcast_msg;
+
     // my direct edges (neighbors)
     std::map<std::string, Neighbor> neighbors;
 
@@ -64,6 +67,9 @@ class INET_API BroadcastingAppBase : public ApplicationBase //, public cListener
     L3Address myAddress;
     // my position
     Coord position;
+
+    // counter to assign ids to broadcast messages
+    int last_id = 0;
 
   private:
 
@@ -94,11 +100,9 @@ class INET_API BroadcastingAppBase : public ApplicationBase //, public cListener
     virtual bool handleNodeShutdown(IDoneCallback *doneCallback) override;
     virtual void handleNodeCrash() override;
 
-//    virtual void receiveSignal(cComponent *source, simsignal_t signalID, long value) override;
+
 
     virtual void processStart();
-
-    L3Address getAddr(std::string id);
 
     template <typename K>
     class Action {
@@ -109,11 +113,20 @@ class INET_API BroadcastingAppBase : public ApplicationBase //, public cListener
     virtual void on_payload_received(const broadcasting::Broadcast* m);
     virtual bool on_network_message_received(cPacket* pkt);
 
-    virtual void time_to_broadcast_payload();
+    virtual void time_to_broadcast_payload(void* user_data);
 
     void emitSent();
     void emitReceived();
     void emitPowerLevel(double value);
+
+    L3Address getAddr(std::string id);
+
+    void delay_broadcast(void* user_data);
+
+    int get_next_id_for_msg();
+    int get_last_id_for_msg();
+
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value) override;
 
   public:
     BroadcastingAppBase();

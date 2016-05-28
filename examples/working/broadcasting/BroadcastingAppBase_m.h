@@ -79,6 +79,7 @@ inline void doUnpacking(cCommBuffer *b, Hello& obj) {obj.parsimUnpack(b);}
  * <pre>
  * packet Broadcast
  * {
+ *     string id;
  *     string sender;
  *     string payload;
  * }
@@ -87,6 +88,7 @@ inline void doUnpacking(cCommBuffer *b, Hello& obj) {obj.parsimUnpack(b);}
 class INET_API Broadcast : public ::cPacket
 {
   protected:
+    opp_string id_var;
     opp_string sender_var;
     opp_string payload_var;
 
@@ -107,6 +109,8 @@ class INET_API Broadcast : public ::cPacket
     virtual void parsimUnpack(cCommBuffer *b);
 
     // field getter/setter methods
+    virtual const char * getId() const;
+    virtual void setId(const char * id);
     virtual const char * getSender() const;
     virtual void setSender(const char * sender);
     virtual const char * getPayload() const;
