@@ -13,20 +13,17 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.applications.dist2mean;
+cplusplus {{
+#include "inet/applications/broadcasting/BroadcastingAppBase_m.h"
+using inet::broadcasting::Broadcast;
+}}
 
-import inet.applications.contract.IUDPApp;
-import inet.applications.broadcasting.BroadcastingBase;
+packet inet::broadcasting::Broadcast;
 
-//
-//
-// Some nodes distribute messages in the network using unicast UDP.
-//
-simple Dist2Mean extends BroadcastingBase like IUDPApp
-{
-    parameters:
-        
-        double threshold = default(5000);
-        
-        @class(Dist2Mean);
+namespace inet::abba;
+
+packet ABBABroadcast extends inet::broadcasting::Broadcast {
+	double x;
+	double y;
 }
+

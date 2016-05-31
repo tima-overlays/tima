@@ -42,6 +42,10 @@ class OmnetGenerator extends NativeGenerator {
 	        string extra_options = default("");
 	
 	        string addresses = default(""); // network members
+	        
+	        @statistic[msg_received](title="A node receive a message";record=sum; source=msg_received);
+	        @statistic[msg_sent](title="The node sends the message";record=sum;source=msg_sent);
+	        @statistic[power_level](title="The power level"; record=min; source=power_level);
 	          
 		gates:
 	        input udpIn @labels(UDPControlInfo/up);
@@ -58,6 +62,7 @@ class OmnetGenerator extends NativeGenerator {
 	#include "inet/networklayer/common/L3AddressResolver.h"
 	#include "inet/transportlayer/contract/udp/UDPControlInfo.h"
 	#include "inet/mobility/contract/IMobility.h"
+	#include "inet/power/contract/IEnergyStorage.h"
 	
 	#include <algorithm>
 	#include <sstream>
@@ -99,6 +104,14 @@ class OmnetGenerator extends NativeGenerator {
 	
 	
 	              msg_tick = new cMessage("msg_ctrl", ControlMessageTypes::IDLE);
+	              
+	              signal_received_id = this->registerSignal("msg_received");
+	              signal_sent_id = this->registerSignal("msg_sent");
+	              signal_power_level = this->registerSignal("power_level");
+	              {
+	              	cModule *hostModule = getParentModule();
+	              	hostModule->subscribe(inet::power::IEnergyStorage::residualCapacityChangedSignal, this);
+	              }
 	            }
 	            break;
 	        case INITSTAGE_PHYSICAL_ENVIRONMENT_2:
@@ -260,6 +273,29 @@ class OmnetGenerator extends NativeGenerator {
 	  }
 	  return automatas;
 	}
+
+
+	void
+	«project_name»::receiveSignal(cComponent *source, simsignal_t signalID, double value)
+	{
+	    if (signalID == inet::power::IEnergyStorage::residualCapacityChangedSignal) {
+	        emit(signal_power_level, value);
+	    }
+	}
+	
+	
+	void
+	«project_name»::emitSent()
+	{
+	    emit(signal_sent_id, 1);
+	}
+	
+	
+	void
+	«project_name»::emitReceived()
+	{
+	    emit(signal_received_id, 1);
+	}
 	
 	} //namespace
 	'''
@@ -296,7 +332,7 @@ class OmnetGenerator extends NativeGenerator {
 	namespace inet {
 	
 	
-	class INET_API «project_name» : public ApplicationBase
+	class INET_API «project_name» : public ApplicationBase, public cListener
 	{
 	  protected:
 	
@@ -322,8 +358,11 @@ class OmnetGenerator extends NativeGenerator {
 	    std::unique_ptr<tima::Executor> executor;
 	
 	    std::map<std::string, std::string> options;
-	
-	  protected:
+	    
+	    /* signals used to record statistics */
+	    simsignal_t signal_received_id;
+	    simsignal_t signal_sent_id;
+	    simsignal_t signal_power_level;
 	
 	    virtual int numInitStages() const override { return NUM_INIT_STAGES; }
 	    virtual void initialize(int stage) override;
@@ -335,10 +374,15 @@ class OmnetGenerator extends NativeGenerator {
 	    virtual void handleNodeCrash() override;
 	
 	    virtual void processStart();
+	    
+	    virtual void receiveSignal(cComponent *source, simsignal_t signalID, double value) override;
 	
 	private:
 	    void configure_next_timer();
 		std::vector<tima::Automaton*> build_stl_version();
+	public:
+		void emitSent();
+		void emitReceived();
 	};
 	
 	} //namespace

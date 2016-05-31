@@ -67,6 +67,7 @@ class INET_API BroadcastingAppBase : public ApplicationBase , public cListener
     L3Address myAddress;
     // my position
     Coord position;
+    int radious;
 
     // counter to assign ids to broadcast messages
     int last_id = 0;

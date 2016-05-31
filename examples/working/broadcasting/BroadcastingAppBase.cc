@@ -21,6 +21,7 @@
 #include "inet/transportlayer/contract/udp/UDPControlInfo.h"
 #include "inet/mobility/contract/IMobility.h"
 #include "inet/power/contract/IEnergyStorage.h"
+#include "inet/physicallayer/idealradio/IdealTransmitter.h"
 
 #include <algorithm>
 
@@ -68,8 +69,10 @@ BroadcastingAppBase::initialize(int stage)
             {
                 cModule* host = getContainingNode(this);
                 IMobility* mobility = check_and_cast<IMobility*>(host->getSubmodule("mobility"));
+                physicallayer::IdealTransmitter* transmitter = check_and_cast<physicallayer::IdealTransmitter*>(host->getModuleByPath(".wlan[0].radio.transmitter"));
 
                 this->position = mobility->getCurrentPosition();
+                this->radious = transmitter->getMaxCommunicationRange().get();
 
                 EV_TRACE << "My position is " << this->position  << "\n";
             }
