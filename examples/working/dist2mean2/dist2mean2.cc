@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 //
 
-#include "dist2mean.h"
+#include "dist2mean2.h"
 
 
 #include "inet/networklayer/common/L3AddressResolver.h"
@@ -27,15 +27,15 @@ using inet::broadcasting::Broadcast;
 
 namespace inet {
 
-Define_Module(Dist2Mean);
+Define_Module(Dist2Mean2);
 
-Dist2Mean::Dist2Mean()
+Dist2Mean2::Dist2Mean2()
 {
 }
 
 
 void
-Dist2Mean::on_payload_received(const Broadcast* m) {
+Dist2Mean2::on_payload_received(const Broadcast* m) {
 
     string key = string(m->getId());
     BroadcastingAppBase::on_payload_received(m);
@@ -57,7 +57,7 @@ Dist2Mean::on_payload_received(const Broadcast* m) {
 
 
 void
-Dist2Mean::send_message(string& key)
+Dist2Mean2::send_message(string& key)
 {
 
     bool must_send = received_from[key].empty();
@@ -83,20 +83,19 @@ Dist2Mean::send_message(string& key)
         EV_DEBUG << "====================== Sending in " << myself << " because the distance to mean  is " << dist << " > " << par("threshold").doubleValue() << "\n";
         cout << "====================== Sending in " << myself << " because the distance to mean  is " << dist << " > " << par("threshold").doubleValue() << "\n";
         emitSent();
-        for (auto& d : neighbors) {
-            Broadcast* m = new Broadcast("payload");
-            m->setPayload(payloads[key].c_str());
-            m->setId(key.c_str());
-            m->setSender(myself.c_str());
-            socket.sendTo(m, d.second.addr, remote_port);
-        }
-
+        L3AddressResolver resolver;
+        L3Address addr = resolver.resolve("255.255.255.255", L3AddressResolver::ADDR_IPv4);
+        Broadcast* m = new Broadcast("payload");
+        m->setPayload(payloads[key].c_str());
+        m->setId(key.c_str());
+        m->setSender(myself.c_str());
+        socket.sendTo(m, addr, remote_port);
     }
 }
 
 
 void
-Dist2Mean::time_to_broadcast_payload(void* user_data)
+Dist2Mean2::time_to_broadcast_payload(void* user_data)
 {
     BroadcastingAppBase::time_to_broadcast_payload(user_data);
     string key;

@@ -104,13 +104,16 @@ BroadcastingAppBase::handleMessageWhenUp(cMessage *msg)
                 }
                 break;
             case SAY_HELLO:
-                for ( auto addr : possible_neighbors ) {
-                    Hello* pkt = new Hello("Hello");
-                    pkt->setX(position.x);
-                    pkt->setY(position.y);
-                    pkt->setSender(myself.c_str());
-                    socket.sendTo(pkt, addr, remote_port);
-
+                {
+                    L3AddressResolver resolver;
+                    L3Address addr = resolver.resolve("255.255.255.255", L3AddressResolver::ADDR_IPv4);
+                    {
+                        Hello* pkt = new Hello("Hello");
+                        pkt->setX(position.x);
+                        pkt->setY(position.y);
+                        pkt->setSender(myself.c_str());
+                        socket.sendTo(pkt, addr, remote_port);
+                    }
                 }
                 this->nr_hello_msg--;
                 if (this->nr_hello_msg) {
@@ -121,7 +124,6 @@ BroadcastingAppBase::handleMessageWhenUp(cMessage *msg)
             case WAKEUP:
                 configure_neighbors();
                 this->emitReceived();
-                cout << typeid(this).name() << " : is the type " << endl;
                 this->time_to_broadcast_payload(nullptr);
                 cancelAndDelete(msg);
                 nr_broadcast_msg--;
@@ -227,20 +229,6 @@ BroadcastingAppBase::processStart()
     myself = this->getParentModule()->getFullName();
     L3AddressResolver().tryResolve(myself.c_str(), myAddress);
 
-    /* process the possible neighbors */
-    const char *destAddrs = par("addresses");
-    cStringTokenizer tokenizer(destAddrs);
-    const char *token;
-
-    while ((token = tokenizer.nextToken()) != nullptr) {
-        L3Address result;
-        L3AddressResolver().tryResolve(token, result);
-        if (result.isUnspecified())
-            EV_ERROR << "cannot resolve destination address: " << ((token)?token:"NULL") << endl;
-        else if (myself != token)
-            possible_neighbors.push_back(result);
-    }
-
     socket.setOutputGate(gate("udpOut"));
     socket.bind(local_port);
     socket.setBroadcast(true);
@@ -270,11 +258,14 @@ void
 BroadcastingAppBase::configure_neighbors()
 {
     // print (debug)
-    EV_DEBUG << "EDGES " << myself << " =>  \n";
-    cerr << "EDGES " << myself << " =>  \n";
-    for (auto& i : neighbors) {
-        EV_DEBUG << "\t" << i.second.name  << " with cost " << i.second.name << "\n";
-        cerr << "\t" << i.second.name  << " with cost " << i.second.name << "\n";
+    if (!already_configured && neighbors.size() > 0) {
+        already_configured = true;
+        EV_DEBUG << "EDGES " << myself << " =>  \n";
+        cerr << "EDGES " << myself << " =>  \n";
+        for (auto& i : neighbors) {
+            EV_DEBUG << "\t" << i.second.name  << " with cost " << i.second.name << "\n";
+            cerr << "\t" << i.second.name  << " with cost " << i.second.name << "\n";
+        }
     }
 }
 
@@ -373,6 +364,14 @@ int
 BroadcastingAppBase::get_last_id_for_msg()
 {
     return last_id;
+}
+
+
+void BroadcastingAppBase::delayed_broadcast(const string& key, double delay) {
+    cMessage* mm = new cMessage("broadcast delay");
+    mm->setContextPointer(strdup(key.c_str()));
+    mm->setKind(BROADCAST_DELAY);
+    scheduleAt(simTime() + delay, mm);
 }
 
 

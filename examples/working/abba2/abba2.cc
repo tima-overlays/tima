@@ -24,6 +24,8 @@
 #include <algorithm>
 #include <cmath>
 #include <vector>
+#include <chrono>
+#include <random>
 
 using namespace std;
 using inet::broadcasting::Broadcast;
@@ -32,82 +34,60 @@ namespace inet {
 
 Define_Module(Abba2);
 
-//double find_angle()
-
-int
-Abba2::add(vector<Range>& v, double a1, double a2 )
-{
-    for (int i = 0 ; i < v.size(); i++) {
-        if (v[i].intersect(a1,2)) {
-            return i;
-        }
-    }
-    v.push_back(Range(a1, a2));
-    return -1;
-}
-
 #define  PIPI  3.141592653589793238463
 
 void
 Abba2::on_payload_received(const Broadcast* m) {
 
-
     string key = string(m->getId());
+
+    bool firstTime = !is_source && payloads[key].empty();
+
+    if (firstTime) {
+        double angle = 0;
+        double delta = 2*PIPI / 36;
+        while (angle < 2*PIPI) {
+            auto y = std::sin(angle)*radious;
+            auto x = std::cos(angle)*radious;
+            received_from[key].insert(make_pair(x+position.x, y + position.y));
+            angle += delta;
+        }
+    }
 
     auto mm = (abba::ABBABroadcast*)m;
     auto r = radious;
 
-    auto x = mm->getX() - position.x;
-    auto y = -(mm->getY() - position.y);
+    auto a = mm->getX();
+    auto b = mm->getY();
 
-    auto a = sqrt(x*x + y*y);
+    for (auto i = received_from[key].begin(), f = received_from[key].end() ; i != f ; ++i) {
+        auto x = i->first;
+        auto y = i->second;
 
-    auto alpha = atan2( y, x );
-    auto beta = atan2( sqrt(4*r*r  - a*2), a/2 );
+        if ((x - a)*(x - a) + (y - b)*(y - b) < r*r) {
+            received_from[key].erase(i);
+        }
+    }
 
-    if (alpha < 0) alpha += 2*PI;
-    if (beta < 0) beta += 2*PI;
-
-    auto a1 = alpha - beta;
-    auto a2 = alpha + beta;
-
-
-    cerr << myself << " angle from " << a1 << " to " << a2 << " received." << endl;
-//
-//    int i = -1;
-//    while ( (i = add(received_from[key], a1, a2)) != -1) {
-//        a1 = received_from[key][i].min;
-//        a2 = received_from[key][i].max;
-//    }
-
-
-
-
-//
-//
-//    string key = string(m->getId());
-//    BroadcastingAppBase::on_payload_received(m);
-//
-//    bool first_time = !is_source && received_from[key].empty(); // is the first time I received this message ?
-//
-//    received_from[key].insert(m->getSender());
-//    if (first_time) {
-//        emitReceived();
-//        payloads[key] = m->getPayload();
-//        cMessage* mm = new cMessage("broadcast delay");
-//        mm->setContextPointer(strdup(key.c_str()));
-//        mm->setKind(BROADCAST_DELAY);
-//        double delay = (1.0 / neighbors[m->getSender()].w)*1000.0*2; // this is in s/(m^2)
-//        cout << "\t\t\tThe waiting time in " << myself << " is " << delay << endl;
-//        scheduleAt(simTime() + delay, mm);
-//    }
+    if (firstTime) {
+        emitReceived();
+        payloads[key] = m->getPayload();
+        unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::minstd_rand0 generator (seed); // minstd_rand0 is a standard linear_congruential_engine
+        std::uniform_real_distribution<double> distribution(0.1,0.5);
+        delayed_broadcast(key, distribution(generator));
+    }
 }
 
 
 void
 Abba2::send_message(string& key)
 {
-    for (auto& addr: possible_neighbors) {
+    if (is_source || received_from[key].size() > 0) {
+        cerr << myself << " has still " << received_from[key].size() << " points " << endl;
+
+        L3AddressResolver resolver;
+        L3Address addr = resolver.resolve("255.255.255.255", L3AddressResolver::ADDR_IPv4);
         abba::ABBABroadcast* m = new abba::ABBABroadcast("payload");
         m->setPayload(payloads[key].c_str());
         m->setId(key.c_str());
@@ -115,6 +95,7 @@ Abba2::send_message(string& key)
         m->setX(position.x);
         m->setY(position.y);
         socket.sendTo(m, addr, remote_port);
+        emitSent();
     }
 }
 
@@ -122,7 +103,7 @@ Abba2::send_message(string& key)
 void
 Abba2::time_to_broadcast_payload(void* user_data)
 {
-    BroadcastingAppBase::time_to_broadcast_payload(user_data);
+//    BroadcastingAppBase::time_to_broadcast_payload(user_data);
     string key;
     if (is_source) {
         key = myself + "-" + to_string(get_next_id_for_msg());
@@ -133,7 +114,7 @@ Abba2::time_to_broadcast_payload(void* user_data)
         key = string(s);
         delete s;
     }
-    cout << "Broadcasting in " << myself << endl;
+    cout << "Broadcasting in " << myself << " at " << simTime() << endl;
     send_message(key);
 }
 

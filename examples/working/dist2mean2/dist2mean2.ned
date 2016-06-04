@@ -13,7 +13,7 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-package inet.applications.dist2mean;
+package inet.applications.dist2mean2;
 
 import inet.applications.contract.IUDPApp;
 import inet.applications.broadcasting.BroadcastingBase;
@@ -22,11 +22,11 @@ import inet.applications.broadcasting.BroadcastingBase;
 //
 // Some nodes distribute messages in the network using unicast UDP.
 //
-simple Dist2Mean extends BroadcastingBase like IUDPApp
+simple Dist2Mean2 extends BroadcastingBase like IUDPApp
 {
     parameters:
         
         double threshold = default(5000);
         
-        @class(Dist2Mean);
+        @class(Dist2Mean2);
 }

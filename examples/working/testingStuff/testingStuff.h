@@ -9,7 +9,6 @@
 #include <queue>
 #include <set>
 
-
 #include "inet/common/INETDefs.h"
 #include "inet/common/ModuleAccess.h"
 #include "inet/common/geometry/common/Coord.h"
@@ -20,23 +19,24 @@
 #include "inet/applications/broadcasting/BroadcastingAppBase.h"
 #include "inet/applications/broadcasting/BroadcastingAppBase_m.h"
 
+#include "inet/physicallayer/idealradio/IdealTransmitter.h"
+
 
 namespace inet {
 
-class INET_API Abba2 : public inet::BroadcastingAppBase
+class INET_API TestingStuff : public inet::BroadcastingAppBase
 {
-
   private:
-
     /* payload of the message to broadcast */
     std::map< std::string, std::string >  payloads;
     /* indicates the set of nodes from whom I received this message */
-    std::map< std::string, std::set< std::pair<double, double> > > received_from;
+    std::map< std::string, std::set<std::string>> received_from;
 
     virtual void on_payload_received(const broadcasting::Broadcast* m) override;
     virtual void time_to_broadcast_payload(void* user_data) override;
 
     void send_message(std::string& key);
+  public:
 };
 
 } //namespace

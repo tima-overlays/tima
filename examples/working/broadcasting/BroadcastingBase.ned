@@ -28,8 +28,6 @@ simple BroadcastingBase
         int remotePort = default(10000);
         int localPort = default(10000);
         
-        string addresses = default(""); // network members (all the devices in the network)
-        
         // section defining parameters used to identify my neighbors
         double maximumDelay @unit(s) = default(0.5s);
         volatile double helloTime @unit(s) = default(uniform(0s,maximumDelay)); // delay between hello messages

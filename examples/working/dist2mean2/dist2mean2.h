@@ -22,7 +22,7 @@
 
 namespace inet {
 
-class INET_API Dist2Mean : public inet::BroadcastingAppBase
+class INET_API Dist2Mean2 : public inet::BroadcastingAppBase
 {
   private:
     /* payload of the message to broadcast */
@@ -35,7 +35,7 @@ class INET_API Dist2Mean : public inet::BroadcastingAppBase
 
     void send_message(std::string& key);
   public:
-    Dist2Mean();
+    Dist2Mean2();
 };
 
 } //namespace

@@ -1,11 +1,11 @@
-#ifndef __dist2mean__
-#define __dist2mean__
+#ifndef __abba__
+#define __abba__
 
 #include "inet/applications/tima/automata.h"
 #include "inet/applications/tima/tima.h"
 #include <string>
 
-namespace dist2mean {
+namespace abba {
 
 //int	get_msg_id_from_name(const char* name);
 
@@ -51,6 +51,20 @@ public:
 	
 	void payload(const std::string& v) {
 		fields["payload"] = v;
+	}
+	std::string x() {
+		return fields["x"];
+	}
+	
+	void x(const std::string& v) {
+		fields["x"] = v;
+	}
+	std::string y() {
+		return fields["y"];
+	}
+	
+	void y(const std::string& v) {
+		fields["y"] = v;
 	}
 };		
 

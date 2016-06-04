@@ -56,9 +56,9 @@ EWMA2::on_payload_received(const Broadcast* m) {
         return;
     }
 
-    emitReceived();
+    payloads[key] = string(m->getPayload());
 
-    payloads.emplace(key, string(m->getPayload()));
+    emitReceived();
 
     if (isForwardingNode()) {
         ewma::EWMABroadcast* mmm = (ewma::EWMABroadcast*)m;
@@ -90,29 +90,29 @@ EWMA2::send_message(const vector<string>& dst, string& key)
     if (dst.size() > 0) {
         EV_DEBUG << "====================== Sending in " << myself << "\n";
         cerr << "====================== Sending in " << myself << "\n";
+        vector<string> v;
         for (auto& c : covered[key]) {
             EV_DEBUG << "\t The following is covered: " << c << "\n";
             cerr << "\t The following is covered: " << c << "\n";
+            v.push_back(c);
         }
         emitSent();
-        /*only send if some children in the mst are not covered, but send to all uncovered*/
-        for (auto& d : neighbors) {
-            if (previous.find(d.first) != previous.end()) {
-                continue;
-            }
-            ewma::EWMABroadcast* m = new ewma::EWMABroadcast("payload");
-            m->setSender(myself.c_str());
-            m->setId(key.c_str());
-            m->setPayload(payloads[key].c_str());
-            m->setCoveredArraySize(covered[key].size());
-            vector<string> v;
-            for (auto& c : covered[key]) v.push_back(c);
-            for (uint32_t i = 0 ; i < v.size() ; i++) {
-                m->setCovered(i, v[i].c_str());
-            }
 
-            socket.sendTo(m, d.second.addr, remote_port);
+        /*only send if some children in the mst are not covered, but send to all uncovered*/
+
+        L3AddressResolver resolver;
+        L3Address addr = resolver.resolve("255.255.255.255", L3AddressResolver::ADDR_IPv4);
+
+        ewma::EWMABroadcast* m = new ewma::EWMABroadcast("payload");
+        m->setSender(myself.c_str());
+        m->setId(key.c_str());
+        m->setPayload(payloads[key].c_str());
+        m->setCoveredArraySize(covered[key].size());
+
+        for (uint32_t i = 0 ; i < v.size() ; i++) {
+            m->setCovered(i, v[i].c_str());
         }
+        socket.sendTo(m, addr, remote_port);
     }
 }
 

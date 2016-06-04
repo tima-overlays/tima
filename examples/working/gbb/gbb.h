@@ -1,11 +1,11 @@
-#ifndef __dist2mean__
-#define __dist2mean__
+#ifndef __gbb__
+#define __gbb__
 
 #include "inet/applications/tima/automata.h"
 #include "inet/applications/tima/tima.h"
 #include <string>
 
-namespace dist2mean {
+namespace gbb {
 
 //int	get_msg_id_from_name(const char* name);
 
@@ -13,8 +13,7 @@ namespace dist2mean {
 enum AUTOMATA_ID {
 	ANY_AUTOMATON_ID,
 	MainPhase_AUTOMATON_ID,
-	phase0_AUTOMATON_ID,
-	Timer_AUTOMATON_ID
+	phase0_AUTOMATON_ID
 };
 
 enum MESSAGES_ID {

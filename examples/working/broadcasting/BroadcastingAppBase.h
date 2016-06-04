@@ -51,9 +51,6 @@ class INET_API BroadcastingAppBase : public ApplicationBase , public cListener
     // my direct edges (neighbors)
     std::map<std::string, Neighbor> neighbors;
 
-    // ugly variable to simulate broadcasts
-    std::vector<L3Address> possible_neighbors;
-
     /* a hack to avoid the problem of two messages being lost when they are send at the same time to the same device */
     std::queue<cMessage*> old_msgs;
 
@@ -86,6 +83,8 @@ class INET_API BroadcastingAppBase : public ApplicationBase , public cListener
     simsignal_t signal_sent_id;
     simsignal_t signal_power_level;
 
+    bool already_configured = false;
+
     void configure_neighbors();
 
     void on_hello_received(const broadcasting::Hello* msg);
@@ -104,6 +103,7 @@ class INET_API BroadcastingAppBase : public ApplicationBase , public cListener
 
 
     virtual void processStart();
+    void delayed_broadcast(const std::string& key, double delay);
 
     template <typename K>
     class Action {
