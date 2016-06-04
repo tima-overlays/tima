@@ -85,6 +85,12 @@ class TimaNativeContext {
         return storage->getValue(i);
       };
 
+      virtual void report_received_message() { }
+
+      virtual void report_sent_message() { }
+
+      virtual ~TimaNativeContext() {}
+
   private:
       std::string device_name;
       std::shared_ptr<GlobalStorage> storage;

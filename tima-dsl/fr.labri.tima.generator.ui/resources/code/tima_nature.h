@@ -11,27 +11,30 @@ namespace tima {
 
 class AbstractTimaNature {
 public:
- enum EventType {
-   NONE, TICK, NETWORK_MESSAGE
- };
+    enum EventType {
+    NONE, TICK, NETWORK_MESSAGE
+    };
 
- virtual void initialize() = 0;
- virtual void configure_communication(int port) = 0;
- virtual void configure_timer(uint64_t nanoseconds) = 0;
- virtual EventType identify_event(int* msg_id, char** payload) = 0;
- virtual void schedule_events() = 0;
- virtual void handle_error(const char * msg) = 0;
- virtual void send_network_message(const std::string& dst, int port, const std::string& msg) = 0;
- virtual void broadcast(int port, const std::string& msg) = 0;
- virtual void print_trace(const std::string& msg) = 0;
+    virtual void initialize() = 0;
+    virtual void configure_communication(int port) = 0;
+    virtual void configure_timer(uint64_t nanoseconds) = 0;
+    virtual EventType identify_event(int* msg_id, char** payload) = 0;
+    virtual void schedule_events() = 0;
+    virtual void handle_error(const char * msg) = 0;
+    virtual void send_network_message(const std::string& dst, int port, const std::string& msg) = 0;
+    virtual void broadcast(int port, const std::string& msg) = 0;
+    virtual void print_trace(const std::string& msg) = 0;
 
- virtual std::string serialize(const Message& msg);
- virtual Message deserialize(int msg_id, const std::string& msg);
+    virtual void report_received_message() = 0;
+    virtual void report_sent_message() = 0;
+
+    virtual std::string serialize(const Message& msg);
+    virtual Message deserialize(int msg_id, const std::string& msg);
 
 
- void print_automata(std::vector<tima::Automaton*>& automata);
+    void print_automata(std::vector<tima::Automaton*>& automata);
 
- AbstractTimaNature(std::string device_name) : device_name(device_name) {}
+    AbstractTimaNature(std::string device_name) : device_name(device_name) {}
 
 public:
  std::string device_name;

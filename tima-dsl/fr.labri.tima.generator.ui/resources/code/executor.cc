@@ -23,6 +23,14 @@ public:
   virtual void print_trace(const string& msg);
   virtual ~InnerGenericActionContext();
 
+  virtual void report_received_message() override {
+      nature->report_received_message();
+  }
+
+  virtual void report_sent_message() override {
+      nature->report_sent_message();
+  }
+
 private:
   shared_ptr<tima::AbstractTimaNature> nature;
 };

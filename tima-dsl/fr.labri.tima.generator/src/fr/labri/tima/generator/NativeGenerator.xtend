@@ -74,6 +74,8 @@ class NativeGenerator extends NamedNodeGenerator {
 		#include "inet/applications/tima/tima.h"
 		#include <string>
 		
+		namespace «name» {
+		
 		//int	get_msg_id_from_name(const char* name);
 		
 		/** ID for each automaton */
@@ -108,6 +110,8 @@ class NativeGenerator extends NamedNodeGenerator {
 		};		
 		«ENDFOR»
 		
+		}
+		
 		#endif
 		'''
 	}
@@ -124,6 +128,8 @@ class NativeGenerator extends NamedNodeGenerator {
 	#include "inet/applications/tima/mailbox.h"
 	#include "«project_name».h"
 	#include <cstring>
+	
+	namespace «project_name» {
 	
 	//int
 	//get_msg_id_from_name(const char* name)
@@ -235,6 +241,8 @@ class NativeGenerator extends NamedNodeGenerator {
 	get_automaton_«project_name»(uint32_t idx)
 	{
 		return *automatons[idx];
+	}
+	
 	}
 	
 	'''
