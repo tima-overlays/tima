@@ -1,0 +1,89 @@
+module gbb
+summary "Broadcast messages using the algorithm gossip-based broadcasting"
+
+/* =========================================== */
+/* control messages */
+/* =========================================== */
+local messages {
+	msg_wakeup {
+		sender
+	} 
+
+	msg_activate_timer{
+		count, src
+	} 
+	
+	msg_timer{
+		n, key
+	} 
+	
+	msg_timer_on{
+		key
+	} 
+}
+
+
+/* =========================================== */ 
+/* network messages */
+/* =========================================== */ 
+gbb messages {
+	/* this one is a trick to find your neighbors  */
+	hello {
+		sender, x, y
+	} 
+	
+	/* the message to disseminate */
+	broadcast {
+		sender, key, payload 
+	} 
+}
+
+
+automaton MainPhase 
+
+	initial state Sleeping
+		when ? msg_wakeup (is_source == "true") => still_sending do {
+				initial_dissemination ("This is a message")
+		}
+			
+		when ? broadcast => Sleeping do { 
+			disseminate (sender, key, payload)
+		}
+			
+		
+	state still_sending
+		when zero_remaining_broadcasts within 2s => stop 
+		when timeout =>  still_sending do { 
+			initial_dissemination ("This is a message")
+		}
+		
+	state stop
+		
+
+/* automaton used to build set of find set of neighbors */ 
+automaton Phase0
+	initial state greeting
+		when ? hello within 100ms => greeting do { 
+			store (sender, x, y)
+		}
+		
+		when timeout => s_check do { 
+			decrease_hellos
+			! hello (x = posX, y = posY) @ *
+		}
+		
+	urgent state s_check
+		when zero_nr_hellos => s0 
+		when no_zero_nr_hellos => greeting  
+
+	state s0
+		when ? hello  within 100ms => s0 do { 
+			store (sender, x, y)
+		}
+		
+		when false within 5s => s0
+		when timeout => done do { 
+			! msg_wakeup @ MainPhase
+		}
+	
+	state done
