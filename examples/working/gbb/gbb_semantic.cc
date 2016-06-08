@@ -94,7 +94,7 @@ init_device_data_gbb(
 
 
 void
-gbb_store(const string& name,
+store(const string& name,
 	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)
@@ -113,7 +113,7 @@ gbb_store(const string& name,
 
 
 void
-gbb_decrease_hellos(const string& name,
+decrease_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -124,7 +124,7 @@ gbb_decrease_hellos(const string& name,
 
 
 void
-gbb_dec_counter(const string& name,
+dec_counter(const string& name,
       TimaNativeContext* ctx, string c)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -133,7 +133,7 @@ gbb_dec_counter(const string& name,
 
 
 bool
-gbb_zero_nr_hellos(const string& name,
+zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -142,7 +142,7 @@ gbb_zero_nr_hellos(const string& name,
 
 
 bool
-gbb_no_zero_nr_hellos(const string& name,
+no_zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -188,7 +188,7 @@ send_message(TimaNativeContext* ctx, string& key)
 }
 
 void
-gbb_initial_dissemination(const string& name,
+initial_dissemination(const string& name,
       TimaNativeContext* ctx, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -202,7 +202,7 @@ gbb_initial_dissemination(const string& name,
 
 
 void
-gbb_disseminate(const string& name,
+disseminate(const string& name,
       TimaNativeContext* ctx, string sender, string key, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -224,7 +224,7 @@ gbb_disseminate(const string& name,
 
 
 bool
-gbb_zero_remaining_broadcasts(const string& name,
+zero_remaining_broadcasts(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();

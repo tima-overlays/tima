@@ -96,7 +96,7 @@ init_device_data_abba(
 
 
 void
-abba_store(const string& name,
+store(const string& name,
 	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)
@@ -115,7 +115,7 @@ abba_store(const string& name,
 
 
 void
-abba_print(const string& name,
+print(const string& name,
       TimaNativeContext* ctx,
       string msg)
 {
@@ -126,7 +126,7 @@ abba_print(const string& name,
 
 
 void
-abba_decrease_hellos(const string& name,
+decrease_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -137,7 +137,7 @@ abba_decrease_hellos(const string& name,
 
 
 void
-abba_dec_counter(const string& name,
+dec_counter(const string& name,
       TimaNativeContext* ctx, string c)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -146,7 +146,7 @@ abba_dec_counter(const string& name,
 
 
 bool
-abba_zero_nr_hellos(const string& name,
+zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -155,7 +155,7 @@ abba_zero_nr_hellos(const string& name,
 
 
 bool
-abba_no_zero_nr_hellos(const string& name,
+no_zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -192,7 +192,7 @@ send_message(TimaNativeContext* ctx, string& key)
 }
 
 void
-abba_initial_dissemination(const string& name,
+initial_dissemination(const string& name,
       TimaNativeContext* ctx, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -206,7 +206,7 @@ abba_initial_dissemination(const string& name,
 
 
 void
-abba_disseminate(const string& name,
+disseminate(const string& name,
       TimaNativeContext* ctx, string key)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -215,7 +215,7 @@ abba_disseminate(const string& name,
 
 
 void
-abba_schedule_dissemination(const string& name,
+schedule_dissemination(const string& name,
       TimaNativeContext* ctx, string src, string key, string payload, string rx, string ry)
 {
 
@@ -279,7 +279,7 @@ abba_schedule_dissemination(const string& name,
 
 
 bool
-abba_zero_remaining_broadcasts(const string& name,
+zero_remaining_broadcasts(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();

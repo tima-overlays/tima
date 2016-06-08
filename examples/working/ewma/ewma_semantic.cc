@@ -109,7 +109,7 @@ process_list_of_nodes(string s, set<string>& l)
 
 
 void
-store_p(const string& name,
+store(const string& name,
 	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)

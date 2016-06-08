@@ -13,7 +13,7 @@ namespace gbb {
 enum AUTOMATA_ID {
 	ANY_AUTOMATON_ID,
 	MainPhase_AUTOMATON_ID,
-	phase0_AUTOMATON_ID
+	Phase0_AUTOMATON_ID
 };
 
 enum MESSAGES_ID {

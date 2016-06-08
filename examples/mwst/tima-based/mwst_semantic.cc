@@ -20,6 +20,8 @@ using namespace tima;
 
 #define HEAD {EV_TRACE << ctx->get_device_name() << "(FN:" << ud->fragment << ", parent: " << ud->parent  << "): ";}
 
+namespace mwst {
+
 static const string nil = "";
 
 class Info: public UserData {
@@ -394,6 +396,8 @@ no_need_to_wait(const std::string& name, tima::TimaNativeContext* ctx)
 {
     auto ud = (Info*)ctx->get_user_data();
     return ud->finding.size() == 0 && ud->testing.size() == 0;
+}
+
 }
 
 

@@ -21,6 +21,8 @@ using namespace tima;
 
 #define HEAD {cerr << ctx->get_device_name() << ": ";}
 
+namespace dist2mean {
+
 static const string nil = "";
 
 class Info: public UserData {
@@ -81,8 +83,11 @@ init_device_data_dist2mean(
 	ud->posY = std::stoi(options["posY"]);
 	ud->is_source = options["is_source"] == "true";
 
+	ud->threshold = stoi(options["threshold"]);
+
 	if (ud->is_source) {
 	    ud->remaining_broadcasts = stoi(options["remaining_broadcasts"]);
+
 	}
 
 	st->setUserData(ud);
@@ -91,7 +96,7 @@ init_device_data_dist2mean(
 
 
 void
-store_pp(const string& name,
+store(const string& name,
 	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)
@@ -108,15 +113,15 @@ store_pp(const string& name,
 	ud->coordinates.emplace(sender, make_pair(i_x, i_y));
 
 
-	if (ud->myself == "hostR13") {
-	    HEAD;
-	    cerr << " ++++ neighbor to " << sender << endl;
-	}
+//	if (ud->myself == "hostR13") {
+//	    HEAD;
+//	    cerr << " ++++ neighbor to " << sender << endl;
+//	}
 }
 
 
 void
-print_p(const string& name,
+print(const string& name,
       TimaNativeContext* ctx,
       string msg)
 {
@@ -127,7 +132,7 @@ print_p(const string& name,
 
 
 void
-decrease_hellos_p(const string& name,
+decrease_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -147,7 +152,7 @@ dec_counter(const string& name,
 
 
 bool
-zero_nr_hellos_p(const string& name,
+zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -156,7 +161,7 @@ zero_nr_hellos_p(const string& name,
 
 
 bool
-no_zero_nr_hellos_p(const string& name,
+no_zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -191,33 +196,41 @@ send_message(TimaNativeContext* ctx, string& key)
 
        cout << "====================== Sending in " << ud->myself << " because the distance to mean  is " << dist << " > " << ud->threshold << "\n";
 //        emitSent();
-        for (auto& d : ud->neighbors) {
-            MessageBroadcast m;
-            m.payload(ud->payloads[key]);
-            m.key(key);
-            m.sender(ud->myself);
-            ((ActionContext*)ctx)->send_to(d.first, 10000, m);
-            cerr << "\t to " << d.first << endl;
-        }
+       MessageBroadcast m;
+       m.payload(ud->payloads[key]);
+       m.key(key);
+       m.sender(ud->myself);
+       ((ActionContext*)ctx)->broadcast(10000, m);
+	   ctx->report_sent_message();
+
+//        for (auto& d : ud->neighbors) {
+//            MessageBroadcast m;
+//            m.payload(ud->payloads[key]);
+//            m.key(key);
+//            m.sender(ud->myself);
+//            ((ActionContext*)ctx)->send_to(d.first, 10000, m);
+//            cerr << "\t to " << d.first << endl;
+//        }
 
     }
 }
 
 void
-initial_dissemination_p(const string& name,
+initial_dissemination(const string& name,
       TimaNativeContext* ctx, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
 	string key = ud->myself + "-" + to_string(ud->lastId++);
 	ud->payloads[key] = payload;
 	ud->remaining_broadcasts--;
-	cerr << "\t >>>>>>>>>>> " << ud->remaining_broadcasts << endl;
+	ctx->report_received_message();
+	cerr << "\t >>>>>>>>>>> " << ud->remaining_broadcasts << " at " << simTime() << endl;
 	send_message(ctx, key);
 }
 
 
 void
-disseminate_p(const string& name,
+disseminate(const string& name,
       TimaNativeContext* ctx, string key)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -226,7 +239,7 @@ disseminate_p(const string& name,
 
 
 void
-schedule_dissemination_p(const string& name,
+schedule_dissemination(const string& name,
       TimaNativeContext* ctx, string src, string key, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -236,6 +249,7 @@ schedule_dissemination_p(const string& name,
         return;
     }
 
+	ctx->report_received_message();
 	ud->payloads[key] = payload;
 	ud->timeToWait = (2000000 / ud->neighbors[src]); // this is in milliseconds/(m^2)
 
@@ -246,7 +260,7 @@ schedule_dissemination_p(const string& name,
 	tima::Mailbox::send(timer, "Timer", ctx);
 
 	
-    cerr << "Message received at " << ud->myself << " and waiting " << ud->timeToWait << " with key " << key << endl;
+    cerr << "Message received at " << ud->myself << " (base time " << simTime() << ") and waiting " << ud->timeToWait << " with key " << key << endl;
 }
 
 
@@ -259,6 +273,9 @@ zero_remaining_broadcasts(const string& name,
 	auto ud = (Info*)ctx->get_user_data();
 	return ud->remaining_broadcasts == 0;
 }
+
+}
+
 
 
 

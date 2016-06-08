@@ -23,167 +23,6 @@ namespace ewma {
 
 
 static void
-MainPhase_received_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-void schedule_dissemination(
-			const std::string& name,
-			tima::TimaNativeContext* ctx ,
-			std::string,
-			std::string,
-			std::string
-			);
-
-static void
-MainPhase_received_transition_0_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	/*transition from received to received */
-	std::string tmp1 = GET_GLOBAL(ctx, "currentKey");
-	std::string tmp2 = GET_FIELD(ctx, "payload");
-	std::string tmp3 = GET_FIELD(ctx, "covered");
-	schedule_dissemination(
-		name, ctx,
-		tmp1,
-		tmp2,
-		tmp3
-	);
-}
-
-	
-static bool
-MainPhase_received_transition_guard_0(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	bool tmp1 = tima::Mailbox::exists2(name, ctx, [&](tima::Message& m){
-		bool b = m.msg_id == broadcast_MSG_ID;
-		if (b) {
-			if (b) {
-				std::string tmp1 = m.get("key");
-				std::string tmp2 = GET_GLOBAL(ctx, "currentKey");
-				bool tmp3 = tmp1 == tmp2;
-				b = tmp3;
-			}
-		}
-		return b;
-	});
-	return tmp1;
-}
-
-
-void disseminate(
-			const std::string& name,
-			tima::TimaNativeContext* ctx ,
-			std::string
-			);
-
-static void
-MainPhase_received_timeout_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	std::string tmp1 = GET_GLOBAL(ctx, "currentKey");
-	disseminate(
-		name, ctx,
-		tmp1
-	);
-}
-
-static const struct tima::Transition MainPhase_transitions_for_received[] = {
-	{
-		dst : 0,
-		is_msg_transition : true,
-		guard : MainPhase_received_transition_guard_0,
-		action : MainPhase_received_transition_0_do
-	}
-};
-
-
-
-
-static void
-MainPhase_still_sending_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-
-static void
-MainPhase_still_sending_transition_0_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	/*transition from still_sending to stop */
-}
-
-bool zero_remaining_broadcasts(
-		   const std::string& name, tima::TimaNativeContext* ctx 
-		  );
-	
-static bool
-MainPhase_still_sending_transition_guard_0(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	bool tmp1 = zero_remaining_broadcasts(
-		name, ctx
-	);
-	return tmp1;
-}
-
-
-void initial_dissemination(
-			const std::string& name,
-			tima::TimaNativeContext* ctx ,
-			std::string
-			);
-
-static void
-MainPhase_still_sending_timeout_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	std::string tmp1 = "This is a message";
-	initial_dissemination(
-		name, ctx,
-		tmp1
-	);
-}
-
-static const struct tima::Transition MainPhase_transitions_for_still_sending[] = {
-	{
-		dst : 2,
-		is_msg_transition : false,
-		guard : MainPhase_still_sending_transition_guard_0,
-		action : MainPhase_still_sending_transition_0_do
-	}
-};
-
-
-
-
-static void
-MainPhase_stop_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-
-
-static const struct tima::Transition MainPhase_transitions_for_stop[] = {
-};
-
-
-
-
-static void
 MainPhase_Sleeping_do(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
@@ -309,13 +148,13 @@ static const struct tima::Transition MainPhase_transitions_for_Sleeping[] = {
 		action : MainPhase_Sleeping_transition_0_do
 	},
 	{
-		dst : 3,
+		dst : 0,
 		is_msg_transition : true,
 		guard : MainPhase_Sleeping_transition_guard_1,
 		action : MainPhase_Sleeping_transition_1_do
 	},
 	{
-		dst : 0,
+		dst : 2,
 		is_msg_transition : true,
 		guard : MainPhase_Sleeping_transition_guard_2,
 		action : MainPhase_Sleeping_transition_2_do
@@ -324,16 +163,177 @@ static const struct tima::Transition MainPhase_transitions_for_Sleeping[] = {
 
 
 
+
+static void
+MainPhase_still_sending_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+
+static void
+MainPhase_still_sending_transition_0_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	/*transition from still_sending to stop */
+}
+
+bool zero_remaining_broadcasts(
+		   const std::string& name, tima::TimaNativeContext* ctx 
+		  );
+	
+static bool
+MainPhase_still_sending_transition_guard_0(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	bool tmp1 = zero_remaining_broadcasts(
+		name, ctx
+	);
+	return tmp1;
+}
+
+
+void initial_dissemination(
+			const std::string& name,
+			tima::TimaNativeContext* ctx ,
+			std::string
+			);
+
+static void
+MainPhase_still_sending_timeout_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	std::string tmp1 = "This is a message";
+	initial_dissemination(
+		name, ctx,
+		tmp1
+	);
+}
+
+static const struct tima::Transition MainPhase_transitions_for_still_sending[] = {
+	{
+		dst : 3,
+		is_msg_transition : false,
+		guard : MainPhase_still_sending_transition_guard_0,
+		action : MainPhase_still_sending_transition_0_do
+	}
+};
+
+
+
+
+static void
+MainPhase_received_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+void schedule_dissemination(
+			const std::string& name,
+			tima::TimaNativeContext* ctx ,
+			std::string,
+			std::string,
+			std::string
+			);
+
+static void
+MainPhase_received_transition_0_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	/*transition from received to received */
+	std::string tmp1 = GET_GLOBAL(ctx, "currentKey");
+	std::string tmp2 = GET_FIELD(ctx, "payload");
+	std::string tmp3 = GET_FIELD(ctx, "covered");
+	schedule_dissemination(
+		name, ctx,
+		tmp1,
+		tmp2,
+		tmp3
+	);
+}
+
+	
+static bool
+MainPhase_received_transition_guard_0(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	bool tmp1 = tima::Mailbox::exists2(name, ctx, [&](tima::Message& m){
+		bool b = m.msg_id == broadcast_MSG_ID;
+		if (b) {
+			if (b) {
+				std::string tmp1 = m.get("key");
+				std::string tmp2 = GET_GLOBAL(ctx, "currentKey");
+				bool tmp3 = tmp1 == tmp2;
+				b = tmp3;
+			}
+		}
+		return b;
+	});
+	return tmp1;
+}
+
+
+void disseminate(
+			const std::string& name,
+			tima::TimaNativeContext* ctx ,
+			std::string
+			);
+
+static void
+MainPhase_received_timeout_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	std::string tmp1 = GET_GLOBAL(ctx, "currentKey");
+	disseminate(
+		name, ctx,
+		tmp1
+	);
+}
+
+static const struct tima::Transition MainPhase_transitions_for_received[] = {
+	{
+		dst : 2,
+		is_msg_transition : true,
+		guard : MainPhase_received_transition_guard_0,
+		action : MainPhase_received_transition_0_do
+	}
+};
+
+
+
+
+static void
+MainPhase_stop_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+
+
+static const struct tima::Transition MainPhase_transitions_for_stop[] = {
+};
+
+
+
 static struct tima::State MainPhase_states[] = {
 	{
-		name : "received",
+		name : "Sleeping",
 		urgent : false,
-		timeout : 200, // milliseconds
-		timeout_destination : 3,
-		timeout_action : MainPhase_received_timeout_do,
-		nr_transitions : 1, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&MainPhase_transitions_for_received,
-		action : MainPhase_received_do,
+		timeout : tima::never_timeout, // milliseconds
+		timeout_destination : tima::null_destination,
+		timeout_action : nullptr,
+		nr_transitions : 3, // without taking into account the default transition
+		transitions : (struct tima::Transition*)&MainPhase_transitions_for_Sleeping,
+		action : MainPhase_Sleeping_do,
 	},
 	{
 		name : "still_sending",
@@ -346,6 +346,16 @@ static struct tima::State MainPhase_states[] = {
 		action : MainPhase_still_sending_do,
 	},
 	{
+		name : "received",
+		urgent : false,
+		timeout : 200, // milliseconds
+		timeout_destination : 0,
+		timeout_action : MainPhase_received_timeout_do,
+		nr_transitions : 1, // without taking into account the default transition
+		transitions : (struct tima::Transition*)&MainPhase_transitions_for_received,
+		action : MainPhase_received_do,
+	},
+	{
 		name : "stop",
 		urgent : false,
 		timeout : tima::never_timeout, // milliseconds
@@ -354,39 +364,44 @@ static struct tima::State MainPhase_states[] = {
 		nr_transitions : 0, // without taking into account the default transition
 		transitions : (struct tima::Transition*)&MainPhase_transitions_for_stop,
 		action : MainPhase_stop_do,
-	},
-	{
-		name : "Sleeping",
-		urgent : false,
-		timeout : tima::never_timeout, // milliseconds
-		timeout_destination : tima::null_destination,
-		timeout_action : nullptr,
-		nr_transitions : 3, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&MainPhase_transitions_for_Sleeping,
-		action : MainPhase_Sleeping_do,
 	}
 };
 
 static struct tima::Automaton MainPhase = {
 	name : "MainPhase",
-	initial : 3,
+	initial : 0,
 	nr_states : 4,
 	states : (struct tima::State*)&MainPhase_states
 };
 
 
-/** Automaton phase0 */
+/** Automaton Phase0 */
 
 
 
 static void
-phase0_greeting_do(
+Phase0_done_do(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
 }
 
-void store_p(
+
+
+static const struct tima::Transition Phase0_transitions_for_done[] = {
+};
+
+
+
+
+static void
+Phase0_s0_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+void store(
 			const std::string& name,
 			tima::TimaNativeContext* ctx ,
 			std::string,
@@ -395,15 +410,15 @@ void store_p(
 			);
 
 static void
-phase0_greeting_transition_0_do(
+Phase0_s0_transition_0_do(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
-	/*transition from greeting to greeting */
+	/*transition from s0 to s0 */
 	std::string tmp1 = GET_FIELD(ctx, "sender");
 	std::string tmp2 = GET_FIELD(ctx, "x");
 	std::string tmp3 = GET_FIELD(ctx, "y");
-	store_p(
+	store(
 		name, ctx,
 		tmp1,
 		tmp2,
@@ -413,7 +428,188 @@ phase0_greeting_transition_0_do(
 
 	
 static bool
-phase0_greeting_transition_guard_0(
+Phase0_s0_transition_guard_0(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	bool tmp1 = tima::Mailbox::exists2(name, ctx, [&](tima::Message& m){
+		bool b = m.msg_id == hello_MSG_ID;
+		if (b) {
+		}
+		return b;
+	});
+	return tmp1;
+}
+
+
+static void
+Phase0_s0_transition_1_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	/*transition from s0 to s0 */
+}
+
+	
+static bool
+Phase0_s0_transition_guard_1(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	bool tmp1 = false;
+	return tmp1;
+}
+
+
+
+static void
+Phase0_s0_timeout_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+static const struct tima::Transition Phase0_transitions_for_s0[] = {
+	{
+		dst : 1,
+		is_msg_transition : true,
+		guard : Phase0_s0_transition_guard_0,
+		action : Phase0_s0_transition_0_do
+	},
+	{
+		dst : 1,
+		is_msg_transition : false,
+		guard : Phase0_s0_transition_guard_1,
+		action : Phase0_s0_transition_1_do
+	}
+};
+
+
+
+
+static void
+Phase0_s0_0_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+
+static void
+Phase0_s0_0_transition_0_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	/*transition from s0_0 to s0 */
+}
+
+	
+static bool
+Phase0_s0_0_transition_guard_0(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	bool tmp1 = false;
+	return tmp1;
+}
+
+
+
+static void
+Phase0_s0_0_timeout_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+static const struct tima::Transition Phase0_transitions_for_s0_0[] = {
+	{
+		dst : 1,
+		is_msg_transition : false,
+		guard : Phase0_s0_0_transition_guard_0,
+		action : Phase0_s0_0_transition_0_do
+	}
+};
+
+
+
+
+static void
+Phase0_initialized_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	MessageMsg_wakeup tmp1;
+	tima::Mailbox::send(tmp1, "MainPhase", ctx);
+}
+
+
+static void
+Phase0_initialized_transition_0_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	/*transition from initialized to done */
+}
+
+	
+static bool
+Phase0_initialized_transition_guard_0(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	bool tmp1 = true;
+	return tmp1;
+}
+
+
+static const struct tima::Transition Phase0_transitions_for_initialized[] = {
+	{
+		dst : 0,
+		is_msg_transition : false,
+		guard : Phase0_initialized_transition_guard_0,
+		action : Phase0_initialized_transition_0_do
+	}
+};
+
+
+
+
+static void
+Phase0_greeting_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+}
+
+void store(
+			const std::string& name,
+			tima::TimaNativeContext* ctx ,
+			std::string,
+			std::string,
+			std::string
+			);
+
+static void
+Phase0_greeting_transition_0_do(
+			const std::string& name,
+			tima::TimaNativeContext* ctx)
+{
+	/*transition from greeting to greeting */
+	std::string tmp1 = GET_FIELD(ctx, "sender");
+	std::string tmp2 = GET_FIELD(ctx, "x");
+	std::string tmp3 = GET_FIELD(ctx, "y");
+	store(
+		name, ctx,
+		tmp1,
+		tmp2,
+		tmp3
+	);
+}
+
+	
+static bool
+Phase0_greeting_transition_guard_0(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
@@ -433,7 +629,7 @@ void decrease_hellos(
 			);
 
 static void
-phase0_greeting_timeout_do(
+Phase0_greeting_timeout_do(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
@@ -449,12 +645,12 @@ phase0_greeting_timeout_do(
 	((tima::ActionContext*)ctx)->broadcast(10000, tmp3);
 }
 
-static const struct tima::Transition phase0_transitions_for_greeting[] = {
+static const struct tima::Transition Phase0_transitions_for_greeting[] = {
 	{
-		dst : 0,
+		dst : 4,
 		is_msg_transition : true,
-		guard : phase0_greeting_transition_guard_0,
-		action : phase0_greeting_transition_0_do
+		guard : Phase0_greeting_transition_guard_0,
+		action : Phase0_greeting_transition_0_do
 	}
 };
 
@@ -462,7 +658,7 @@ static const struct tima::Transition phase0_transitions_for_greeting[] = {
 
 
 static void
-phase0_s_check_do(
+Phase0_s_check_do(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
@@ -470,7 +666,7 @@ phase0_s_check_do(
 
 
 static void
-phase0_s_check_transition_0_do(
+Phase0_s_check_transition_0_do(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
@@ -482,7 +678,7 @@ bool zero_nr_hellos(
 		  );
 	
 static bool
-phase0_s_check_transition_guard_0(
+Phase0_s_check_transition_guard_0(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
@@ -494,7 +690,7 @@ phase0_s_check_transition_guard_0(
 
 
 static void
-phase0_s_check_transition_1_do(
+Phase0_s_check_transition_1_do(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
@@ -506,7 +702,7 @@ bool no_zero_nr_hellos(
 		  );
 	
 static bool
-phase0_s_check_transition_guard_1(
+Phase0_s_check_transition_guard_1(
 			const std::string& name,
 			tima::TimaNativeContext* ctx)
 {
@@ -517,239 +713,53 @@ phase0_s_check_transition_guard_1(
 }
 
 
-static const struct tima::Transition phase0_transitions_for_s_check[] = {
+static const struct tima::Transition Phase0_transitions_for_s_check[] = {
 	{
-		dst : 4,
+		dst : 1,
 		is_msg_transition : false,
-		guard : phase0_s_check_transition_guard_0,
-		action : phase0_s_check_transition_0_do
-	},
-	{
-		dst : 0,
-		is_msg_transition : false,
-		guard : phase0_s_check_transition_guard_1,
-		action : phase0_s_check_transition_1_do
-	}
-};
-
-
-
-
-static void
-phase0_initialized_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	MessageMsg_wakeup tmp1;
-	tima::Mailbox::send(tmp1, "MainPhase", ctx);
-}
-
-
-static void
-phase0_initialized_transition_0_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	/*transition from initialized to done */
-}
-
-	
-static bool
-phase0_initialized_transition_guard_0(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	bool tmp1 = true;
-	return tmp1;
-}
-
-
-static const struct tima::Transition phase0_transitions_for_initialized[] = {
-	{
-		dst : 3,
-		is_msg_transition : false,
-		guard : phase0_initialized_transition_guard_0,
-		action : phase0_initialized_transition_0_do
-	}
-};
-
-
-
-
-static void
-phase0_done_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-
-
-static const struct tima::Transition phase0_transitions_for_done[] = {
-};
-
-
-
-
-static void
-phase0_s0_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-void store_p(
-			const std::string& name,
-			tima::TimaNativeContext* ctx ,
-			std::string,
-			std::string,
-			std::string
-			);
-
-static void
-phase0_s0_transition_0_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	/*transition from s0 to s0 */
-	std::string tmp1 = GET_FIELD(ctx, "sender");
-	std::string tmp2 = GET_FIELD(ctx, "x");
-	std::string tmp3 = GET_FIELD(ctx, "y");
-	store_p(
-		name, ctx,
-		tmp1,
-		tmp2,
-		tmp3
-	);
-}
-
-	
-static bool
-phase0_s0_transition_guard_0(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	bool tmp1 = tima::Mailbox::exists2(name, ctx, [&](tima::Message& m){
-		bool b = m.msg_id == hello_MSG_ID;
-		if (b) {
-		}
-		return b;
-	});
-	return tmp1;
-}
-
-
-static void
-phase0_s0_transition_1_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	/*transition from s0 to s0 */
-}
-
-	
-static bool
-phase0_s0_transition_guard_1(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	bool tmp1 = false;
-	return tmp1;
-}
-
-
-
-static void
-phase0_s0_timeout_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-static const struct tima::Transition phase0_transitions_for_s0[] = {
-	{
-		dst : 4,
-		is_msg_transition : true,
-		guard : phase0_s0_transition_guard_0,
-		action : phase0_s0_transition_0_do
+		guard : Phase0_s_check_transition_guard_0,
+		action : Phase0_s_check_transition_0_do
 	},
 	{
 		dst : 4,
 		is_msg_transition : false,
-		guard : phase0_s0_transition_guard_1,
-		action : phase0_s0_transition_1_do
+		guard : Phase0_s_check_transition_guard_1,
+		action : Phase0_s_check_transition_1_do
 	}
 };
 
 
 
-
-static void
-phase0_s0_0_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-
-static void
-phase0_s0_0_transition_0_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	/*transition from s0_0 to s0 */
-}
-
-	
-static bool
-phase0_s0_0_transition_guard_0(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-	bool tmp1 = false;
-	return tmp1;
-}
-
-
-
-static void
-phase0_s0_0_timeout_do(
-			const std::string& name,
-			tima::TimaNativeContext* ctx)
-{
-}
-
-static const struct tima::Transition phase0_transitions_for_s0_0[] = {
+static struct tima::State Phase0_states[] = {
 	{
-		dst : 4,
-		is_msg_transition : false,
-		guard : phase0_s0_0_transition_guard_0,
-		action : phase0_s0_0_transition_0_do
-	}
-};
-
-
-
-static struct tima::State phase0_states[] = {
-	{
-		name : "greeting",
+		name : "done",
 		urgent : false,
-		timeout : 100, // milliseconds
-		timeout_destination : 1,
-		timeout_action : phase0_greeting_timeout_do,
-		nr_transitions : 1, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&phase0_transitions_for_greeting,
-		action : phase0_greeting_do,
-	},
-	{
-		name : "s_check",
-		urgent : true,
 		timeout : tima::never_timeout, // milliseconds
 		timeout_destination : tima::null_destination,
 		timeout_action : nullptr,
+		nr_transitions : 0, // without taking into account the default transition
+		transitions : (struct tima::Transition*)&Phase0_transitions_for_done,
+		action : Phase0_done_do,
+	},
+	{
+		name : "s0",
+		urgent : false,
+		timeout : 100, // milliseconds
+		timeout_destination : 2,
+		timeout_action : Phase0_s0_timeout_do,
 		nr_transitions : 2, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&phase0_transitions_for_s_check,
-		action : phase0_s_check_do,
+		transitions : (struct tima::Transition*)&Phase0_transitions_for_s0,
+		action : Phase0_s0_do,
+	},
+	{
+		name : "s0_0",
+		urgent : true,
+		timeout : 6900, // milliseconds
+		timeout_destination : 3,
+		timeout_action : Phase0_s0_0_timeout_do,
+		nr_transitions : 1, // without taking into account the default transition
+		transitions : (struct tima::Transition*)&Phase0_transitions_for_s0_0,
+		action : Phase0_s0_0_do,
 	},
 	{
 		name : "initialized",
@@ -758,46 +768,36 @@ static struct tima::State phase0_states[] = {
 		timeout_destination : tima::null_destination,
 		timeout_action : nullptr,
 		nr_transitions : 1, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&phase0_transitions_for_initialized,
-		action : phase0_initialized_do,
+		transitions : (struct tima::Transition*)&Phase0_transitions_for_initialized,
+		action : Phase0_initialized_do,
 	},
 	{
-		name : "done",
-		urgent : false,
-		timeout : tima::never_timeout, // milliseconds
-		timeout_destination : tima::null_destination,
-		timeout_action : nullptr,
-		nr_transitions : 0, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&phase0_transitions_for_done,
-		action : phase0_done_do,
-	},
-	{
-		name : "s0",
+		name : "greeting",
 		urgent : false,
 		timeout : 100, // milliseconds
 		timeout_destination : 5,
-		timeout_action : phase0_s0_timeout_do,
-		nr_transitions : 2, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&phase0_transitions_for_s0,
-		action : phase0_s0_do,
+		timeout_action : Phase0_greeting_timeout_do,
+		nr_transitions : 1, // without taking into account the default transition
+		transitions : (struct tima::Transition*)&Phase0_transitions_for_greeting,
+		action : Phase0_greeting_do,
 	},
 	{
-		name : "s0_0",
+		name : "s_check",
 		urgent : true,
-		timeout : 6900, // milliseconds
-		timeout_destination : 2,
-		timeout_action : phase0_s0_0_timeout_do,
-		nr_transitions : 1, // without taking into account the default transition
-		transitions : (struct tima::Transition*)&phase0_transitions_for_s0_0,
-		action : phase0_s0_0_do,
+		timeout : tima::never_timeout, // milliseconds
+		timeout_destination : tima::null_destination,
+		timeout_action : nullptr,
+		nr_transitions : 2, // without taking into account the default transition
+		transitions : (struct tima::Transition*)&Phase0_transitions_for_s_check,
+		action : Phase0_s_check_do,
 	}
 };
 
-static struct tima::Automaton phase0 = {
-	name : "phase0",
-	initial : 0,
+static struct tima::Automaton Phase0 = {
+	name : "Phase0",
+	initial : 4,
 	nr_states : 6,
-	states : (struct tima::State*)&phase0_states
+	states : (struct tima::State*)&Phase0_states
 };
 
 
@@ -805,7 +805,7 @@ static const uint32_t nr_automaton = 2;
 
 static struct tima::Automaton* automatons [] = {
 	&MainPhase,
-	&phase0
+	&Phase0
 };
 
 uint32_t

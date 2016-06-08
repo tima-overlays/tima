@@ -96,7 +96,7 @@ init_device_data_dist2mean(
 
 
 void
-store_pp(const string& name,
+store(const string& name,
 	  TimaNativeContext* ctx,
 	  string sender,
 	  string x, string y)
@@ -121,7 +121,7 @@ store_pp(const string& name,
 
 
 void
-print_p(const string& name,
+print(const string& name,
       TimaNativeContext* ctx,
       string msg)
 {
@@ -132,7 +132,7 @@ print_p(const string& name,
 
 
 void
-decrease_hellos_p(const string& name,
+decrease_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -152,7 +152,7 @@ dec_counter(const string& name,
 
 
 bool
-zero_nr_hellos_p(const string& name,
+zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -161,7 +161,7 @@ zero_nr_hellos_p(const string& name,
 
 
 bool
-no_zero_nr_hellos_p(const string& name,
+no_zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -216,7 +216,7 @@ send_message(TimaNativeContext* ctx, string& key)
 }
 
 void
-initial_dissemination_p(const string& name,
+initial_dissemination(const string& name,
       TimaNativeContext* ctx, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -230,7 +230,7 @@ initial_dissemination_p(const string& name,
 
 
 void
-disseminate_p(const string& name,
+disseminate(const string& name,
       TimaNativeContext* ctx, string key)
 {
 	auto ud = (Info*)ctx->get_user_data();
@@ -239,7 +239,7 @@ disseminate_p(const string& name,
 
 
 void
-schedule_dissemination_p(const string& name,
+schedule_dissemination(const string& name,
       TimaNativeContext* ctx, string src, string key, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
