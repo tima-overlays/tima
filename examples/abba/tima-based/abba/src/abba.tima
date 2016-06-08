@@ -1,0 +1,116 @@
+module abba
+summary "Broadcast messages using the algorithm abba"
+
+/* =========================================== */
+/* control messages */
+/* =========================================== */
+local messages { 
+	msg_wakeup {
+		sender
+	} 
+
+	msg_activate_timer {
+		count, src
+	} 
+	
+	msg_timer {
+		n, key
+	} 
+	
+	msg_timer_on {
+		key
+	} 
+}
+
+
+/* =========================================== */ 
+/* network messages */ 
+/* =========================================== */
+abba messages {
+	/* this one is a trick to find your neighbors  */ 
+	hello {
+		sender, x, y
+	} 
+	
+	/* the message to disseminate */
+	broadcast {
+		sender, key, payload, x, y
+	} 
+}
+
+
+automaton MainPhase 
+
+	initial state Sleeping
+		when ? msg_wakeup (is_source == "true") => still_sending do {
+			initial_dissemination ("This is a message")	
+		}
+				
+			
+		when ? broadcast => received do {
+			schedule_dissemination (sender, key, payload, x, y)
+		}
+		
+	state received
+		when ? broadcast => received do {
+			schedule_dissemination (sender, key, payload, x, y)
+		}
+		when ? msg_timer_on => Sleeping do {
+			disseminate (key) 
+		}
+		
+	state still_sending
+		when zero_remaining_broadcasts within 2s => stop 
+		when timeout =>  still_sending do {
+			initial_dissemination ("This is a message")
+		}
+		
+	state stop
+		
+
+/* a timer used to wait a variable amount of time */
+automaton Timer
+	initial state idle
+		when ? msg_activate_timer => active do {
+			 ! msg_timer (n = count, key = src) @ Timer
+		}
+		
+	state active 
+		when false within 1ms => active
+		when timeout => checking
+		
+	urgent state checking 
+		when ? msg_timer (n == "0") => idle do {
+			! msg_timer_on (key = key) @ MainPhase
+		} 
+		when ? msg_timer (n != "0") => active do {
+			dec_counter (n)
+			! msg_timer (n = newCounter, key = key) @ Timer
+		}
+
+/* automaton used to build set of find set of neighbors */ 
+automaton Phase0
+	initial state greeting
+		when ? hello within 100ms => greeting do {
+			store (sender, x, y)
+		}
+		
+		when timeout => s_check do {
+			decrease_hellos
+			! hello (x = posX, y =posY) @ *
+		}
+
+	urgent state s_check
+		when zero_nr_hellos => s0 
+		when no_zero_nr_hellos => greeting  
+
+	state s0
+		when ? hello  within 100ms => s0 do {
+			store (sender, x, y) 
+		}
+		when false within 5s => s0
+		when timeout => done do {
+			 ! msg_wakeup @ MainPhase 
+		}
+		
+	state done
