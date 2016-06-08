@@ -185,10 +185,8 @@ public class IRAutomata {
 	}
 	
 	public static class RemoteMessage extends Message {
-		Map<String, String> options;
-		public RemoteMessage(String name, List<String> fields, Map<String, String> opts) {
+		public RemoteMessage(String name, List<String> fields) {
 			super(name, fields);
-			options = opts;
 		}
 	}
 	

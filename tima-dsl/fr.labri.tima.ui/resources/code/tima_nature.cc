@@ -9,24 +9,25 @@ using std::string;
 struct tima::Automaton& get_automaton(uint32_t idx);
 uint32_t get_nr_automaton();
 
+
 string
 tima::AbstractTimaNature::serialize(const tima::Message& msg)
 {
-  std::stringstream ss;
-	ss << msg.msg_id;
-	ss << ";";
-	for (auto it = msg.fields.begin(),
-						itEnd = msg.fields.end() ; it != itEnd ; ++it) {
-						ss << it->first << "=" << it->second << ";";
-	}
-  return ss.str();
+    std::stringstream ss;
+    ss << msg.msg_id;
+    ss << ";";
+    for (auto it : msg.fields) {
+        ss << it.first << "=" << it.second << ";";
+    }
+    return ss.str();
 }
+
 
 tima::Message
 tima::AbstractTimaNature::deserialize(int msg_id, const string& payload)
 {
   tima::Message msg(msg_id);
-  std::string s(payload);
+  string s(payload);
   auto pos = s.find(';');
   while (pos > 0 && pos != string::npos) {
     string ss = s.substr(0, pos);
@@ -37,6 +38,7 @@ tima::AbstractTimaNature::deserialize(int msg_id, const string& payload)
   }
   return msg;
 }
+
 
 void
 tima::AbstractTimaNature::print_automata(std::vector<tima::Automaton*>& automata)
@@ -61,17 +63,4 @@ tima::AbstractTimaNature::print_automata(std::vector<tima::Automaton*>& automata
       }
     }
   }
-}
-
-std::vector<tima::Automaton*>
-tima::AbstractTimaNature::build_stl_version()
-{
-  std::vector<tima::Automaton*> automatas;
-  uint32_t n = get_nr_automaton();
-  for (size_t i = 0; i < n; i++) {
-    /* code */
-    struct tima::Automaton* x = &get_automaton(i);
-    automatas.push_back(x);
-  }
-  return automatas;
 }

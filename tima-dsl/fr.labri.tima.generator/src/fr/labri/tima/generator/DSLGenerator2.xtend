@@ -40,6 +40,7 @@ class DSLGenerator2 extends AbstractGenerator {
 			} catch(Exception e) {
 				System.err.println("Unable to call generator " + target)
 				System.err.println(e)
+				e.printStackTrace
 			}
 	}
 }

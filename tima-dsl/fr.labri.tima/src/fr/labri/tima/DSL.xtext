@@ -4,7 +4,7 @@ generate dSL "http://www.labri.fr/tima/DSL"
 
 Model:
 	header=Header
-	messages+=MessageType*
+	messageSections+=MessageSection*
 	automatons+=Automaton*
 ;
 
@@ -16,10 +16,13 @@ Header:
 fragment
 Summary : TK_SUMMARY summary=STRING;
 
+
+MessageSection:
+	name=ID TK_MESSAGES '{' messages+=MessageType* '}'
+;
+
 MessageType:
-	name=ID
-	('(' Fields ')')?
-	(':' FieldDeclaration)?
+	name=ID ('{' FieldDeclaration '}' )?
 ;
 
 fragment
@@ -43,7 +46,7 @@ StateModifiers:
 
 fragment
 Actions:
-	TK_ACTION actions+=Action+
+	TK_ACTION '{' actions+=Action+ '}'
 ;
 
 Action returns Action:
@@ -58,7 +61,7 @@ Fields:
 ;
 
 Field:
-	name=ID ':' value=Expression
+	name=ID '=' value=Expression
 ;
 
 BuiltinAction returns Action:
@@ -75,8 +78,8 @@ MessageAction returns Action:
 
 MessageTarget:
 	{BroadcastTarget} '*' |
-	{UnicastTarget} 'addr' '=' address=Expression |
-	{InternalTarget} automata=[Automaton]
+	{UnicastTarget} address=Expression
+//	{InternalTarget} automata=[Automaton]
 ;
 
 Transition returns Transition:
@@ -123,7 +126,7 @@ PatternExpression:
 ;
 
 fragment
-Operator: operator=(ID|'='|'<>'|'>='|'<='|'<'|'>');
+Operator: operator=(ID|'=='|'!='|'>='|'<='|'<'|'>');
 
 fragment
 Expressions:
@@ -135,7 +138,7 @@ Expression:
 	{StringExpression} value=STRING
 ;
 
-enum TimeUnit: MSEC='msec' | SEC='sec';
+enum TimeUnit: MSEC='ms' | SEC='s';
 
 terminal TK_AUTOMATON: 'automaton';
 terminal TK_STATE: 'state';
@@ -143,5 +146,6 @@ terminal TK_ACTION: 'do';
 terminal TK_GUARD: 'when';
 terminal TK_MODULE: 'module';
 terminal TK_SUMMARY: 'summary';
+terminal TK_MESSAGES: 'messages';
 
 terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';

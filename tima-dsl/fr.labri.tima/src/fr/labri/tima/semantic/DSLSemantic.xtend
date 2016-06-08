@@ -10,7 +10,7 @@ import fr.labri.tima.dSL.ExternalGuard
 import fr.labri.tima.dSL.FieldExpression
 import fr.labri.tima.dSL.Guard
 import fr.labri.tima.dSL.GuardedTransition
-import fr.labri.tima.dSL.InternalTarget
+//import fr.labri.tima.dSL.InternalTarget
 import fr.labri.tima.dSL.MessageAction
 import fr.labri.tima.dSL.MessageGuard
 import fr.labri.tima.dSL.State
@@ -24,24 +24,33 @@ import java.util.Map
 import org.eclipse.emf.ecore.resource.Resource
 import fr.labri.tima.dSL.MessageType
 import fr.labri.tima.dSL.Expression
+import java.util.LinkedList
+import fr.labri.tima.dSL.MessageSection
 
 public class DSLSemantic {
 
 	def toIR(Resource resource) {
 		val builder = new IRBuilder
-		builder.createMessages(resource.allContents.filter(MessageType))
+		resource.allContents.filter(MessageSection).forEach[
+			val isLocal = it.name == "local" // FIXME
+			builder.createMessages(it.messages.iterator, isLocal)
+		]
+		
 		builder.createAutomata(resource.allContents.filter(Automaton))
 		builder.automata
 	}
 
 	static class IRBuilder {
 		val automata = new IRAutomata
+		
+		var Iterator<Automaton> front_end_automata;
 
-		def createMessages(Iterator<MessageType> msgs) {
-			msgs.forEach[automata.messages.put(it.name, newMessage(it))]
+		def createMessages(Iterator<MessageType> msgs, boolean local) {
+			msgs.forEach[automata.messages.put(it.name, newMessage(it, local))]
 		}
 
 		def createAutomata(Iterator<Automaton> autos) {
+			front_end_automata = autos
 			autos.forEach[createAutomaton(it)]
 		}
 
@@ -65,14 +74,26 @@ public class DSLSemantic {
 				getAutomaton(a)
 			}
 		}
+		
+		def IRAutomata.Automaton getAutomaton(String name) {
+			if (automata.automata.containsKey(name)) {
+				automata.automata.get(name)
+			}
+			else {
+				if (front_end_automata.exists[it.name == name]) {
+					createAutomaton(front_end_automata.findFirst[it.name == name])
+					getAutomaton(front_end_automata.findFirst[it.name == name])
+				}
+				else null
+			}
+		}
 
-		def newMessage(MessageType msg) {
-			val r = if (msg.fields == null || msg.fields.size  == 0) // FIXME ugly
+		def newMessage(MessageType msg, boolean local) {
+			val r = if (local)
 				new IRAutomata.Message(msg.name, msg.declaredFields.map[it])
 			else
-				new IRAutomata.RemoteMessage(msg.name, msg.declaredFields.map[it], newHashMap(msg.fields.filter[it.value instanceof StringExpression].map[
-					it.name -> (it.value as StringExpression).value
-				]))
+				
+				new IRAutomata.RemoteMessage(msg.name, msg.declaredFields.map[it])
 //			println(msg.name + " " + msg.fields + " " + r.class.simpleName)	
 			r
 		}
@@ -194,8 +215,16 @@ public class DSLSemantic {
 			val target = action.target
 			switch target {
 				BroadcastTarget: new IRAutomata.MessageTarget.Broadcast
-				UnicastTarget: new IRAutomata.MessageTarget.Unicast(newExpression(target.address))
-				InternalTarget: new IRAutomata.MessageTarget.Internal(autoBuilder.getAutomaton(target.automata))
+				UnicastTarget: {
+					val v = target.address as FieldExpression
+					val a = autoBuilder.getAutomaton(v.field)
+					if (a == null) 
+						new IRAutomata.MessageTarget.Unicast(newExpression(target.address))
+					else {
+						new IRAutomata.MessageTarget.Internal(a)					
+					}
+				}
+
 			}
 		}
 

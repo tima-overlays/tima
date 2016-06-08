@@ -28,29 +28,37 @@ public:
 };
 
 
+class UserData {
+public:
+    virtual std::string computeValue(const std::string& id) = 0;
+};
+
 class GlobalStorage {
 
     std::map<std::string, std::string> data;
 
-    void* user_data;
+    UserData* user_data;
 
 public:
 
-    GlobalStorage(void* ud) : user_data(ud) {}
+    GlobalStorage(UserData* ud) : user_data(ud) {}
 
     void setValue(const std::string& key, const std::string v) {
         data[key] = v;
     }
 
     std::string getValue(const std::string& key) {
+        if (data.find(key) == data.end()) {
+            return user_data->computeValue(key);
+        }
         return data[key];
     }
 
-    void* getUserData() {
+    UserData* getUserData() {
         return user_data;
     }
 
-    void setUserData(void* v) {
+    void setUserData(UserData* v) {
         user_data = v;
     }
 
@@ -64,10 +72,25 @@ class TimaNativeContext {
               device_name(device_name), storage(st) {}
 
       std::string get_device_name() { return device_name; }
-      void* get_user_data() { return user_data; }
+
+      void* get_user_data() {
+          return storage->getUserData();
+      }
+
+      std::shared_ptr<GlobalStorage> getStorage() {
+           return storage;
+       }
+
       std::string get_global(const std::string i) {
-        return "1123";
+        return storage->getValue(i);
       };
+
+      virtual void report_received_message() { }
+
+      virtual void report_sent_message() { }
+
+      virtual ~TimaNativeContext() {}
+
   private:
       std::string device_name;
       std::shared_ptr<GlobalStorage> storage;
@@ -79,11 +102,9 @@ class TimaNativeContext {
  */
 class MailboxContext : public TimaNativeContext {
 public:
-  int msg_id;
   Message read_message;
-  MailboxContext(int a, const std::string& device_name, std::shared_ptr<GlobalStorage> st):
-          TimaNativeContext(device_name, st),
-          msg_id(a) {}
+  MailboxContext(const std::string& device_name, std::shared_ptr<GlobalStorage> st):
+          TimaNativeContext(device_name, st) {}
 };
 
 /**

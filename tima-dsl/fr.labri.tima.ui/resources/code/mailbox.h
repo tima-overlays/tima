@@ -23,13 +23,9 @@ private:
 public:
   static Mailbox*  get_instance(std::string device_name);
 
-  static bool exists(const std::string& name, TimaNativeContext* context);
-
   static bool exists2(const std::string& name, TimaNativeContext* context, std::function<bool(tima::Message&)> pred);
 
-  static bool exists_network_message(const std::string& name, TimaNativeContext* context);
-
-  static void send(tima::Message& msg, std::string& target, TimaNativeContext* context);
+  static void send(tima::Message& msg, std::string target, TimaNativeContext* context);
 
   static void add_received_network_message(int msg_id, const char* payload, TimaNativeContext* context);
 
