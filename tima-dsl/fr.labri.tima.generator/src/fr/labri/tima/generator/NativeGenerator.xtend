@@ -53,6 +53,13 @@ class NativeGenerator extends NamedNodeGenerator {
 				'''GET_GLOBAL(ctx, "«symbol»")'''
 			}
 		}
+		
+		def String symbol2Target(List<String> key) {
+			val k = key.fold("",[ acc,ele | {
+				acc + "." + ele
+			}])
+			'''GET_GLOBAL(ctx, "«k»")'''
+		}
 	}
 	
 	val context = new GenerationContext()
@@ -393,6 +400,10 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	dispatch def String IR2Target(IRAutomata.Expression.Identifier i) {
 		'''std::string «context.nextTmp» = «context.symbol2Target(i.name)»;'''
+	}
+	
+	dispatch def String IR2Target(IRAutomata.Expression.KeyValuePair k) {
+		'''std::string «context.nextTmp» = «context.symbol2Target(k.key)»;'''
 	}
 	
 	dispatch def String IR2Target(IRAutomata.MessageGuard g) {

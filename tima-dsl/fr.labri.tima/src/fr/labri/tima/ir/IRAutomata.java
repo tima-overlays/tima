@@ -58,6 +58,13 @@ public class IRAutomata {
 				name = n;
 			}
 		}
+		
+		public static class KeyValuePair  implements Expression {
+			public List<String> key;
+			public KeyValuePair(List<String> key) {
+				this.key = key;
+			}
+		}
 	}
 
 	public static class Automaton {

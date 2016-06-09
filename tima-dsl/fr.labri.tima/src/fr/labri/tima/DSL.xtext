@@ -135,7 +135,8 @@ Expressions:
 
 Expression:
 	{FieldExpression} field = ID |
-	{StringExpression} value=STRING
+	{StringExpression} value=STRING |
+	{KeyInStore} '$' key+=ID ('.' key+=ID )*
 ;
 
 enum TimeUnit: MSEC='ms' | SEC='s';
@@ -147,5 +148,6 @@ terminal TK_GUARD: 'when';
 terminal TK_MODULE: 'module';
 terminal TK_SUMMARY: 'summary';
 terminal TK_MESSAGES: 'messages';
+terminal TK_PROTOCOL: 'protocol';
 
 terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';

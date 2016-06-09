@@ -26,6 +26,7 @@ import fr.labri.tima.dSL.MessageType
 import fr.labri.tima.dSL.Expression
 import java.util.LinkedList
 import fr.labri.tima.dSL.MessageSection
+import fr.labri.tima.dSL.KeyInStore
 
 public class DSLSemantic {
 
@@ -190,6 +191,7 @@ public class DSLSemantic {
 			switch e {
 				FieldExpression: new IRAutomata.Expression.Identifier(e.field)
 				StringExpression: new IRAutomata.Expression.Constant(e.value)
+				KeyInStore: new IRAutomata.Expression.KeyValuePair(e.key.map[it].toList)
 			}
 		}
 
