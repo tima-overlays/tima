@@ -30,28 +30,28 @@ automaton MainPhase
 
   /* the node is not building its local MWST */
 	initial state Sleeping
-		when ? msg_wakeup (is_source == "true") => still_sending do {
+		when ? msg_wakeup ($is_source == "true") => still_sending do {
 				initial_dissemination ("This is the message") 
 		}
 		
-		when ? msg_wakeup (is_source == "false") => Sleeping
+		when ? msg_wakeup ($is_source == "false") => Sleeping
 			
 		when ? broadcast => received do {
 			schedule_dissemination (key, payload, covered)
 		}
 		
 	state received
-		when ? broadcast (key == currentKey) within 200ms => received do { 
-			schedule_dissemination (currentKey, payload, covered)
+		when ? broadcast (key == $currentKey) within 200ms => received do { 
+			schedule_dissemination ($currentKey, payload, covered)
 		}
 		
 		when timeout => Sleeping do { 
-			disseminate (currentKey)
+			disseminate ($currentKey)
 		}
 		
 	state still_sending
 		when zero_remaining_broadcasts within 1800ms => stop 
-		when timeout =>  still_sending do { 
+		when timeout => still_sending do {
 			initial_dissemination ("This is a message")
 		}
 		
@@ -61,13 +61,13 @@ automaton MainPhase
 /* automaton used to build set of find set of neighbors */
 automaton Phase0
 	initial state greeting
-		when ? hello within 100ms => greeting do { 
+		when ? hello within 100ms => greeting do {
 			store (sender, x, y)
 		}
 		
-		when timeout => s_check do { 
+		when timeout => s_check do {
 			decrease_hellos
-			! hello (x = posX, y = posY) @ *
+			! hello (x = $posX, y = $posY) @ *
 		}
 
 	urgent state s_check

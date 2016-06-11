@@ -50,15 +50,22 @@ class NativeGenerator extends NamedNodeGenerator {
 				t.get(symbol)
 			}
 			else {
-				'''GET_GLOBAL(ctx, "«symbol»")'''
+				throw new RuntimeException("Wrong symbol: " + symbol)
+				//'''GET_GLOBAL(ctx, "«symbol»")'''
 			}
 		}
 		
-		def String symbol2Target(List<String> key) {
-			val k = key.fold("",[ acc,ele | {
-				acc + "." + ele
-			}])
-			'''GET_GLOBAL(ctx, "«k»")'''
+		def String symbol2Target(List<String> keys) {
+			var s = '''''';
+			'''
+			auto «nextTmp» = ctx->getStorage()->getValue("«keys.get(0)»");
+			«{s = lastTmp.toString; null}»
+			«FOR k : keys.drop(1)»
+			auto «nextTmp» = «s»->getValue(«k»);
+			«{s = lastTmp.toString; null}»
+			«ENDFOR»
+			auto «nextTmp» = «s»->to_string();
+			'''
 		}
 	}
 	
@@ -403,7 +410,7 @@ class NativeGenerator extends NamedNodeGenerator {
 	}
 	
 	dispatch def String IR2Target(IRAutomata.Expression.KeyValuePair k) {
-		'''std::string «context.nextTmp» = «context.symbol2Target(k.key)»;'''
+		'''«context.symbol2Target(k.key)»'''
 	}
 	
 	dispatch def String IR2Target(IRAutomata.MessageGuard g) {

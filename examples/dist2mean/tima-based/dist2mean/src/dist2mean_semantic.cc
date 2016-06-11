@@ -27,11 +27,7 @@ static const string nil = "";
 
 class Info: public UserData {
 public:
-	string myself;
-    int posX;
-    int posY;
 	int remaining_hellos;
-	bool is_source;
 	map<string, string> payloads;
 	map<string, pair<int, int> > coordinates;
     map<string, int> neighbors;
@@ -41,31 +37,11 @@ public:
 
 	int lastId;    
 
-	int newCounter;
 
-	int remaining_broadcasts;
-
-	int timeToWait; // in milliseconds
-
-    Info(const string& f, int nr_hellos): myself(f), remaining_hellos(nr_hellos) { }
+    Info(int nr_hellos): remaining_hellos(nr_hellos) { }
 
     virtual std::string computeValue(const std::string& id) override {
-        if (id == "myself") {
-            return myself;
-        }
-		else if (id == "is_source") {
-			return is_source? "true" : "false";
-		}
-		else if (id == "newCounter") {
-			return to_string(newCounter);
-		}
-		else if (id == "timeToWait") {
-			return to_string(timeToWait);
-		}
-		else if (id == "remaining_broadcasts") {
-			return to_string(remaining_broadcasts);
-		}
-        return nil;
+        throw runtime_error("unimplemented value : " + id);
     }
 };
 
@@ -76,19 +52,19 @@ init_device_data_dist2mean(
 	map<string, string>& options,
 	shared_ptr<tima::GlobalStorage> st)
 {
+
 	st->setValue("posX", options["posX"]);
 	st->setValue("posY", options["posY"]);
-	auto ud = new Info(device_name, std::stoi(options["nr_hellos"]));
-	ud->posX = std::stoi(options["posX"]);
-	ud->posY = std::stoi(options["posY"]);
-	ud->is_source = options["is_source"] == "true";
+	st->setValue("is_source", options["is_source"]);
+	st->setValue("radious", options["radious"]);
+
+	auto ud = new Info(stoi(options["nr_hellos"]));
+
+	if (st->getValue("is_source")->to_string() == "true") {
+		st->setValue("remaining_broadcasts", options["remaining_broadcasts"]);
+	}
 
 	ud->threshold = stoi(options["threshold"]);
-
-	if (ud->is_source) {
-	    ud->remaining_broadcasts = stoi(options["remaining_broadcasts"]);
-
-	}
 
 	st->setUserData(ud);
 }
@@ -104,16 +80,19 @@ store(const string& name,
 
     auto ud = (Info*)ctx->get_user_data();
 
+	auto px = stoi(ctx->get_global("posX"));
+	auto py = stoi(ctx->get_global("posY"));
+
     auto i_x = std::stoi(x);
     auto i_y = std::stoi(y);
 
-    auto d = (i_x - ud->posX)*(i_x - ud->posX) + (i_y - ud->posY)*(i_y - ud->posY);
+    auto d = (i_x - px)*(i_x - px) + (i_y - py)*(i_y - py);
 
     ud->neighbors.emplace(sender, d);
 	ud->coordinates.emplace(sender, make_pair(i_x, i_y));
 
 
-//	if (ud->myself == "hostR13") {
+//	if (ctx->get_device_name() == "hostR13") {
 //	    HEAD;
 //	    cerr << " ++++ neighbor to " << sender << endl;
 //	}
@@ -147,7 +126,7 @@ dec_counter(const string& name,
       TimaNativeContext* ctx, string c)
 {
 	auto ud = (Info*)ctx->get_user_data();
-	ud->newCounter = stoi(c) - 1;
+	ctx->set_global("newCounter", to_string(stoi(c) - 1));
 }
 
 
@@ -188,29 +167,24 @@ send_message(TimaNativeContext* ctx, string& key)
         my /= ud->received_from[key].size();
     }
 
-    int dist = (mx - ud->posX)*(mx - ud->posX) + (my - ud->posY)*(my - ud->posY);
+	auto px = stoi(ctx->get_global("posX"));
+	auto py = stoi(ctx->get_global("posY"));
+
+    int dist = (mx - px)*(mx - px) + (my - py)*(my - py);
 
     must_send = must_send || dist > ud->threshold;
 
     if (must_send) {
 
-       cout << "====================== Sending in " << ud->myself << " because the distance to mean  is " << dist << " > " << ud->threshold << "\n";
-//        emitSent();
+       cout << "====================== Sending in " << ctx->get_device_name() << " because the distance to mean  is " << dist << " > " << ud->threshold << "\n";
+
        MessageBroadcast m;
        m.payload(ud->payloads[key]);
        m.key(key);
-       m.sender(ud->myself);
+       m.sender(ctx->get_device_name());
        ((ActionContext*)ctx)->broadcast(10000, m);
-	   ctx->report_sent_message();
 
-//        for (auto& d : ud->neighbors) {
-//            MessageBroadcast m;
-//            m.payload(ud->payloads[key]);
-//            m.key(key);
-//            m.sender(ud->myself);
-//            ((ActionContext*)ctx)->send_to(d.first, 10000, m);
-//            cerr << "\t to " << d.first << endl;
-//        }
+	   ctx->report_sent_message();
 
     }
 }
@@ -220,11 +194,11 @@ initial_dissemination(const string& name,
       TimaNativeContext* ctx, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
-	string key = ud->myself + "-" + to_string(ud->lastId++);
+	string key = ctx->get_device_name() + "-" + to_string(ud->lastId++);
 	ud->payloads[key] = payload;
-	ud->remaining_broadcasts--;
+	ctx->set_global("remaining_broadcasts", to_string(stoi(ctx->get_global("remaining_broadcasts")) - 1));
 	ctx->report_received_message();
-	cerr << "\t >>>>>>>>>>> " << ud->remaining_broadcasts << " at " << simTime() << endl;
+	cerr << "\t >>>>>>>>>>> " << ctx->get_global("remaining_broadcasts") << " at " << simTime() << endl;
 	send_message(ctx, key);
 }
 
@@ -251,16 +225,16 @@ schedule_dissemination(const string& name,
 
 	ctx->report_received_message();
 	ud->payloads[key] = payload;
-	ud->timeToWait = (2000000 / ud->neighbors[src]); // this is in milliseconds/(m^2)
+	ctx->set_global("timeToWait", to_string(2000000 / ud->neighbors[src])); // this is in milliseconds/(m^2) 
 
 	MessageMsg_activate_timer timer;
 	timer.src(key);
-	timer.count(to_string(ud->timeToWait));
+	timer.count(ctx->get_global("timeToWait"));
 
 	tima::Mailbox::send(timer, "Timer", ctx);
 
 	
-    cerr << "Message received at " << ud->myself << " (base time " << simTime() << ") and waiting " << ud->timeToWait << " with key " << key << endl;
+    cerr << "Message received at " << ctx->get_device_name() << " (base time " << simTime() << ") and waiting " << ctx->get_global("timeToWait") << " with key " << key << endl;
 }
 
 
@@ -271,7 +245,7 @@ zero_remaining_broadcasts(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
-	return ud->remaining_broadcasts == 0;
+	return ctx->get_global("remaining_broadcasts") == "0";
 }
 
 }

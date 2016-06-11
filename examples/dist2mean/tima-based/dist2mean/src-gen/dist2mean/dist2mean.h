@@ -5,14 +5,16 @@
 #include "inet/applications/tima/tima.h"
 #include <string>
 
+namespace dist2mean {
+
 //int	get_msg_id_from_name(const char* name);
 
 /** ID for each automaton */
 enum AUTOMATA_ID {
 	ANY_AUTOMATON_ID,
 	MainPhase_AUTOMATON_ID,
-	phase0_AUTOMATON_ID,
-	Timer_AUTOMATON_ID
+	Timer_AUTOMATON_ID,
+	Phase0_AUTOMATON_ID
 };
 
 enum MESSAGES_ID {
@@ -144,5 +146,7 @@ public:
 		fields["y"] = v;
 	}
 };		
+
+}
 
 #endif

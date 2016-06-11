@@ -26,12 +26,8 @@ static const string nil = "";
 
 class Info: public UserData {
 public:
-    string myself;
-    int posX;
-    int posY;
 	int remaining_hellos;
 	int remaining_broadcasts;
-	bool is_source;
 	map<string, string> payloads;
     map<string, int> neighbors;
     map<string, set<string> > covered;
@@ -39,24 +35,10 @@ public:
 
     int lastId = 0;
 
-    string currentKey;
-
-
-
-    Info(string f, int nr_hellos): myself(f), remaining_hellos(nr_hellos) {
-        cerr << "Creating info at " << this << endl;
+    Info(int nr_hellos): remaining_hellos(nr_hellos) {
     }
 
     virtual std::string computeValue(const std::string& id) override {
-        if (id == "myself") {
-            return myself;
-        }
-		else if (id == "is_source") {
-			return is_source? "true" : "false";
-		}
-		else if (id == "currentKey") {
-		    return currentKey;
-		}
         return nil;
     }
 };
@@ -73,16 +55,14 @@ init_device_data_ewma(
 {
 	st->setValue("posX", options["posX"]);
 	st->setValue("posY", options["posY"]);
-	auto h = stoi(options["nr_hellos"]);
-	cerr << device_name << " " << h << endl;
-	Info* ud = new Info(device_name, h);
-	ud->posX = std::stoi(options["posX"]);
-	ud->posY = std::stoi(options["posY"]);
-	ud->is_source = options["is_source"] == "true";
+	st->setValue("is_source", options["is_source"]);
+	st->setValue("myself", device_name);
 
+	auto h = stoi(options["nr_hellos"]);
+	Info* ud = new Info(h);
     process_list_of_nodes(options["children"], ud->children);
 
-	if (ud->is_source) {
+	if (st->getValue("is_source")->to_string() == "true") { 
 	    ud->remaining_broadcasts = stoi(options["remaining_broadcasts"]);
 	}
 
@@ -120,7 +100,10 @@ store(const string& name,
     auto i_x = std::stoi(x);
     auto i_y = std::stoi(y);
 
-    auto d = (i_x - ud->posX)*(i_x - ud->posX) + (i_y - ud->posY)*(i_y - ud->posY);
+    auto px = stoi(ctx->get_global("posX"));
+    auto py = stoi(ctx->get_global("posY"));
+
+    auto d = (i_x - px)*(i_x - px) + (i_y - py)*(i_y - py);
 
     ud->neighbors.emplace(sender, d);
 }
@@ -177,12 +160,10 @@ send_message(TimaNativeContext* ctx, const set<string>& dst, string key)
             }
         }
         if (must_send) {
-            cerr << "====================== Sending in " << ud->myself << "\n";
-            for (auto& c : ud->covered[key]) {
-//                cerr << "\t The following is covered: " << c << "\n";
-            }
+            cerr << "====================== Sending in " << ctx->get_global("myself") << "\n";
+
             MessageBroadcast msg;
-            msg.sender(ud->myself);
+            msg.sender(ctx->get_global("myself"));
             msg.key(key);
             msg.payload(ud->payloads[key]);
             string cc;
@@ -203,8 +184,8 @@ initial_dissemination(const string& name,
       TimaNativeContext* ctx, string payload)
 {
 	auto ud = (Info*)ctx->get_user_data();
-	string key = ud->myself + "-" + to_string(ud->lastId++);
-	ud->covered[key].insert(ud->myself);
+	string key = ctx->get_global("myself") + "-" + to_string(ud->lastId++);
+	ud->covered[key].insert(ctx->get_global("myself"));
 	ud->payloads[key] = payload;
 	ud->remaining_broadcasts--;
 	ctx->report_received_message();
@@ -217,8 +198,6 @@ disseminate(const string& name,
       TimaNativeContext* ctx, string key)
 {
 	auto ud = (Info*)ctx->get_user_data();
-	//HEAD;
-	// cout << ud->remaining_hellos << " =========  hellos left" << endl;
 
 	/* send to members of (local_mst - covered) */
     set<string> v;
@@ -236,18 +215,19 @@ schedule_dissemination(const string& name,
       TimaNativeContext* ctx, string key, string payload, string covered)
 {
 	auto ud = (Info*)ctx->get_user_data();
-	//HEAD;
-	// cout << ud->remaining_hellos << " =========  hellos left" << endl;
-	if (!ud->payloads[key].empty()) {
-        return;
-    }
+
+	if (!ud->payloads[key].empty()) return;
+
 	ctx->report_received_message();
+
     ud->payloads[key] = payload;
-    if (ud->is_source || ud->children.size() > 0) {
+
+    if (ctx->get_global("is_source") == "true" || ud->children.size() > 0) {
         process_list_of_nodes(covered, ud->covered[key]);
     }
-    ud->currentKey = key;
-    cerr << "Message received at " << ud->myself << " with key " << key  << " => " << covered << endl;
+
+    ctx->set_global("currentKey", key);
+    cerr << "Message received at " << ctx->get_global("myself") << " with key " << key  << " => " << covered << endl;
 }
 
 
@@ -256,12 +236,7 @@ zero_nr_hellos(const string& name,
       TimaNativeContext* ctx)
 {
 	auto ud = (Info*)ctx->get_user_data();
-	bool b = ud->remaining_hellos == 0;
-	if (b) {
-//	    HEAD;
-//	    cout << ud->remaining_hellos << " =========  hellos left" << endl;
-	}
-	return b;
+	return ud->remaining_hellos == 0;
 }
 
 
@@ -283,6 +258,7 @@ zero_remaining_broadcasts(const string& name,
 }
 
 }
+
 
 
 

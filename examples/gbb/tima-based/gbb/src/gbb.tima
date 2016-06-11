@@ -34,26 +34,26 @@ gbb messages {
 	
 	/* the message to disseminate */
 	broadcast {
-		sender, key, payload 
+		sender, key, payload  
 	} 
-}
+} 
 
 
-automaton MainPhase 
+automaton MainPhase
 
 	initial state Sleeping
-		when ? msg_wakeup (is_source == "true") => still_sending do {
+		when ? msg_wakeup ($is_source == "true") => still_sending do {
 				initial_dissemination ("This is a message")
 		}
 			
 		when ? broadcast => Sleeping do { 
 			disseminate (sender, key, payload)
-		}
+		} 
 			
 		
 	state still_sending
-		when zero_remaining_broadcasts within 2s => stop 
-		when timeout =>  still_sending do { 
+		when zero_remaining_broadcasts within 1500ms => stop
+		when timeout =>  still_sending do {
 			initial_dissemination ("This is a message")
 		}
 		
@@ -69,7 +69,7 @@ automaton Phase0
 		
 		when timeout => s_check do { 
 			decrease_hellos
-			! hello (x = posX, y = posY) @ *
+			! hello (x = $posX, y = $posY) @ *
 		}
 		
 	urgent state s_check

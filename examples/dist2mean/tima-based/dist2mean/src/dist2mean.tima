@@ -41,7 +41,7 @@ dst2mean messages {
 automaton MainPhase 
 
 	initial state Sleeping
-		when ? msg_wakeup (is_source == "true") => still_sending do {
+		when ? msg_wakeup ($is_source == "true") => still_sending do {
 				initial_dissemination ("This is a message")
 		}
 				
@@ -85,18 +85,18 @@ automaton Timer
 		}
 		when ? msg_timer (n != "0") => active do {
 			dec_counter (n)
-			! msg_timer (n = newCounter, key = key) @ Timer
+			! msg_timer (n = $newCounter, key = key) @ Timer
 		}
 
 /* automaton used to build set of find set of neighbors */ 
 automaton Phase0
 	initial state greeting
-		when ? hello within 100 ms => greeting do { 
+		when ? hello within 100ms => greeting do {
 			store (sender, x, y)
 		}
 		when timeout => s_check do {
 			decrease_hellos
-			! hello (x = posX, y = posY) @ *
+			! hello (x = $posX, y = $posY) @ *
 		}
 
 	urgent state s_check

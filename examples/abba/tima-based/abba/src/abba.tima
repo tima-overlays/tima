@@ -20,7 +20,7 @@ local messages {
 	msg_timer_on {
 		key
 	} 
-}
+} 
 
 
 /* =========================================== */ 
@@ -42,14 +42,14 @@ abba messages {
 automaton MainPhase 
 
 	initial state Sleeping
-		when ? msg_wakeup (is_source == "true") => still_sending do {
+		when ? msg_wakeup ($is_source == "true") => still_sending do {
 			initial_dissemination ("This is a message")	
 		}
 				
 			
 		when ? broadcast => received do {
 			schedule_dissemination (sender, key, payload, x, y)
-		}
+		} 
 		
 	state received
 		when ? broadcast => received do {
@@ -68,8 +68,8 @@ automaton MainPhase
 	state stop
 		
 
-/* a timer used to wait a variable amount of time */
-automaton Timer
+/* a timer used to wait a variable amount of time */ 
+automaton Timer 
 	initial state idle
 		when ? msg_activate_timer => active do {
 			 ! msg_timer (n = count, key = src) @ Timer
@@ -85,7 +85,7 @@ automaton Timer
 		} 
 		when ? msg_timer (n != "0") => active do {
 			dec_counter (n)
-			! msg_timer (n = newCounter, key = key) @ Timer
+			! msg_timer (n = $newCounter, key = key) @ Timer
 		}
 
 /* automaton used to build set of find set of neighbors */ 
@@ -97,7 +97,7 @@ automaton Phase0
 		
 		when timeout => s_check do {
 			decrease_hellos
-			! hello (x = posX, y =posY) @ *
+			! hello (x = $posX, y = $posY) @ *
 		}
 
 	urgent state s_check
