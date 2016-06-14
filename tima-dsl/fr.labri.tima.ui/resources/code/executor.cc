@@ -9,24 +9,10 @@
 #include "tima.h"
 
 
-using std::string;
-using std::shared_ptr;
+using namespace std;
 
-void init_device_data(string& device_name,std::map<string, string>& options, shared_ptr<tima::GlobalStorage> st);
 
 namespace tima {
-	class InnerGenericActionContext : public ActionContext {
-	public:
-	  InnerGenericActionContext(std::string device_name,void* user_data, Message msg, bool msg_received, std::shared_ptr<tima::AbstractTimaNature> nature);
-
-	  virtual void send_to(const std::string& dst, int port, const Message& msg);
-	  virtual void broadcast(int port, const Message& msg);
-	  virtual void print_trace(const std::string& msg);
-	  virtual ~InnerGenericActionContext();
-	private:
-	  std::shared_ptr<tima::AbstractTimaNature> nature;
-	};
-}
 
 class InnerGenericActionContext : public ActionContext {
 public:
@@ -36,6 +22,14 @@ public:
   virtual void broadcast(int port, const Message& msg);
   virtual void print_trace(const string& msg);
   virtual ~InnerGenericActionContext();
+
+  virtual void report_received_message() override {
+      nature->report_received_message();
+  }
+
+  virtual void report_sent_message() override {
+      nature->report_sent_message();
+  }
 
 private:
   shared_ptr<tima::AbstractTimaNature> nature;
@@ -60,14 +54,10 @@ InnerGenericActionContext::InnerGenericActionContext(string device_name,shared_p
 {}
 
 
-ActionContext::~ActionContext()
-{
-}
+ActionContext::~ActionContext(){}
 
 
-InnerGenericActionContext::~InnerGenericActionContext()
-{
-}
+InnerGenericActionContext::~InnerGenericActionContext() {}
 
 
 void
@@ -90,12 +80,13 @@ InnerGenericActionContext::print_trace(const string& msg)
 }
 
 
-Executor::Executor(shared_ptr<tima::AbstractTimaNature> nature, std::map<string, string>& options)
+Executor::Executor(vector<tima::Automaton*> a,
+        shared_ptr<tima::AbstractTimaNature> nature,
+        map<string, string>& options, device_initialization_t callback)
   :nature(nature)
 {
 
-  automatas = nature->build_stl_version();
-<<<<<<< HEAD
+  automatas = a;
 
   auto myMailbox = Mailbox::get_instance(nature->device_name);
 
@@ -104,22 +95,12 @@ Executor::Executor(shared_ptr<tima::AbstractTimaNature> nature, std::map<string,
 
       current_states.push_back(it->initial);
 
-=======
-
-  auto myMailbox = Mailbox::get_instance(nature->device_name);
-
-  for (auto it : automatas) {
-      myMailbox->add_automaton(it->name);
-
-      current_states.push_back(it->initial);
-
->>>>>>> old code
       timeouts.push_back(deadline(it, it->initial));
   }
 
   storage = std::make_shared<tima::GlobalStorage>(nullptr);
 
-  init_device_data(nature->device_name, options, storage);
+  callback(nature->device_name, options, storage);
 
 }
 
@@ -158,9 +139,25 @@ Executor::step(uint32_t milliseconds, bool only_urgents)
 
         if (state->transitions[i].is_msg_transition == false) {
 
-        found = state->transitions[i].guard(a->name, ctx);
+            /* external and built-in actions  */
 
-        _the_message = ctx->read_message;
+            ctx = new TimaNativeContext(nature->device_name, storage);
+            found = state->transitions[i].guard(a->name, ctx);
+
+        }
+        else {
+
+            /* message pattern */
+
+            ctx = new MailboxContext(
+                        nature->device_name,
+                        storage);
+
+            found = state->transitions[i].guard(a->name, ctx);
+
+            _the_message = ((MailboxContext*)ctx)->read_message;
+
+        }
 
         delete ctx;
 
@@ -195,8 +192,12 @@ Executor::step(uint32_t milliseconds, bool only_urgents)
           /* a transition due to a guard being true */
 
           timeouts[idx] = deadline(a, current_states[idx]);
-          auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(state->transitions[i].msg_id), msg_received, nature);
-          ctx->msg = _the_message;
+          auto ctx = new InnerGenericActionContext(
+                                  nature->device_name,
+                                  storage,
+                                  _the_message,
+                                  state->transitions[i].is_msg_transition,
+                                  nature);
 
           /* execute action in transition */
           state->transitions[i].action(a->name, ctx);
@@ -212,8 +213,12 @@ Executor::step(uint32_t milliseconds, bool only_urgents)
         /* a time out transition */
 
         timeouts[idx] = deadline(a, current_states[idx]);
-        auto ctx = new InnerGenericActionContext(nature->device_name, user_data, Message(0), false, nature);
-        ctx->msg = _the_message;
+        auto ctx = new InnerGenericActionContext(
+                                nature->device_name,
+                                storage,
+                                _the_message,
+                                false,
+                                nature);
 
         /* execute action in transition */
         state->timeout_action(a->name, ctx);

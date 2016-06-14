@@ -10,7 +10,7 @@
 #include <omnetpp.h>
 #include "inet/common/INETDefs.h"
 
-#include "tima.h"
+#include "inet/applications/tima/tima.h"
 
 #include "mwst.h"
 
@@ -19,6 +19,8 @@ using namespace std;
 using namespace tima;
 
 #define HEAD {EV_TRACE << ctx->get_device_name() << "(FN:" << ud->fragment << ", parent: " << ud->parent  << "): ";}
+
+namespace mwst {
 
 static const string nil = "";
 
@@ -114,7 +116,7 @@ public:
 };
 
 void
-init_device_data(
+init_device_data_mwst(
 	string& device_name,
 	map<string, string>& options,
 	shared_ptr<tima::GlobalStorage> st)
@@ -394,6 +396,8 @@ no_need_to_wait(const std::string& name, tima::TimaNativeContext* ctx)
 {
     auto ud = (Info*)ctx->get_user_data();
     return ud->finding.size() == 0 && ud->testing.size() == 0;
+}
+
 }
 
 

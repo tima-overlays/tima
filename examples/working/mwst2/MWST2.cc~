@@ -1,0 +1,303 @@
+
+#include <string>
+#include <map>
+#include <set>
+#include <iostream>
+#include <memory>
+#include <algorithm>
+#include <limits>
+
+#include "tima.h"
+
+#include "mwst.h"
+
+using namespace std;
+
+using namespace tima;
+
+static const string nil = "";
+
+class Info: public UserData {
+public:
+    enum EdgeStatus {
+        Basic, Branch, Rejected
+    };
+    int posX;
+    int posY;
+    string fragment;
+    map<string, int> neighbors;
+    map<string, EdgeStatus> status;
+    set<string> requesting;
+    set<string> finding;
+    set<string> testing;
+    string best_neighbor;
+    int bw;
+    string connecting_with;
+    string parent;
+
+    string myself;
+
+    Info(const string& f) {
+        bw = 0;
+        best_neighbor = "";
+        fragment = f;
+        myself = f;
+    }
+
+    bool isRequesting(const string& i) {
+        return find(begin(requesting), end(requesting), i) != end(requesting);
+    }
+
+    void removeRequest(const string& i) {
+        requesting.erase(i);
+    }
+
+    virtual std::string computeValue(const std::string& id) override {
+        if (id == "closest") {
+            auto m = min_element(begin(neighbors), end(neighbors), [&](pair<const string, int>& e1, pair<const string, int>& e2) {
+                return e1.second <= e2.second;
+            });
+
+            return (m != end(neighbors)) ? m->first: nil;
+        }
+        else if (id == "connecting_to") {
+            return connecting_with;
+        }
+        else if (id == "myself") {
+            return myself;
+        }
+        else if (id == "fragmentName") {
+            return fragment;
+        }
+        return nil;
+    }
+};
+
+void
+init_device_data(
+	string& device_name,
+	map<string, string>& options,
+	shared_ptr<tima::GlobalStorage> st)
+{
+	st->setValue("posX", options["posX"]);
+	st->setValue("posY", options["posY"]);
+	auto ud = new Info(device_name);
+	ud->posX = std::stoi(options["posX"]);
+	ud->posY = std::stoi(options["posY"]);
+	st->setUserData(ud);
+}
+
+
+void
+store(const string& name,
+	  TimaNativeContext* ctx,
+	  string sender,
+	  string x, string y)
+{
+
+    auto ud = (Info*)ctx->get_user_data();
+
+    auto i_x = std::stoi(x);
+    auto i_y = std::stoi(y);
+
+    auto d = (i_x - ud->posX)*(i_x - ud->posX) + (i_y - ud->posY)*(i_y - ud->posY);
+
+    ud->neighbors.emplace(sender, d);
+}
+
+void
+store_requester(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string j
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->requesting.insert(j);
+}
+
+
+void
+make_root(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string a1,
+            std::string a2
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->parent = nil;
+    if (a1 <= a2) {
+        ud->fragment = a1 + " <-> " + a2;
+    }
+    else {
+        ud->fragment = a2 + " <-> " + a1;
+    }
+}
+
+
+void
+println(const string& name,
+	  TimaNativeContext* ctx,
+	  string sender,
+	  string x, string y)
+{
+	cout << ctx->get_device_name() << " knows that " << sender << " is located at (" << x << ", " << y << ")" << endl;
+}
+
+void
+println(const string& name,
+      TimaNativeContext* ctx,
+      string sender,
+      string msg)
+{
+    auto ud = (Info*)ctx->get_user_data();
+    cout << ctx->get_device_name() << ": " << sender << msg << ". In addition: you are connecting to " << ud->connecting_with << endl;
+}
+
+
+void
+initiate(const string& name,
+         TimaNativeContext* ctx,
+         string fragment_name
+        )
+{
+    auto ud = (Info*)ctx->get_user_data();
+
+    // initialization
+    ud->fragment = fragment_name;
+    ud->best_neighbor = "";
+    ud->bw = numeric_limits<int>::max();
+
+    /* send 'initiate' to neighbors in the MST */
+    for (auto i : ud->neighbors) {
+        auto name = i.first;
+        if (ud->parent != name &&
+                ud->status[name] == Info::Branch) {
+
+            MessageInitiate m;
+            m.sender(ctx->get_device_name());
+            m.fragment(fragment_name);
+
+            ((tima::ActionContext*)ctx)->send_to(name, 10000, m);
+
+            ud->finding.emplace(name);
+        }
+    }
+
+//    /* send 'test' to neighbors in the MST */
+//    MessageTest m2;
+//    m2.set("sender", ctx->get_device_name());
+//    m2.fragment(ud->fragment);
+//
+//    for_each(begin(ud->neighbors), end(ud->neighbors), [&](pair<const string, int>& p) {
+//
+//        if (ud->status[p.first] == Info::Basic) {
+//            ud->testing.emplace(p.first);
+//        }
+//
+//    });
+//
+//    if (ud->testing.size() > 0) {
+//        auto dst = *ud->testing.begin();
+//        cout << ctx->get_device_name() << " is sending 'test' to " << dst << endl;
+//        ((tima::ActionContext*)ctx)->send_to(dst, 10000, m2);
+//        ud->testing.erase(ud->testing.begin());
+//    }
+
+}
+
+
+void
+send_connect(TimaNativeContext* ctx, const std::string& j)
+{
+
+    auto ud = (Info*)ctx->get_user_data();
+
+    if (ud->isRequesting(j)) {
+        /*connecting with someone who already sent me connect request */
+        ud->status[j] = Info::Branch; // no sure
+        /* I'm the root */
+        ud->parent = nil;
+//      TODO:  initiate(create_unique_name(j, ctx->get_device_name()));
+        ud->removeRequest(j);
+    }
+    else {
+//       TODO: SN = States::Connecting;
+        ud->connecting_with = j;
+        MessageConnect m;
+        m.sender(ctx->get_device_name());
+        ((ActionContext*)ctx)->send_to(j, 10000, m);
+    }
+
+}
+
+
+void
+mark_closest(
+            const std::string& name,
+            tima::TimaNativeContext* ctx ,
+            std::string neighbor
+            )
+{
+    auto ud = (Info*)ctx->get_user_data();
+    ud->connecting_with = neighbor;
+    ud->status[neighbor] = Info::Branch;
+}
+
+
+void
+wakeup(const string& name,
+       TimaNativeContext* ctx)
+{
+
+    auto ud = (Info*)ctx->get_user_data();
+
+    auto closest = ctx->get_global("closest");
+
+    ud->status[closest] = Info::Branch;
+
+    send_connect(ctx, closest);
+
+}
+
+
+
+void
+accept(const std::string& name,
+       tima::TimaNativeContext* ctx,
+       std::string j
+      )
+{
+
+}
+
+
+void
+reject(const std::string& name,
+       tima::TimaNativeContext* ctx,
+       std::string j
+      )
+{
+
+}
+
+
+void
+report(const std::string& name,
+       tima::TimaNativeContext* ctx,
+       std::string,
+       std::string
+      )
+{
+
+}
+
+
+bool
+must_report(const std::string& name, tima::TimaNativeContext* ctx)
+{
+    return false;
+}
+
+

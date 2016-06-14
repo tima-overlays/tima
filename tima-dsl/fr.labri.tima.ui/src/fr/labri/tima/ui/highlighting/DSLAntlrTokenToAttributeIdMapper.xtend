@@ -11,6 +11,8 @@ class DSLAntlrTokenToAttributeIdMapper extends DefaultAntlrTokenToAttributeIdMap
 			case "RULE_TK_GUARD",
 			case "RULE_TK_MODULE",
 			case "RULE_TK_STATE",
+			case "RULE_TK_MESSAGES",
+			case "RULE_TK_PROTOCOLS",
 			case "RULE_TK_SUMMARY": DSLHighlightingConfigurator.KEYWORD_ID
 			default: super.calculateId(tokenName, tokenType)
 		}

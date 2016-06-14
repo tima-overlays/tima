@@ -11,6 +11,7 @@ import org.eclipse.xtext.EcoreUtil2
 import org.eclipse.xtext.scoping.Scopes
 import fr.labri.tima.dSL.MessagePattern
 import fr.labri.tima.dSL.Automaton
+import fr.labri.tima.dSL.MessageType
 
 /**
  * This class contains custom scoping description.
@@ -22,22 +23,20 @@ class DSLScopeProvider extends fr.labri.tima.scoping.AbstractDSLScopeProvider {
 	
 
   override getScope(EObject context, EReference reference) {
-//      if(context instanceof MessagePattern
-//          && reference == DSLPackage.Literals.MESSAGE_PATTERN__TYPE){
-//        val rootElement = EcoreUtil2.getRootContainer(context);
-//        val candidates = EcoreUtil2.getAllContentsOfType(rootElement, MessageType);
-//        val existingScope = Scopes.scopeFor(candidates);
-//        // Scope that filters out the context element from the candidates list
-//        
-//        return existingScope;
-//      }
-//      else if (context instanceof Action && reference == DSLPackage.Literals.MESSAGE_ACTION__TYPE){
-//      	val rootElement = EcoreUtil2.getRootContainer(context);
-//        val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Automaton);
-//        val existingScope = Scopes.scopeFor(candidates);
-//        return existingScope;
-//      }
-  
-      return super.getScope(context, reference);
+  	val rootElement = EcoreUtil2.getRootContainer(context)
+  	switch (reference) {
+  		case DSLPackage.Literals.MESSAGE_ACTION__TYPE,
+  		case DSLPackage.Literals.MESSAGE_PATTERN__TYPE: {
+        	val candidates = EcoreUtil2.getAllContentsOfType(rootElement, MessageType)
+        	Scopes.scopeFor(candidates)
+  		}
+  		case DSLPackage.Literals.MESSAGE_ACTION__TARGET: {
+  			val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Automaton)
+        	Scopes.scopeFor(candidates)
+  		}
+  		default: {
+  			super.getScope(context, reference)
+  		}
+  	}
   }
 }

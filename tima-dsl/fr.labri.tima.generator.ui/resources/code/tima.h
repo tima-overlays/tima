@@ -35,25 +35,56 @@ public:
 
 class GlobalStorage {
 
-    std::map<std::string, std::string> data;
+public:
+    class Value {
+    private:
+        std::map< std::string, std::shared_ptr<Value> > values;
+        std::string value;
+    public:
+        
+        void setValue(std::string key, std::shared_ptr<Value> v) {
+            values[key] = v;
+        } 
+        void setSimpleValue(std::string v) {
+            values.clear();
+            value = v;
+        } 
+        std::shared_ptr<Value> getValue(std::string key) {
+            if (values.find(key) != values.end()) {
+                return values[key];
+            }
+            throw std::runtime_error("Unknown key: " + key);
+        } 
+        
+        std::string to_string() {
+            if (values.size() > 0)
+                throw std::runtime_error("This is a composed value");
+            return value;
+        }
+        
+        
+    };
+    
+private:
+    
+    Value root;
 
     UserData* user_data;
 
 public:
-
     GlobalStorage(UserData* ud) : user_data(ud) {}
 
-    void setValue(const std::string& key, const std::string v) {
-        data[key] = v;
+    std::shared_ptr<Value> getValue(const std::string& key) {
+        return root.getValue(key);
     }
-
-    std::string getValue(const std::string& key) {
-        if (data.find(key) == data.end()) {
-            return user_data->computeValue(key);
-        }
-        return data[key];
+    
+    void setValue(const std::string key, std::string v) {
+        auto value = std::make_shared<Value>();
+        value->setSimpleValue(v);
+        root.setValue(key, value);
     }
-
+    
+    
     UserData* getUserData() {
         return user_data;
     }
@@ -82,8 +113,20 @@ class TimaNativeContext {
        }
 
       std::string get_global(const std::string i) {
-        return storage->getValue(i);
+        return storage->getValue(i)->to_string();
       };
+      
+      
+      void set_global(const std::string i, std::string v) {
+        storage->setValue(i, v);
+      };
+      
+
+      virtual void report_received_message() { }
+
+      virtual void report_sent_message() { }
+
+      virtual ~TimaNativeContext() {}
 
   private:
       std::string device_name;

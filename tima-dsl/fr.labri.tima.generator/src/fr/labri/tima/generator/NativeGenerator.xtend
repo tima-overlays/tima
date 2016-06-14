@@ -15,6 +15,7 @@ import org.eclipse.xtext.generator.IGeneratorContext
 import java.util.List
 import java.util.LinkedList
 import java.util.HashMap
+import fr.labri.tima.dSL.BuiltinAction
 
 class NativeGenerator extends NamedNodeGenerator {
 	
@@ -49,8 +50,22 @@ class NativeGenerator extends NamedNodeGenerator {
 				t.get(symbol)
 			}
 			else {
-				'''GET_GLOBAL(ctx, "«symbol»")'''
+				throw new RuntimeException("Wrong symbol: " + symbol)
+				//'''GET_GLOBAL(ctx, "«symbol»")'''
 			}
+		}
+		
+		def String symbol2Target(List<String> keys) {
+			var s = '''''';
+			'''
+			auto «nextTmp» = ctx->getStorage()->getValue("«keys.get(0)»");
+			«{s = lastTmp.toString; null}»
+			«FOR k : keys.drop(1)»
+			auto «nextTmp» = «s»->getValue(«k»);
+			«{s = lastTmp.toString; null}»
+			«ENDFOR»
+			auto «nextTmp» = «s»->to_string();
+			'''
 		}
 	}
 	
@@ -73,6 +88,8 @@ class NativeGenerator extends NamedNodeGenerator {
 		#include "inet/applications/tima/automata.h"
 		#include "inet/applications/tima/tima.h"
 		#include <string>
+		
+		namespace «name» {
 		
 		//int	get_msg_id_from_name(const char* name);
 		
@@ -108,6 +125,8 @@ class NativeGenerator extends NamedNodeGenerator {
 		};		
 		«ENDFOR»
 		
+		}
+		
 		#endif
 		'''
 	}
@@ -124,6 +143,8 @@ class NativeGenerator extends NamedNodeGenerator {
 	#include "inet/applications/tima/mailbox.h"
 	#include "«project_name».h"
 	#include <cstring>
+	
+	namespace «project_name» {
 	
 	//int
 	//get_msg_id_from_name(const char* name)
@@ -237,19 +258,30 @@ class NativeGenerator extends NamedNodeGenerator {
 		return *automatons[idx];
 	}
 	
+	}
+	
 	'''
 	}
 	
 	private def get_forward_declarations(List<IRAutomata.Action> actions) {
 		'''
-		«FOR act : actions.filter(ExternalAction)»
-		void «(act as fr.labri.tima.ir.IRAutomata.ExternalAction).externalName.simple_name»(
-					const std::string& name,
-					tima::TimaNativeContext* ctx «IF act.arguments.size > 0»,«ENDIF»
-					«FOR p : act.arguments SEPARATOR ','»
-						std::string
-					«ENDFOR»
-					);
+		«FOR act : actions.filter(IRAutomata.ExternalAction)»
+			void «(act as fr.labri.tima.ir.IRAutomata.ExternalAction).externalName.simple_name»(
+						const std::string& name,
+						tima::TimaNativeContext* ctx «IF act.arguments.size > 0»,«ENDIF»
+						«FOR p : act.arguments SEPARATOR ','»
+							std::string
+						«ENDFOR»
+						);
+		«ENDFOR»
+		«FOR act : actions.filter(IRAutomata.BuiltinAction).filter[true]»
+			void «(act as IRAutomata.BuiltinAction).builtinName»(
+						const std::string& name,
+						tima::TimaNativeContext* ctx «IF act.arguments.size > 0»,«ENDIF»
+						«FOR p : act.arguments SEPARATOR ','»
+							std::string
+						«ENDFOR»
+						);
 		«ENDFOR»
 		'''
 		
@@ -266,6 +298,19 @@ class NativeGenerator extends NamedNodeGenerator {
 	   				   «ENDFOR»
 					  );
 			'''
+		}
+		else if (g instanceof IRAutomata.BuiltinGuard) {
+			val bg = g as IRAutomata.BuiltinGuard
+			if (bg.builtinName != "true" && bg.builtinName != "false")
+				'''
+				bool «bg.builtinName»(
+						   const std::string& name, tima::TimaNativeContext* ctx «IF bg.arguments.size > 0»,«ENDIF»
+						   «FOR p : bg.arguments SEPARATOR ','»
+						   std::string
+		   				   «ENDFOR»
+						  );
+				'''
+			else ""
 		}
 		else ""
 	}
@@ -313,32 +358,11 @@ class NativeGenerator extends NamedNodeGenerator {
 	}
 	
 	dispatch def String IR2Target(IRAutomata.BuiltinAction action) {
-		throw new UnsupportedOperationException("Really? Do we have some built-in action?");
+		invokeExternalAction(action.builtinName, action.arguments)
 	}
 	
 	dispatch def String IR2Target(IRAutomata.ExternalAction action) {
-		/* steps:
-		 *  - build parameters
-		 *  - call operation
-		 */
-		val v = newLinkedList()
-		val i = newLinkedList()
-		for (a : action.arguments) {
-			v.add(a.IR2Target)
-			i.add(context.lastTmp)
-		}
-		'''
-		«FOR e : v»
-		«e»
-		«ENDFOR»
-		«action.externalName.simple_name»(
-			name, ctx«IF i.size > 0»,«ENDIF»
-			«FOR tmp : i SEPARATOR ','»
-				«tmp»
-			«ENDFOR»
-		);
-		'''
-		
+		invokeExternalAction(action.externalName.simple_name, action.arguments)
 	}
 	
 	dispatch def String IR2Target(IRAutomata.MessageAction action) {
@@ -364,15 +388,15 @@ class NativeGenerator extends NamedNodeGenerator {
 		«msg».«f.key»(«i.get(f.key)»);
 		«ENDFOR»
 		«IF action.message instanceof RemoteMessage»
-		«msg».set("sender",ctx->get_device_name());
-		«IF action.target instanceof MessageTarget.Broadcast»
-		((tima::ActionContext*)ctx)->broadcast(10000, «msg»);
+			«msg».set("sender",ctx->get_device_name());
+			«IF action.target instanceof MessageTarget.Broadcast»
+				((tima::ActionContext*)ctx)->broadcast(10000, «msg»);
+			«ELSE»
+				«(action.target as MessageTarget.Unicast).target.IR2Target»
+				((tima::ActionContext*)ctx)->send_to(«context.lastTmp», 10000, «msg»);
+			«ENDIF»
 		«ELSE»
-		«(action.target as MessageTarget.Unicast).target.IR2Target»
-		((tima::ActionContext*)ctx)->send_to(«context.lastTmp», 10000, «msg»);
-		«ENDIF»
-		«ELSE»
-		tima::Mailbox::send(«msg», "«(action.target as MessageTarget.Internal).target.name»", ctx);
+			tima::Mailbox::send(«msg», "«(action.target as MessageTarget.Internal).target.name»", ctx);
 		«ENDIF»
 		'''
 	}
@@ -383,6 +407,10 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	dispatch def String IR2Target(IRAutomata.Expression.Identifier i) {
 		'''std::string «context.nextTmp» = «context.symbol2Target(i.name)»;'''
+	}
+	
+	dispatch def String IR2Target(IRAutomata.Expression.KeyValuePair k) {
+		'''«context.symbol2Target(k.key)»'''
 	}
 	
 	dispatch def String IR2Target(IRAutomata.MessageGuard g) {
@@ -429,31 +457,9 @@ class NativeGenerator extends NamedNodeGenerator {
 		
 	
 	dispatch def String IR2Target(IRAutomata.ExternalGuard g) {
-		/* steps:
-		 *  - build parameters
-		 *  - call operation
-		 */
-		val v = newLinkedList()
-		val i = newLinkedList()
-		for (a : g.arguments) {
-			v.add(a.IR2Target)
-			i.add(context.lastTmp)
-		}
-		'''
-		«FOR e : v»
-		«e»
-		«ENDFOR»
-		bool «context.nextTmp» = «g.externalName.simple_name»(
-			name, ctx«IF i.size > 0»,«ENDIF»
-			«FOR tmp : i SEPARATOR ','»
-				«tmp»
-			«ENDFOR»
-		);
-		'''
+		invokeExternalGuard(g.externalName.simple_name, g.arguments)
 	}
 		
-		
-	
 	dispatch def String IR2Target(IRAutomata.BuiltinGuard g) {
 		switch (g.builtinName) {
 			case "true": {
@@ -463,12 +469,61 @@ class NativeGenerator extends NamedNodeGenerator {
 				'''bool «context.nextTmp» = false;'''
 			}
 			default: {
-				throw new UnsupportedOperationException("Really? Do we have some builtin guards?");
+				invokeExternalGuard(g.builtinName, g.arguments)
 			}
 		}
 	}
 	
 	/* A bunch of methods to keep consistent the definition of identifies  */
+	
+	
+	private def String invokeExternalGuard(String operationName, List<IRAutomata.Expression> args){
+		/* steps:
+		 *  - build parameters
+		 *  - call operation
+		 */
+		val v = newLinkedList()
+		val i = newLinkedList()
+		for (a : args) {
+			v.add(a.IR2Target)
+			i.add(context.lastTmp)
+		}
+		'''
+		«FOR e : v»
+		«e»
+		«ENDFOR»
+		bool «context.nextTmp» = «operationName»(
+			name, ctx«IF i.size > 0»,«ENDIF»
+			«FOR tmp : i SEPARATOR ','»
+				«tmp»
+			«ENDFOR»
+		);
+		'''
+	}
+	
+	private def String invokeExternalAction(String operationName, List<IRAutomata.Expression> args){
+		/* steps:
+		 *  - build parameters
+		 *  - call operation
+		 */
+		val v = newLinkedList()
+		val i = newLinkedList()
+		for (a : args) {
+			v.add(a.IR2Target)
+			i.add(context.lastTmp)
+		}
+		'''
+		«FOR e : v»
+		«e»
+		«ENDFOR»
+		«operationName»(
+			name, ctx«IF i.size > 0»,«ENDIF»
+			«FOR tmp : i SEPARATOR ','»
+				«tmp»
+			«ENDFOR»
+		);
+		'''
+	}
 	
 	
 	private def Map<String, String> getMessageSymbolTable(IRAutomata.Message m) {

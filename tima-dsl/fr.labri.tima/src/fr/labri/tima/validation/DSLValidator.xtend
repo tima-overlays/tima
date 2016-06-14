@@ -11,6 +11,7 @@ import fr.labri.tima.semantic.DSLSemantic
 import fr.labri.tima.dSL.Model
 import fr.labri.tima.dSL.Automaton
 import fr.labri.tima.dSL.MessageType
+import org.eclipse.xtext.xtext.FlattenedGrammarAccess.FlattenedGrammarAccessAdapter
 
 /**
  * This class contains custom validation rules.
@@ -71,9 +72,9 @@ class DSLValidator extends AbstractDSLValidator {
 
 	@Check(FAST)
 	def checkUniqueMaessage(MessageType s) {
-		val model = s.eContainer as Model
-		if (model.messages == null) return
-		val f = model.messages.filter[it.name == s.name].size > 1
+		val model = s.eContainer.eContainer as Model
+		if (model.messageSections == null) return
+		val f = IterableExtensions.flatten(model.messageSections.map[it.messages]).filter[it.name == s.name].size > 1
 		if (f) {
 			error('Duplicated message name',
 						DSLPackage.Literals.MESSAGE_TYPE__NAME, DUPLICATED_MESSAGE_NAME)
