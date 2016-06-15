@@ -26,7 +26,7 @@ automaton MainPhase
 
 	initial state sleeping
 	
-		// begin the dissemination of a message 
+		// begin the dissemination of a message
 		when ? init_new_broadcast  => sleeping do {
 			
 			$payloads[ init_new_broadcast.key ] = "This is a message";

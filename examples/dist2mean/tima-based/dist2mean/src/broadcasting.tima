@@ -1,5 +1,7 @@
 module broadcasting
 
+require neighbors
+
 local messages {
 	init_new_broadcast { sender, key }
 } 
@@ -12,7 +14,7 @@ extern void statistic_message_received ();
  * This automaton is external to the protocol. It is in fact used to evaluate it
  * In activates several broadcast sessions by sending a local message to MainPhase
  */	
-template automaton BroadcastExperimenter (ProtocolCore)
+template automaton BroadcastExperimenter (ProtocolCore) 
 	initial state sleeping
 		when ? wakeup ($is_source == true) => still_sending do{
 			! init_new_broadcast (key = $myself + "-" + $lastId) @ ProtocolCore	
