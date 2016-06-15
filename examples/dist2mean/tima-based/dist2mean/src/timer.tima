@@ -1,0 +1,27 @@
+module timer
+
+local messages {
+	
+	activate_timer { count, src	} 
+
+	timer_data { n, key }
+
+	timer_expering { key } 
+} 
+
+/* a timer used to wait a variable amount of time */
+template automaton TimerTemplate (Client)
+	initial state idle
+		when ? activate_timer => active do
+			 ! timer_data (n = activate_timer.count, key = activate_timer.src) @ Timer
+	
+	state active 
+		when false within 1 ms => active
+		when timeout => checking
+		
+	urgent state checking 
+		when ? timer_data ( timer_data.n == 0 ) => idle do
+			! timer_expering (key = timer_data.key) @ Client
+			
+		when ? timer_data (timer_data.n != 0) => active do
+			! timer_data (n = timer_data.n - 1, key = timer_data.key) @ Timer

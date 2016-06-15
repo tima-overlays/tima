@@ -1,0 +1,30 @@
+module broadcasting
+
+local messages {
+	init_new_broadcast { sender, key }
+} 
+
+
+/**
+ * This automaton is external to the protocol. It is in fact used to evaluate it
+ * In activates several broadcast sessions by sending a local message to MainPhase
+ */	
+template automaton BroadcastExperimenter (ProtocolCore)
+	initial state sleeping
+		when ? wakeup ($is_source == true) => still_sending do{
+			! init_new_broadcast (key = $myself + "-" + $lastId) @ ProtocolCore	
+			$remaining_broadcasts = $remaining_broadcasts - 1;
+			$lastId = $lastId + 1;
+		}
+		
+		when ? wakeup ($is_source == false) => stop
+		
+	state still_sending
+		when $remaining_broadcasts == 0 within 2s => stop 
+		when timeout => still_sending do {
+			! init_new_broadcast (key = $myself + "-" + $lastId) @ ProtocolCore	
+			$remaining_broadcasts = $remaining_broadcasts - 1;
+			$lastId = $lastId + 1;
+		}
+		
+	final state stop

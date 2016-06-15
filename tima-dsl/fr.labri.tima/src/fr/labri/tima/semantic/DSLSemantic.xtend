@@ -26,6 +26,7 @@ import fr.labri.tima.dSL.Expression
 import java.util.LinkedList
 import fr.labri.tima.dSL.MessageSection
 import fr.labri.tima.dSL.KeyInStore
+import fr.labri.tima.dSL.SimpleAutomaton
 
 public class DSLSemantic {
 
@@ -51,10 +52,10 @@ public class DSLSemantic {
 
 		def createAutomata(Iterator<Automaton> autos) {
 			front_end_automata = autos
-			autos.forEach[createAutomaton(it)]
+			autos.forEach[createAutomaton(it as SimpleAutomaton)]
 		}
 
-		def createAutomaton(Automaton a) {
+		def createAutomaton(SimpleAutomaton a) {
 			val builder = new IRAutomatonBuilder(this, a)
 			// the order here is important, remember, recursive definitions
 			automata.add(builder.automaton) // line 1
@@ -70,7 +71,7 @@ public class DSLSemantic {
 				automata.automata.get(a.name)
 			}
 			else {
-				createAutomaton(a)
+				createAutomaton(a as SimpleAutomaton)
 				getAutomaton(a)
 			}
 		}
@@ -81,7 +82,7 @@ public class DSLSemantic {
 			}
 			else {
 				if (front_end_automata.exists[it.name == name]) {
-					createAutomaton(front_end_automata.findFirst[it.name == name])
+					createAutomaton(front_end_automata.findFirst[it.name == name] as SimpleAutomaton)
 					getAutomaton(front_end_automata.findFirst[it.name == name])
 				}
 				else null
@@ -109,7 +110,7 @@ public class DSLSemantic {
 			automaton = new IRAutomata.Automaton(auto.name)
 		}
 
-		def createAutomata(Automaton a) {
+		def createAutomata(SimpleAutomaton a) {
 			a.states.forEach[states.put(it, newNamedNode(it))]
 			states.forEach[x, y|
 				automaton.add(y)

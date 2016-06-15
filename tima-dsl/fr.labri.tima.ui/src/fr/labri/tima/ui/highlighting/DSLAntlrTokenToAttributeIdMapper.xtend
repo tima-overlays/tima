@@ -17,6 +17,7 @@ class DSLAntlrTokenToAttributeIdMapper extends DefaultAntlrTokenToAttributeIdMap
 			case "RULE_TK_UNDEFINED",
 			case "RULE_TK_IF",
 			case "RULE_TK_EXTERNAL_ACTIONS",
+			case "RULE_TK_TEMPLATE",
 			case "RULE_TK_SUMMARY": DSLHighlightingConfigurator.KEYWORD_ID
 			case "RULE_TK_TRUE",
 			case "RULE_TK_FALSE": DSLHighlightingConfigurator.BOOLEAN_VALUE_ID 

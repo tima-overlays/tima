@@ -12,6 +12,7 @@ import fr.labri.tima.dSL.Model
 import fr.labri.tima.dSL.Automaton
 import fr.labri.tima.dSL.MessageType
 import org.eclipse.xtext.xtext.FlattenedGrammarAccess.FlattenedGrammarAccessAdapter
+import fr.labri.tima.dSL.SimpleAutomaton
 
 /**
  * This class contains custom validation rules.
@@ -43,7 +44,7 @@ class DSLValidator extends AbstractDSLValidator {
 //	}
 
 	@Check(FAST)
-	def checkOneAndOnlyOneInitialState(Automaton a) {
+	def checkOneAndOnlyOneInitialState(SimpleAutomaton a) {
 		if (a.states.filter[it.initial].size != 1) {
 			error('An automata must have one and only one initial state', null);
 					//DSLPackage.Literals.AUTOMATA__NAME) // FIXME
@@ -62,7 +63,7 @@ class DSLValidator extends AbstractDSLValidator {
 
 	@Check(FAST)
 	def checkUniqueStates(fr.labri.tima.dSL.State s) {
-		val auto = s.eContainer as Automaton
+		val auto = s.eContainer as SimpleAutomaton
 		val f = auto.states.filter[it.name == s.name].size > 1
 		if (f) {
 			error('Duplicated State name',
