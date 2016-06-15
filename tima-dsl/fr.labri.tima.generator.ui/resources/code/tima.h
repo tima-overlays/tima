@@ -30,7 +30,9 @@ public:
 
 class UserData {
 public:
-    virtual std::string computeValue(const std::string& id) = 0;
+ 	virtual std::string computeValue(const std::string& id) {
+        throw runtime_error("unimplemented value : " + id);
+    }
 };
 
 class GlobalStorage {
@@ -61,6 +63,10 @@ public:
                 throw std::runtime_error("This is a composed value");
             return value;
         }
+
+		std::map< std::string, std::shared_ptr<Value> > getValues() {
+			return values;
+		}
         
         
     };

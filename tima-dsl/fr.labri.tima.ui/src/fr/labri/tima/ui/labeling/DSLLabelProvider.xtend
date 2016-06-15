@@ -4,7 +4,6 @@
 package fr.labri.tima.ui.labeling
 
 import com.google.inject.Inject
-import fr.labri.tima.dSL.BuiltInGuard
 import fr.labri.tima.dSL.BuiltinAction
 import fr.labri.tima.dSL.ExternalAction
 import fr.labri.tima.dSL.ExternalGuard
@@ -18,6 +17,7 @@ import org.eclipse.xtext.ui.IImageHelper
 import org.eclipse.xtext.ui.label.DefaultEObjectLabelProvider
 import fr.labri.tima.dSL.Automaton
 import fr.labri.tima.dSL.MessageType
+import fr.labri.tima.dSL.BooleanGuard
 
 /**
  * Provides labels for EObjects.
@@ -80,7 +80,7 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 		"receive.png"
 	}
 	
-	dispatch def String iconName(BuiltInGuard guard) {
+	dispatch def String iconName(BooleanGuard guard) {
 		"action.png"
 	}
 	

@@ -1,11 +1,15 @@
 module dist2mean
 summary "Broadcast messages using the algorithm distance-to-mean"
 
-//protocol dst2mean { mode = "udp", port = 10000 } 
+protocol dst2mean { mode = "udp", port = 10000 } 
 
 local messages {
 	msg_wakeup {
 		 sender
+	}
+	
+	msg_init_new_broadcast {
+		sender, key
 	}
 	
 	msg_activate_timer {
@@ -35,81 +39,119 @@ dst2mean messages {
 	}   
 
 }
+
+actions {
+	void statistic_message_sent ();
+	void statistic_message_received ();
+	int compute_distance(int x1, int y1, int x2, int y2);
+	int compute_distance_to_mean(string key);
+}
  
 
-
+/**
+ * This is the main automaton in the protocol
+ */
 automaton MainPhase 
 
-	initial state Sleeping
-		when ? msg_wakeup ($is_source == "true") => still_sending do {
-				initial_dissemination ("This is a message")
+	initial state waiting
+	
+		// begin the dissemination of a message 
+		when ? msg_init_new_broadcast  => waiting do {
+			
+			$payloads[ msg_init_new_broadcast.key ] = "This is a message";
+			
+			! broadcast (sender=$myself, key = msg_init_new_broadcast.key, payload=$payloads[msg_init_new_broadcast.key]) @ *
+			
+			statistic_message_sent;
+			
 		}
 				
 			
-		when ? broadcast => received do {
-			schedule_dissemination (sender, key, payload) 
+		when ? broadcast => waiting do {
+			$received[broadcast.key].from[broadcast.sender] = true;
+		
+			if (undefined $payloads[broadcast.key]) {
+				statistic_message_received;
+				$payloads[broadcast.key] = broadcast.payload;
+				// time to wait in milliseconds/m 
+				! msg_activate_timer (src = broadcast.key, count = 2000000 / $distance[broadcast.sender]) @ Timer
+			}
 		}
 		
-	state received
-		when ? broadcast => received do {
-			schedule_dissemination (sender, key, payload)
-		} 
+		when ? msg_timer_on => waiting do 
+			$distance_to_mean= compute_distance_to_mean(msg_timer_on.key)
 		
-		when ? msg_timer_on => Sleeping do  {
-			disseminate (key) 
+	urgent state sending_if_needed
+		when $distance_to_mean > $threshold => waiting do {
+			! broadcast (sender=$myself, key = $key, payload=$payloads[$key]) @ *
+			statistic_message_sent;
 		}
-		
-	state still_sending
-		when zero_remaining_broadcasts within 2s => stop 
-		when timeout => still_sending do { 
-			initial_dissemination ("This is a message")
-		}
-		
-	state stop
+		when $distance_to_mean <= $threshold => waiting
 		
 
 /* a timer used to wait a variable amount of time */
 automaton Timer
 	initial state idle
-		when ? msg_activate_timer => active do {
-			 ! msg_timer (n = count, key = src) @ Timer
-		}
+		when ? msg_activate_timer => active do
+			 ! msg_timer (n = msg_activate_timer.count, key = msg_activate_timer.src) @ Timer
 	
 	state active 
 		when false within 1 ms => active
 		when timeout => checking
 		
 	urgent state checking 
-		when ? msg_timer ( n == "0" ) => idle do  {
-			! msg_timer_on (key = key) @ MainPhase
+		when ? msg_timer ( msg_timer.n == 0 ) => idle do
+			! msg_timer_on (key = msg_timer.key) @ MainPhase
+			
+		when ? msg_timer (msg_timer.n != 0) => active do
+			! msg_timer (n = msg_timer.n - 1, key = msg_timer.key) @ Timer
+		
+		
+automaton BroadcastInitiator 
+	initial state sleeping
+		when ? msg_wakeup ($is_source == true) => still_sending do{
+			! msg_init_new_broadcast (key = $myself + "-" + $lastId) @ MainPhase	
+			$remaining_broadcasts = $remaining_broadcasts - 1;
+			$lastId = $lastId + 1;
 		}
-		when ? msg_timer (n != "0") => active do {
-			dec_counter (n)
-			! msg_timer (n = $newCounter, key = key) @ Timer
+		
+		when ? msg_wakeup ($is_source == false) => stop
+		
+	state still_sending
+		when $remaining_broadcasts == 0 within 2s => stop 
+		when timeout => still_sending do {
+			! msg_init_new_broadcast (key = $myself + "-" + $lastId) @ MainPhase	
+			$remaining_broadcasts = $remaining_broadcasts - 1;
+			$lastId = $lastId + 1;
 		}
+		
+	final state stop
 
-/* automaton used to build set of find set of neighbors */ 
+/* automaton used to build set of neighbors */ 
 automaton Phase0
 	initial state greeting
 		when ? hello within 100ms => greeting do {
-			store (sender, x, y)
+			$distance[hello.sender] = compute_distance($posX, $posY, hello.x, hello.y)
+			$coordinates[hello.sender].x = hello.x
+			$coordinates[hello.sender].y = hello.y
 		}
 		when timeout => s_check do {
-			decrease_hellos
+			$remaining_hellos = $remaining_hellos - 1
 			! hello (x = $posX, y = $posY) @ *
 		}
 
 	urgent state s_check
-		when zero_nr_hellos => s0 
-		when no_zero_nr_hellos => greeting
+		when $remaining_hellos == 0 => s0 
+		when $remaining_hellos != 0 => greeting
 
 	state s0
 		when ? hello  within 100ms => s0 do { 
-			store (sender, x, y)
+			$distance[hello.sender] = compute_distance($posX, $posY, hello.x, hello.y)
+			$coordinates[hello.sender].x = hello.x
+			$coordinates[hello.sender].y = hello.y
 		} 
 		when false within 5s => s0
-		when timeout => done do {
-				! msg_wakeup @ MainPhase 
-		}
+		when timeout => done do	
+			! msg_wakeup @ BroadcastInitiator 
 	
-	state done
+	final state done

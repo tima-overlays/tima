@@ -3,7 +3,6 @@ package fr.labri.tima.semantic
 import fr.labri.tima.dSL.Action
 import fr.labri.tima.dSL.Automaton
 import fr.labri.tima.dSL.BroadcastTarget
-import fr.labri.tima.dSL.BuiltInGuard
 import fr.labri.tima.dSL.BuiltinAction
 import fr.labri.tima.dSL.ExternalAction
 import fr.labri.tima.dSL.ExternalGuard
@@ -170,17 +169,13 @@ public class DSLSemantic {
 					])
 
 				}
-				BuiltInGuard: {
-					new IRAutomata.BuiltinGuard(g.name,  g.operands.map[
-						newExpression(it)
-					])
-				}
+//				BuiltInGuard: {
+//					new IRAutomata.BuiltinGuard(g.name,  g.operands.map[
+//						newExpression(it)
+//					])
+//				}
 				MessageGuard:  {
-					new IRAutomata.MessageGuard(autoBuilder.getMessage(g.msgPattern.type), g.msgPattern.patterns.map[
-						new IRAutomata.Pattern(it.operator, it.operands.map[
-							newExpression(it)
-						])
-					])
+					new IRAutomata.MessageGuard(autoBuilder.getMessage(g.msgPattern.type), newExpression(g.msgPattern.predicate))
 
 				}
 			}
@@ -191,7 +186,7 @@ public class DSLSemantic {
 			switch e {
 				FieldExpression: new IRAutomata.Expression.Identifier(e.field)
 				StringExpression: new IRAutomata.Expression.Constant(e.value)
-				KeyInStore: new IRAutomata.Expression.KeyValuePair(e.key.map[it].toList)
+				KeyInStore: new IRAutomata.Expression.KeyValuePair(e.key.sections.map[it.key].toList)
 			}
 		}
 

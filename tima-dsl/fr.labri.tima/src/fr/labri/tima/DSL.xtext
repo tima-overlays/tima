@@ -4,7 +4,9 @@ generate dSL "http://www.labri.fr/tima/DSL"
 
 Model:
 	header=Header
+	protocols+=ProtocolSection*
 	messageSections+=MessageSection*
+	externalActions=ExternalActions?
 	automatons+=Automaton*
 ;
 
@@ -21,6 +23,10 @@ MessageSection:
 	name=ID TK_MESSAGES '{' messages+=MessageType* '}'
 ;
 
+ProtocolSection:
+	TK_PROTOCOL name=ID '{' fields+=Field (',' fields+=Field)* '}'
+;
+
 MessageType:
 	name=ID ('{' FieldDeclaration '}' )?
 ;
@@ -28,6 +34,25 @@ MessageType:
 fragment
 FieldDeclaration:
 	declaredFields+=ID (',' declaredFields+=ID)*
+;
+
+ExternalActions:
+	TK_EXTERNAL_ACTIONS '{'
+		declarations+=ExternalActionDeclaration+
+	'}'
+;
+
+ExternalActionDeclaration:
+	ExternalActionType name=ID '('  (paramType+=ExternalActionParam (',' paramType+=ExternalActionParam)* )?   ')' ';'
+;
+
+ExternalActionParam:
+	 ExternalActionType name=ID
+;
+
+fragment
+ExternalActionType:
+	void?='void'? & int?='int'? & string?='string'? & Bool?='bool'?
 ;
 
 Automaton:
@@ -42,17 +67,20 @@ State:
 
 fragment
 StateModifiers:
-	urgent?='urgent'? & initial?='initial'?;
+	urgent?='urgent'? & initial?='initial'? & final?='final'?;
 
 fragment
 Actions:
-	TK_ACTION '{' actions+=Action+ '}'
+	TK_ACTION '{' actions+=Action+ '}' |
+	TK_ACTION actions+=Action
 ;
 
 Action returns Action:
-	 BuiltinAction |
-	 ExternalAction |
-	 MessageAction
+	 BuiltinAction ';'? |
+	 ExternalAction ';'? |
+	 MessageAction ';'? |
+	 IfAction |
+	 AssignmentAction
 ;
 
 fragment
@@ -76,6 +104,14 @@ MessageAction returns Action:
 	{MessageAction} '!' type=[MessageType] ('(' Fields ')')? '@' target=MessageTarget
 ;
 
+IfAction returns Action:
+	{IfAction} TK_IF '(' condition=Expression ')' '{' actions+=Action+ '}'
+;
+
+AssignmentAction returns Action:
+	{AssignmentAction} key=StoredValue '=' value=Expression ';'?
+;
+
 MessageTarget:
 	{BroadcastTarget} '*' |
 	{UnicastTarget} address=Expression
@@ -92,9 +128,14 @@ Transition returns Transition:
 
 Guard returns Guard:
 	(	MessageGuard|
-		BuiltinGuard |
-		ExternalGuard)
+//		BuiltinGuard |
+		ExternalGuard |
+		BooleanGuard)
 	(within ?= 'within' value=INT unit=TimeUnit)?
+;
+
+BooleanGuard returns Guard:
+	{BooleanGuard} predicate=Expression
 ;
 
 ExternalGuard returns Guard:
@@ -106,37 +147,75 @@ MessageGuard returns Guard:
 	msgPattern=MessagePattern
 ;
 
-BuiltinGuard returns Guard:
-	{BuiltInGuard} name=ID ('(' Expressions ')')?
-;
+//BuiltinGuard returns Guard:
+//	{BuiltInGuard} name=ID ('(' Expressions ')')?
+//;
 
 MessagePattern:
 	type=[MessageType]
-	('(' Patterns ')')?
+	( predicate=Expression )?
 ;
 
 fragment
 Patterns:
-	patterns+=PatternExpression (',' patterns+=PatternExpression)*
+	patterns+=Expression (',' patterns+=Expression)*
 ;
-
-PatternExpression:
-	operands+=Expression Operator operands+=Expression |
-	Operator '(' Expressions ')'
-;
-
-fragment
-Operator: operator=(ID|'=='|'!='|'>='|'<='|'<'|'>');
 
 fragment
 Expressions:
 	operands+=Expression (',' operands+=Expression)*
 ;
 
+//Expression:
+//	{StringExpression} value=STRING |
+//	{BooleanExpression} (valueTrue?=TK_TRUE | valueFalse?=TK_FALSE) |
+//	{NumericExpression} value=INT |
+//	{FieldExpression} type=[MessageType] '.' field = ID |
+//	{CheckIfValueDefined} (defined?=TK_DEFINED | undefined?=TK_UNDEFINED) key=StoredValue | 
+//	{KeyInStore} key=StoredValue
+//;
+
+StoredValue:
+	'$' sections+=StoredValueSection ('.' sections+=StoredValueSection )*
+;
+
+StoredValueSection:
+	key=ID ('[' index=Expression ']')?
+;
+
 Expression:
-	{FieldExpression} field = ID |
-	{StringExpression} value=STRING |
-	{KeyInStore} '$' key+=ID ('.' key+=ID )*
+    BooleanExpression;
+
+BooleanExpression returns Expression:
+    Comparison 
+    (({AndOrExpression.left=current} op=("||"|"&&")) right=Comparison)*;
+
+Comparison returns Expression:
+       Addition
+       (({Comparison.left=current} op=("<"|">"|">="|"<="|"=="|"!=") ) right=Addition)*;
+ 
+Addition returns Expression:
+    Multiplication
+    ({PlusMinus.left=current} op=('+'|'-') right=Multiplication)*; 
+
+Multiplication returns Expression:
+    Prefixed (({MultiOrDiv.left=current} op=("*"|"/")) right=Prefixed)*;
+
+Prefixed returns Expression:
+    {BooleanNegation} =>op="!" expression=Atomic | /* right associativity */
+    {ArithmeticSigned} =>op="-" expression=Atomic | /* right associativity */ 
+    {Atomic} atomic=Atomic
+;
+
+Atomic returns Expression:
+    {GroupExpression} '(' group=Expression ')' |
+    {NumericExpression} value=INT |
+    {StringExpression} value=STRING | 
+    {BooleanExpression} (valueTrue?=TK_TRUE | valueFalse?=TK_FALSE) |
+    {FieldExpression} type=[MessageType] '.' field = ID |
+    {CheckIfValueDefined} (defined?=TK_DEFINED | undefined?=TK_UNDEFINED) key=StoredValue |
+    {KeyInStore} key=StoredValue |
+    {ExternalCallExpression} function=ID ( '(' Expressions? ')' )?
 ;
 
 enum TimeUnit: MSEC='ms' | SEC='s';
@@ -149,5 +228,15 @@ terminal TK_MODULE: 'module';
 terminal TK_SUMMARY: 'summary';
 terminal TK_MESSAGES: 'messages';
 terminal TK_PROTOCOL: 'protocol';
+terminal TK_TRUE: 'true';
+terminal TK_FALSE: 'false';
+terminal TK_DEFINED: 'defined';
+terminal TK_UNDEFINED: 'undefined';
+terminal TK_IF: 'if';
+//terminal TK_VIOD: 'void';
+//terminal TK_INT: 'int';
+//terminal TK_STRING: 'string';
+//terminal TK_BOOL: 'bool';
+terminal TK_EXTERNAL_ACTIONS: 'actions';
 
 terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';

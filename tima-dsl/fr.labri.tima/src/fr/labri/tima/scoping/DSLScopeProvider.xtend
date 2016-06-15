@@ -26,6 +26,7 @@ class DSLScopeProvider extends fr.labri.tima.scoping.AbstractDSLScopeProvider {
   	val rootElement = EcoreUtil2.getRootContainer(context)
   	switch (reference) {
   		case DSLPackage.Literals.MESSAGE_ACTION__TYPE,
+  		case DSLPackage.Literals.FIELD_EXPRESSION__TYPE,
   		case DSLPackage.Literals.MESSAGE_PATTERN__TYPE: {
         	val candidates = EcoreUtil2.getAllContentsOfType(rootElement, MessageType)
         	Scopes.scopeFor(candidates)
