@@ -22,9 +22,9 @@ class DSLSemanticHighlightingConfigurator extends DefaultSemanticHighlightingCal
 	      	
 //	      	println(ge.class.name + " " + node.semanticElement)
 	        if (node.semanticElement instanceof StoredValueSection) {
+//	          println("The value is " + (node.semanticElement as StoredValueSection).key + " with len " + (node.semanticElement as StoredValueSection).key.length + " and offset " + node.offset)
 	        	
-	          acceptor.addPosition(node.getOffset(), node.leafNodes.get(0).length, 
-	            DSLHighlightingConfigurator.KEY_PAIR_ID);
+	          acceptor.addPosition(node.offset, node.length, DSLHighlightingConfigurator.KEY_PAIR_ID);
 	        }
 	      }
 	}

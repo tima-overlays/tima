@@ -13,14 +13,17 @@ finding_neighbors messages {
 
 extern int compute_distance(int x1, int y1, int x2, int y2);
 
-/* automaton used to build set of neighbors */ 
+/* 
+ * This automaton is the specification of a protocol
+ * to find your neighbors and to announce yourself.
+ */ 
 template automaton FindingNeighbors (NextPhase)
 	
 	initial state greeting
 		when ? hello within 100ms => greeting do {
-			$distance[hello.sender] = compute_distance($posX, $posY, hello.x, hello.y)
-			$coordinates[hello.sender].x = hello.x
-			$coordinates[hello.sender].y = hello.y
+			$distance[ hello.sender ] = compute_distance($posX, $posY, hello.x, hello.y)
+			$coordinates[ hello.sender ].x = hello.x
+			$coordinates[ hello.sender ].y = hello.y
 		}
 	
 		when timeout => s_check do {

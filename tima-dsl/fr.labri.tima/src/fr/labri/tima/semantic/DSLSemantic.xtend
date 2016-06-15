@@ -52,14 +52,18 @@ public class DSLSemantic {
 
 		def createAutomata(Iterator<Automaton> autos) {
 			front_end_automata = autos
-			autos.forEach[createAutomaton(it as SimpleAutomaton)]
+			autos.forEach[createAutomaton(it)]
 		}
 
-		def createAutomaton(SimpleAutomaton a) {
-			val builder = new IRAutomatonBuilder(this, a)
-			// the order here is important, remember, recursive definitions
-			automata.add(builder.automaton) // line 1
-			builder.createAutomata(a) // line 2
+		def createAutomaton(Automaton a) {
+			switch (a) {
+				SimpleAutomaton: {
+					val builder = new IRAutomatonBuilder(this, a)
+					// the order here is important, remember, recursive definitions
+					automata.add(builder.automaton) // line 1
+					builder.createAutomata(a) // line 2	
+				}
+			}
 		}
 
 		def IRAutomata.Message getMessage(MessageType msg) {

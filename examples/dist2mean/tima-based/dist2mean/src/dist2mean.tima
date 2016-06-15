@@ -1,19 +1,17 @@
 module dist2mean
 summary "Broadcast messages using the algorithm distance-to-mean"
 
-//import timer
-//import broadcasting
-//import neighbors
+require timer
+require broadcasting
+require neighbors
 
-protocol dst2mean { mode = "udp", port = 10000 } 
+protocol dst2mean { mode = "udp", port = 10000 }
  
 dst2mean messages {
 	/* the message to disseminate */
 	broadcast { sender, key, payload }   
 }
 
-extern void statistic_message_sent ();
-extern void statistic_message_received ();
 extern int compute_distance_to_mean(string key); 
 
 
@@ -40,7 +38,7 @@ automaton MainPhase
 		}
 		
 		when ? broadcast => sleeping do {
-			$received[broadcast.key].from[broadcast.sender] = true;
+			$received[ broadcast.key ].from[ broadcast.sender ] = true; 
 		
 			if (undefined $payloads[broadcast.key]) {
 				statistic_message_received;

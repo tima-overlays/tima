@@ -34,7 +34,7 @@ class DSLHighlightingConfigurator extends DefaultHighlightingConfiguration {
     def booleanValueTextStyle() {
         val textStyle = defaultTextStyle().copy()
         textStyle.setStyle(SWT.ITALIC)
-        textStyle.color = new RGB(20, 80, 120)
+        textStyle.color = new RGB(20, 80, 150)
         textStyle
     }
 				

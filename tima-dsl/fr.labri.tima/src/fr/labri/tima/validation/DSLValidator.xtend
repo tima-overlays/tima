@@ -13,6 +13,7 @@ import fr.labri.tima.dSL.Automaton
 import fr.labri.tima.dSL.MessageType
 import org.eclipse.xtext.xtext.FlattenedGrammarAccess.FlattenedGrammarAccessAdapter
 import fr.labri.tima.dSL.SimpleAutomaton
+import fr.labri.tima.dSL.AutomatonTemplate
 
 /**
  * This class contains custom validation rules.
@@ -63,12 +64,24 @@ class DSLValidator extends AbstractDSLValidator {
 
 	@Check(FAST)
 	def checkUniqueStates(fr.labri.tima.dSL.State s) {
-		val auto = s.eContainer as SimpleAutomaton
-		val f = auto.states.filter[it.name == s.name].size > 1
-		if (f) {
-			error('Duplicated State name',
-						DSLPackage.Literals.STATE__NAME, DUPLICATED_STATE_NAME)
+		val a = s.eContainer as Automaton
+		switch (a) {
+			SimpleAutomaton: {
+				val f = a.states.filter[it.name == s.name].size > 1
+				if (f) {
+					error('Duplicated State name',
+								DSLPackage.Literals.STATE__NAME, DUPLICATED_STATE_NAME)
+				}
+			}
+			AutomatonTemplate: {
+				val f = a.states.filter[it.name == s.name].size > 1
+				if (f) {
+					error('Duplicated State name',
+								DSLPackage.Literals.STATE__NAME, DUPLICATED_STATE_NAME)
+				}
+			}
 		}
+		
 	}
 
 	@Check(FAST)

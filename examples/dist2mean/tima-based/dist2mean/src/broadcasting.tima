@@ -4,6 +4,9 @@ local messages {
 	init_new_broadcast { sender, key }
 } 
 
+extern void statistic_message_sent ();
+extern void statistic_message_received ();
+
 
 /**
  * This automaton is external to the protocol. It is in fact used to evaluate it

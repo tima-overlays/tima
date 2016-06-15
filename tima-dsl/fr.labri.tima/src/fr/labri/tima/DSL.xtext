@@ -4,11 +4,17 @@ generate dSL "http://www.labri.fr/tima/DSL"
 
 Model:
 	header=Header
+	dependencies+=Dependency*
 	protocols+=ProtocolSection*
 	messageSections+=MessageSection*
 	externalActions+=ExternalActionDeclaration*
 	automatons+=Automaton*
 ;
+
+Dependency:
+	'require' importedNamespace=ID
+;
+
 
 Header:
 	TK_MODULE name=ID
