@@ -285,19 +285,19 @@ public class IRAutomata {
 	}
 	public static class MessageGuard implements Guard {
 		Message message;
-		List<Pattern> arguments;
+		Expression predicate;
 		
-		public MessageGuard(Message msg, List<Pattern> args) {
+		public MessageGuard(Message msg, Expression predicate) {
 			message = msg;
-			arguments = args;
+			this.predicate = predicate;
 		}
 		
 		public Message getMessageType() {
 			return message;
 		}
 		
-		public List<Pattern> getPatterns() {
-			return arguments;
+		public Expression getPredicate() {
+			return predicate;
 		}
 	}
 	

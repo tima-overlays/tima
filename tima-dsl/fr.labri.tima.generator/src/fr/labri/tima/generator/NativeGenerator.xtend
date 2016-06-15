@@ -419,12 +419,8 @@ class NativeGenerator extends NamedNodeGenerator {
 			«{context.enterScope(getMessageSymbolTable(g.messageType)); null}»
 			bool b = m.msg_id == «g.messageType.get_message_id»;
 			if (b) {
-				«FOR p : g.patterns»
-				if (b) {
-					«p.IR2Target»
-					b = «context.lastTmp»;
-				}
-				«ENDFOR»
+				«g.predicate.IR2Target»
+				b = «context.lastTmp»;
 			}
 			return b;
 			«{context.leaveScope; null}»
