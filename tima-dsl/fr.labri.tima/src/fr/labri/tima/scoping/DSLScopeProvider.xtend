@@ -12,6 +12,8 @@ import org.eclipse.xtext.scoping.Scopes
 import fr.labri.tima.dSL.MessagePattern
 import fr.labri.tima.dSL.Automaton
 import fr.labri.tima.dSL.MessageType
+import fr.labri.tima.dSL.ExternalAction
+import fr.labri.tima.dSL.ExternalActionDeclaration
 
 /**
  * This class contains custom scoping description.
@@ -25,14 +27,19 @@ class DSLScopeProvider extends fr.labri.tima.scoping.AbstractDSLScopeProvider {
   override getScope(EObject context, EReference reference) {
   	val rootElement = EcoreUtil2.getRootContainer(context)
   	switch (reference) {
-  		case DSLPackage.Literals.MESSAGE_ACTION__TYPE,
-  		case DSLPackage.Literals.FIELD_EXPRESSION__TYPE,
-  		case DSLPackage.Literals.MESSAGE_PATTERN__TYPE: {
-        	val candidates = EcoreUtil2.getAllContentsOfType(rootElement, MessageType)
-        	Scopes.scopeFor(candidates)
-  		}
+//  		case DSLPackage.Literals.MESSAGE_ACTION__TYPE,
+//  		case DSLPackage.Literals.FIELD_EXPRESSION__TYPE,
+//  		case DSLPackage.Literals.MESSAGE_PATTERN__TYPE: 
+//  		{
+//        	val candidates = EcoreUtil2.getAllContentsOfType(rootElement, MessageType)
+//        	Scopes.scopeFor(candidates)
+//  		}
   		case DSLPackage.Literals.MESSAGE_ACTION__TARGET: {
   			val candidates = EcoreUtil2.getAllContentsOfType(rootElement, Automaton)
+        	Scopes.scopeFor(candidates)
+  		}
+  		case DSLPackage.Literals.EXTERNAL_CALL_EXPRESSION__FUNCTION: {
+        	val candidates = EcoreUtil2.getAllContentsOfType(rootElement, ExternalActionDeclaration)
         	Scopes.scopeFor(candidates)
   		}
   		default: {

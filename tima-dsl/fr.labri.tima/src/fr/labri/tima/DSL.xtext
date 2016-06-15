@@ -6,7 +6,7 @@ Model:
 	header=Header
 	protocols+=ProtocolSection*
 	messageSections+=MessageSection*
-	externalActions=ExternalActions?
+	externalActions+=ExternalActionDeclaration*
 	automatons+=Automaton*
 ;
 
@@ -36,14 +36,8 @@ FieldDeclaration:
 	declaredFields+=ID (',' declaredFields+=ID)*
 ;
 
-ExternalActions:
-	TK_EXTERNAL_ACTIONS '{'
-		declarations+=ExternalActionDeclaration+
-	'}'
-;
-
 ExternalActionDeclaration:
-	ExternalActionType name=ID '('  (paramType+=ExternalActionParam (',' paramType+=ExternalActionParam)* )?   ')' ';'
+	TK_EXTERNAL_ACTIONS ExternalActionType name=ID '('  (paramType+=ExternalActionParam (',' paramType+=ExternalActionParam)* )?   ')' ';'
 ;
 
 ExternalActionParam:
@@ -56,9 +50,9 @@ ExternalActionType:
 ;
 
 Automaton:
-	TK_AUTOMATON name=ID
-	Summary?
-	states+=State* 
+	{SimpleAutomaton} TK_AUTOMATON name=ID Summary? states+=State* |
+	{AutomatonInstance} TK_AUTOMATON name=ID '=' template=[AutomatonTemplate] '(' params+=ID (',' params+=ID )* ')' |
+	{AutomatonTemplate} TK_TEMPLATE TK_AUTOMATON name=ID '(' params+=ID (',' params+=ID )* ')' Summary? states+=State*
 ;
 
 State:
@@ -114,7 +108,8 @@ AssignmentAction returns Action:
 
 MessageTarget:
 	{BroadcastTarget} '*' |
-	{UnicastTarget} address=Expression
+	{UnicastTarget} address=Expression | 
+	{LocalUnicastTarget} address=ID
 //	{InternalTarget} automata=[Automaton]
 ;
 
@@ -166,15 +161,6 @@ Expressions:
 	operands+=Expression (',' operands+=Expression)*
 ;
 
-//Expression:
-//	{StringExpression} value=STRING |
-//	{BooleanExpression} (valueTrue?=TK_TRUE | valueFalse?=TK_FALSE) |
-//	{NumericExpression} value=INT |
-//	{FieldExpression} type=[MessageType] '.' field = ID |
-//	{CheckIfValueDefined} (defined?=TK_DEFINED | undefined?=TK_UNDEFINED) key=StoredValue | 
-//	{KeyInStore} key=StoredValue
-//;
-
 StoredValue:
 	'$' sections+=StoredValueSection ('.' sections+=StoredValueSection )*
 ;
@@ -215,7 +201,7 @@ Atomic returns Expression:
     {FieldExpression} type=[MessageType] '.' field = ID |
     {CheckIfValueDefined} (defined?=TK_DEFINED | undefined?=TK_UNDEFINED) key=StoredValue |
     {KeyInStore} key=StoredValue |
-    {ExternalCallExpression} function=ID ( '(' Expressions? ')' )?
+    {ExternalCallExpression} function=[ExternalActionDeclaration] ( '(' Expressions? ')' )
 ;
 
 enum TimeUnit: MSEC='ms' | SEC='s';
@@ -233,10 +219,7 @@ terminal TK_FALSE: 'false';
 terminal TK_DEFINED: 'defined';
 terminal TK_UNDEFINED: 'undefined';
 terminal TK_IF: 'if';
-//terminal TK_VIOD: 'void';
-//terminal TK_INT: 'int';
-//terminal TK_STRING: 'string';
-//terminal TK_BOOL: 'bool';
-terminal TK_EXTERNAL_ACTIONS: 'actions';
+terminal TK_EXTERNAL_ACTIONS: 'extern';
+terminal TK_TEMPLATE: 'template';
 
 terminal EXTERNAL_NAME:  '`' ( '\\' . | !('\\'|'`') )* '`';
