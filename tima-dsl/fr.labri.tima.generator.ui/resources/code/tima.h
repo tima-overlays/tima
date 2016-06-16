@@ -51,6 +51,18 @@ public:
             values.clear();
             value = v;
         } 
+		void setSimpleValue(int v) {
+            values.clear();
+            value = std::to_string(v);
+        } 
+		void setSimpleValue(double v) {
+            values.clear();
+            value = std::to_string(v);
+        } 
+		void setSimpleValue(bool v) {
+            values.clear();
+            value = std::to_string(v);
+        } 
         std::shared_ptr<Value> getValue(std::string key) {
             if (values.find(key) != values.end()) {
                 return values[key];
@@ -64,8 +76,24 @@ public:
             return value;
         }
 
+		int to_int() {
+            if (values.size() > 0)
+                throw std::runtime_error("This is a composed value");
+            return std::stoi(value);
+        }
+
+		double to_double() {
+            if (values.size() > 0)
+                throw std::runtime_error("This is a composed value");
+            return std::stod(value);
+        }
+
 		std::map< std::string, std::shared_ptr<Value> > getValues() {
 			return values;
+		}
+
+		bool is_defined(std::string key) {
+			return values.find(key) != values.end();
 		}
         
         
@@ -88,6 +116,10 @@ public:
         auto value = std::make_shared<Value>();
         value->setSimpleValue(v);
         root.setValue(key, value);
+    }
+
+	void setValue(const std::string key, std::shared_ptr<Value> v) {
+        root.setValue(key, v);
     }
     
     

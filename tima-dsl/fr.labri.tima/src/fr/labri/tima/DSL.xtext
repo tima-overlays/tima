@@ -76,7 +76,7 @@ Actions:
 ;
 
 Action returns Action:
-	 BuiltinAction ';'? |
+//	 BuiltinAction ';'? |
 	 ExternalAction ';'? |
 	 MessageAction ';'? |
 	 IfAction |
@@ -92,9 +92,9 @@ Field:
 	name=ID '=' value=Expression
 ;
 
-BuiltinAction returns Action:
-	{BuiltinAction} name=ID ('(' Expressions ')')?
-;
+//BuiltinAction returns Action:
+//	{BuiltinAction} name=ID ('(' Expressions ')')?
+//;
 
 ExternalAction returns Action:
 	{ExternalAction} name=EXTERNAL_NAME ('(' Expressions ')')?

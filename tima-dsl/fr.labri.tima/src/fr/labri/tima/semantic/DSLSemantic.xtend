@@ -3,7 +3,6 @@ package fr.labri.tima.semantic
 import fr.labri.tima.dSL.Action
 import fr.labri.tima.dSL.Automaton
 import fr.labri.tima.dSL.BroadcastTarget
-import fr.labri.tima.dSL.BuiltinAction
 import fr.labri.tima.dSL.ExternalAction
 import fr.labri.tima.dSL.ExternalGuard
 import fr.labri.tima.dSL.FieldExpression
@@ -23,10 +22,23 @@ import java.util.Map
 import org.eclipse.emf.ecore.resource.Resource
 import fr.labri.tima.dSL.MessageType
 import fr.labri.tima.dSL.Expression
-import java.util.LinkedList
 import fr.labri.tima.dSL.MessageSection
 import fr.labri.tima.dSL.KeyInStore
 import fr.labri.tima.dSL.SimpleAutomaton
+import fr.labri.tima.dSL.AutomatonInstance
+import fr.labri.tima.dSL.AutomatonTemplate
+import fr.labri.tima.dSL.NumericExpression
+import fr.labri.tima.dSL.BooleanExpression
+import fr.labri.tima.dSL.CheckIfValueDefined
+import fr.labri.tima.dSL.StoredValue
+import fr.labri.tima.dSL.ExternalCallExpression
+import fr.labri.tima.dSL.AndOrExpression
+import fr.labri.tima.dSL.Comparison
+import fr.labri.tima.dSL.PlusMinus
+import fr.labri.tima.dSL.MultiOrDiv
+import fr.labri.tima.dSL.BooleanNegation
+import fr.labri.tima.dSL.ArithmeticSigned
+import fr.labri.tima.dSL.GroupExpression
 
 public class DSLSemantic {
 
@@ -63,6 +75,11 @@ public class DSLSemantic {
 					automata.add(builder.automaton) // line 1
 					builder.createAutomata(a) // line 2	
 				}
+				AutomatonInstance: {
+					val builder = new IRAutomatonBuilder(this, a)
+					automata.add(builder.automaton) // line 1
+					builder.createAutomata(a, a.template) // line 2	
+				}
 			}
 		}
 
@@ -89,7 +106,10 @@ public class DSLSemantic {
 					createAutomaton(front_end_automata.findFirst[it.name == name] as SimpleAutomaton)
 					getAutomaton(front_end_automata.findFirst[it.name == name])
 				}
-				else null
+				else {
+					throw new RuntimeException("Message not found : " + name)
+				}
+					
 			}
 		}
 
@@ -97,9 +117,7 @@ public class DSLSemantic {
 			val r = if (local)
 				new IRAutomata.Message(msg.name, msg.declaredFields.map[it])
 			else
-				
 				new IRAutomata.RemoteMessage(msg.name, msg.declaredFields.map[it])
-//			println(msg.name + " " + msg.fields + " " + r.class.simpleName)	
 			r
 		}
 	}
@@ -121,6 +139,15 @@ public class DSLSemantic {
 				buildTransitions(x)
 			]
 			automaton.entryPoint = states.get(a.states.findFirst[ it.initial ])
+		}
+		
+		def createAutomata(AutomatonInstance a, AutomatonTemplate template) {
+			template.states.forEach[states.put(it, newNamedNode(it))]
+			states.forEach[x, y|
+				automaton.add(y)
+				buildTransitions(x)
+			]
+			automaton.entryPoint = states.get(template.states.findFirst[ it.initial ])
 		}
 
 		def buildTransitions(State state) {
@@ -187,12 +214,27 @@ public class DSLSemantic {
 			new IRAutomata.Transition(states.get(t.target), guard, t.actions.map[newAction(it)])
 		}
 	
-		def newExpression(Expression e) {
+		def IRAutomata.Expression newExpression(Expression e) {
 			switch e {
 				FieldExpression: new IRAutomata.Expression.Identifier(e.field)
 				StringExpression: new IRAutomata.Expression.Constant(e.value)
+				NumericExpression: new IRAutomata.Expression.Constant(e.value)
+				BooleanExpression: new IRAutomata.Expression.Constant(e.valueTrue)
+				CheckIfValueDefined: new IRAutomata.Expression.CheckIfStoreExists(e.defined, newStoredValue(e.key))
 				KeyInStore: new IRAutomata.Expression.KeyValuePair(e.key.sections.map[it.key].toList)
+				ExternalCallExpression: new IRAutomata.Expression.CallExp(e.function.name, e.operands.map[newExpression(it)])
+				AndOrExpression: new IRAutomata.Expression.BinaryExpression(newExpression(e.left), newExpression(e.right), e.op)
+				Comparison: new IRAutomata.Expression.BinaryExpression(newExpression(e.left), newExpression(e.right), e.op)
+				PlusMinus: new IRAutomata.Expression.BinaryExpression(newExpression(e.left), newExpression(e.right), e.op)
+				MultiOrDiv: new IRAutomata.Expression.BinaryExpression(newExpression(e.left), newExpression(e.right), e.op)
+				BooleanNegation: new IRAutomata.Expression.UnaryExpression(newExpression(e.expression), e.op)
+				ArithmeticSigned: new IRAutomata.Expression.UnaryExpression(newExpression(e.expression), e.op)
+				GroupExpression: newExpression(e.group)
 			}
+		}
+	
+		def IRAutomata.Expression.StoredValue newStoredValue(StoredValue value) {
+			throw new UnsupportedOperationException("TODO: auto-generated method stub")
 		}
 
 		def IRAutomata.Action newAction(Action action) {
@@ -200,9 +242,9 @@ public class DSLSemantic {
 				ExternalAction:	new IRAutomata.ExternalAction(action.name, action.operands.map[
 						newExpression(it)
 					])
-				BuiltinAction: new IRAutomata.BuiltinAction(action.name, action.operands.map[
-						newExpression(it)
-					])
+//				BuiltinAction: new IRAutomata.BuiltinAction(action.name, action.operands.map[
+//						newExpression(it)
+//					])
 				MessageAction:
 						new IRAutomata.MessageAction(
 						newMessageTarget(action),

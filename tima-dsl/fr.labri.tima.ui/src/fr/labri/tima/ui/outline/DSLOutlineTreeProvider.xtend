@@ -5,7 +5,6 @@ package fr.labri.tima.ui.outline
 
 import com.google.inject.Inject
 import fr.labri.tima.dSL.Action
-import fr.labri.tima.dSL.BuiltinAction
 import fr.labri.tima.dSL.ExternalAction
 import fr.labri.tima.dSL.MessageAction
 import fr.labri.tima.dSL.State
@@ -50,11 +49,6 @@ class DSLOutlineTreeProvider extends DefaultOutlineTreeProvider {
 	}
 
 	def _text(ExternalAction a) {
-		val x = new StyledString()
-		x.appendBlackText(a.name)
-    }
-
-    def _text(BuiltinAction a) {
 		val x = new StyledString()
 		x.appendBlackText(a.name)
     }

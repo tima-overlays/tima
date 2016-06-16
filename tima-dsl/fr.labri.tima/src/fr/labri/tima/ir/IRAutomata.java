@@ -45,10 +45,47 @@ public class IRAutomata {
 			}
 		}
 		
+		public static class UnaryExpression implements Expression {
+			public Expression e;
+			public String operator;
+			public UnaryExpression(Expression l, String op) {
+				e = l;
+				operator = op;
+			}
+		}
+		
+		public static class  StoredValue  implements Expression {
+			
+		}
+		
+		public static class CheckIfStoreExists implements Expression {
+			public boolean defined_operator;
+			public StoredValue key;
+			public CheckIfStoreExists(boolean defined_operator, StoredValue k) {
+				this.defined_operator = defined_operator;
+				this.key = k;
+			}
+		}
+		
+		public static class CallExp implements Expression {
+			public String function_name;
+			public List<Expression> parameters;
+			public CallExp(String name, List<Expression> p) {
+				function_name = name;
+				parameters = p;
+			}
+		}
+		
 		public static class Constant  implements Expression {
 			public String value;
 			public Constant(String v) {
 				value = v;
+			}
+			public Constant(int v) {
+				value = v + "";
+			}
+			public Constant(boolean v) {
+				value = v + "";
 			}
 		}
 		

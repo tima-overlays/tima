@@ -30,17 +30,23 @@ class DSLGenerator2 extends AbstractGenerator {
 	override void doGenerate(Resource resource, IFileSystemAccess2 fsa, IGeneratorContext context) {
 		val automata = dslSemantic.toIR(resource)
 		val name = resource.allContents.filter(Header).toList.get(0).name
+		if (name == "dist2mean") {
+			val iresource = ResourcesPlugin.getWorkspace().getRoot().findMember(resource.URI.toPlatformString(true)); // FIXME more than ugly
+			val targets = Util.unserialize(iresource.project.getPersistentProperty(KEY_TARGETS), new HashSet<String>());
+			for (String target: targets)
+				try {
+					println('''Calling «target» generator''')
+					Generators.getGenerator(target, automata).generateFiles(name, fsa, context)
+				} catch(Exception e) {
+					System.err.println("Unable to call generator " + target)
+					System.err.println(e)
+					e.printStackTrace
+				}
+		}
+		else {
+			throw new RuntimeException("Remove the ridiculous IF")
+		}
 
-		val iresource = ResourcesPlugin.getWorkspace().getRoot().findMember(resource.URI.toPlatformString(true)); // FIXME more than ugly
-		val targets = Util.unserialize(iresource.project.getPersistentProperty(KEY_TARGETS), new HashSet<String>());
-		for (String target: targets)
-			try {
-				println('''Calling «target» generator''')
-				Generators.getGenerator(target, automata).generateFiles(name, fsa, context)
-			} catch(Exception e) {
-				System.err.println("Unable to call generator " + target)
-				System.err.println(e)
-				e.printStackTrace
-			}
+		
 	}
 }

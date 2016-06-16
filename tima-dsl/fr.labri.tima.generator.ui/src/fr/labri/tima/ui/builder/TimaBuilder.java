@@ -25,6 +25,7 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 	private static final String TIMA_BASE_APP_NAME = "tima";
 	public static final String BUILDER_ID = "fr.labri.tima.generator.ui.timabuilder";
 	private static final String WRONG_OMNETPP_PATH = "Wrong Path to OMNETPP/INET";
+	private static final String UNKNOWN_SEMANTIC_FILE = "Couldn't find semantic file";
 
 	@Override
 	protected IProject[] build(int kind, Map<String, String> args,
@@ -76,20 +77,30 @@ public class TimaBuilder extends IncrementalProjectBuilder {
 			File app = new File(destination, name);
 			app.mkdir();
 			
-			// copy semantic
-			Util.copy(semantic_file, new File(app.getAbsoluteFile(), semantic_file.getName()), true);
 			
-			// copy all files under src-gen/${app}
-			f.accept(new IResourceVisitor() {
-				@Override
-				public boolean visit(IResource resource) throws CoreException {
-					if (resource.getType() == IResource.FILE) {
-						// copy file from the project to the external location
-						Util.copy(f.getFile(resource.getName()), new File(app.getAbsolutePath(), resource.getName()), true);
+			if (semantic_file.exists()) {
+				// first, copy semantic
+				Util.copy(semantic_file, new File(app.getAbsoluteFile(), semantic_file.getName()), true);
+				
+				// copy all files under src-gen/${app}
+				f.accept(new IResourceVisitor() {
+					@Override
+					public boolean visit(IResource resource) throws CoreException {
+						if (resource.getType() == IResource.FILE) {
+							// copy file from the project to the external location
+							Util.copy(f.getFile(resource.getName()), new File(app.getAbsolutePath(), resource.getName()), true);
+						}
+						return true;
 					}
-					return true;
-				}
-			}, 1, false);
+				}, 1, false);
+			}
+			else {
+				// FIXME: properly report error
+				IMarker marker = getProject().createMarker(WRONG_OMNETPP_PATH);
+				marker.setAttribute(IMarker.PROBLEM, UNKNOWN_SEMANTIC_FILE + semantic_file.toString());
+			}
+			
+			
 			
 			
 		}

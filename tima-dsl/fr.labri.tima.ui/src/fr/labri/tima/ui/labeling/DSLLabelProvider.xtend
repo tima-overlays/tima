@@ -4,7 +4,6 @@
 package fr.labri.tima.ui.labeling
 
 import com.google.inject.Inject
-import fr.labri.tima.dSL.BuiltinAction
 import fr.labri.tima.dSL.ExternalAction
 import fr.labri.tima.dSL.ExternalGuard
 import fr.labri.tima.dSL.GuardedTransition
@@ -39,10 +38,6 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 	Send «action.type.name»
 	'''
 	
-	def text(BuiltinAction action ){
-		action.name
-	}
-	
 	def text(ExternalAction action ){
 		action.name
 	}
@@ -51,10 +46,7 @@ class DSLLabelProvider extends DefaultEObjectLabelProvider {
 	def image(ExternalAction a) {
 		imageHelper.getImage("action.png")
     }
-    
-    def image(BuiltinAction a) {
-		imageHelper.getImage("action.png")
-    }
+
     
     def image(MessageAction a) {
 		imageHelper.getImage("send.png")

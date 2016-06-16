@@ -15,7 +15,7 @@ import org.eclipse.xtext.generator.IGeneratorContext
 import java.util.List
 import java.util.LinkedList
 import java.util.HashMap
-import fr.labri.tima.dSL.BuiltinAction
+
 
 class NativeGenerator extends NamedNodeGenerator {
 	
@@ -274,15 +274,6 @@ class NativeGenerator extends NamedNodeGenerator {
 						«ENDFOR»
 						);
 		«ENDFOR»
-		«FOR act : actions.filter(IRAutomata.BuiltinAction).filter[true]»
-			void «(act as IRAutomata.BuiltinAction).builtinName»(
-						const std::string& name,
-						tima::TimaNativeContext* ctx «IF act.arguments.size > 0»,«ENDIF»
-						«FOR p : act.arguments SEPARATOR ','»
-							std::string
-						«ENDFOR»
-						);
-		«ENDFOR»
 		'''
 		
 	}
@@ -298,19 +289,6 @@ class NativeGenerator extends NamedNodeGenerator {
 	   				   «ENDFOR»
 					  );
 			'''
-		}
-		else if (g instanceof IRAutomata.BuiltinGuard) {
-			val bg = g as IRAutomata.BuiltinGuard
-			if (bg.builtinName != "true" && bg.builtinName != "false")
-				'''
-				bool «bg.builtinName»(
-						   const std::string& name, tima::TimaNativeContext* ctx «IF bg.arguments.size > 0»,«ENDIF»
-						   «FOR p : bg.arguments SEPARATOR ','»
-						   std::string
-		   				   «ENDFOR»
-						  );
-				'''
-			else ""
 		}
 		else ""
 	}
@@ -355,10 +333,6 @@ class NativeGenerator extends NamedNodeGenerator {
 			«{context.leaveScope; null}»
 		}
 		'''
-	}
-	
-	dispatch def String IR2Target(IRAutomata.BuiltinAction action) {
-		invokeExternalAction(action.builtinName, action.arguments)
 	}
 	
 	dispatch def String IR2Target(IRAutomata.ExternalAction action) {
@@ -454,20 +428,6 @@ class NativeGenerator extends NamedNodeGenerator {
 	
 	dispatch def String IR2Target(IRAutomata.ExternalGuard g) {
 		invokeExternalGuard(g.externalName.simple_name, g.arguments)
-	}
-		
-	dispatch def String IR2Target(IRAutomata.BuiltinGuard g) {
-		switch (g.builtinName) {
-			case "true": {
-				'''bool «context.nextTmp» = true;'''
-			}
-			case "false": {
-				'''bool «context.nextTmp» = false;'''
-			}
-			default: {
-				invokeExternalGuard(g.builtinName, g.arguments)
-			}
-		}
 	}
 	
 	/* A bunch of methods to keep consistent the definition of identifies  */
